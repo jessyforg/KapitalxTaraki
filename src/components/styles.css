@@ -1,3 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap');
+
+.font-montserrat-semibold {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
 .dropdown:hover .dropdown-menu {
   opacity: 1;
   transform: translate(0) scale(1);
@@ -113,4 +120,67 @@
   to {
     opacity: 0;
   }
+}
+
+body, html {
+  transition: background 0.3s, color 0.3s;
+}
+
+.dark {
+  background: #151515 !important;
+  color: #fff !important;
+}
+
+.dark .bg-white {
+  background: #151515 !important;
+}
+
+.dark .text-gray-900, .dark .text-gray-700, .dark .text-gray-400, .dark .text-black {
+  color: #fff !important;
+}
+
+.dark .border-gray-200, .dark .border-gray-300, .dark .border-trkblack {
+  border-color: #333 !important;
+}
+
+.dark .bg-gray-50 {
+  background: #232323 !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background: #232323 !important;
+}
+
+.dark .bg-white {
+  background: #151515 !important;
+}
+
+.dark .shadow-md, .dark .shadow-lg {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.7) !important;
+}
+
+.dark .modal-container {
+  background: #232323 !important;
+  color: #fff !important;
+}
+
+.dark .rounded-md {
+  background: #232323 !important;
+  color: #fff !important;
+}
+
+.dark .border-orange-600 {
+  border-color: #ff9800 !important;
+}
+
+.dark .hover\:text-orange-600:hover {
+  color: #ff9800 !important;
+}
+
+.faq-container {
+  border: 2px solid #d1d5db; /* Tailwind's gray-300 */
+  border-radius: 0.75rem; /* Tailwind's rounded-lg */
+  padding: 1.5rem;
+  background: #fff;
+  margin-bottom: 1.5rem;
 }

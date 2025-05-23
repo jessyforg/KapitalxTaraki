@@ -5,6 +5,7 @@ import aware from "../components/imgs/aware.webp";
 import ready from "../components/imgs/ready.webp";
 import know from "../components/imgs/knowledge.webp";
 import inno from "../components/imgs/inno.webp";
+import './styles.css';
 
 function Program() {
   useEffect(() => {
@@ -38,7 +39,7 @@ function Program() {
 
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-5 laptop-s:rounded-lg"
+              className="tablet:flex tablet:flex-col tablet:px-5 laptop-s:rounded-lg font-montserrat-semibold"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -69,12 +70,7 @@ function Program() {
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-0 tablet:bg-gradient-to-r from-orange-100 tablet:rounded-lg
-              tablet:py-[0.9rem] tablet:pl-4 tablet:mr-4 tablet:mt-5
-              tablet-m:py-[0.8rem] tablet-m:pl-4 tablet-m:mr-4 tablet-m:mt-5
-              laptop-s:py-[4.5rem] laptop-s:pl-4 laptop-s:mr-4 laptop-s:mt-5 
-              desktop-s:py-[5.5rem]
-              desktop-m:py-[7.8rem] desktop-m:pl-4 desktop-m:mr-4 desktop-m:mt-5"
+              className="tablet:flex tablet:flex-col tablet:px-0 bg-white tablet:rounded-lg font-montserrat-semibold"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -104,7 +100,7 @@ function Program() {
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-5"
+              className="tablet:flex tablet:flex-col tablet:px-5 font-montserrat-semibold"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -135,12 +131,7 @@ function Program() {
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-0 tablet:bg-gradient-to-r from-orange-100 tablet:rounded-lg
-              tablet:py-[1.5rem] tablet:pl-4 tablet:mr-4 tablet:mt-5
-              tablet-m:py-[1rem] tablet-m:pl-4 tablet-m:mr-4 tablet-m:mt-5
-              laptop-s:py-[4.5rem] laptop-s:pl-4 laptop-s:mr-4 laptop-s:mt-5 
-              desktop-s:py-[5.5rem]
-              desktop-m:py-[7.8rem] desktop-m:pl-4 desktop-m:mr-4 desktop-m:mt-5"
+              className="tablet:flex tablet:flex-col tablet:px-0 bg-white tablet:rounded-lg font-montserrat-semibold"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"

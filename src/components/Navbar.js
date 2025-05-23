@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
 import { Link } from "react-router-dom";
-import tarakiLogo from "../components/imgs/taraki-black.svg";
 import "./styles.css";
 
 function Navbar() {
@@ -94,10 +93,23 @@ function Navbar() {
     navbarStickyRef.current.classList.add("hidden");
   };
 
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("taraki-dark-mode") === "true";
+  });
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("taraki-dark-mode", darkMode);
+  }, [darkMode]);
+
   return (
-    <header className="font-satoshi overflow-x-hidden">
-      <nav className="bg-white border-gray-200 shadow-md fixed w-full z-50 top-0 start-0">
-        <div className="flex flex-wrap items-center justify-between mx-auto p-4 tablet-m:px-8 laptop-s:p-7 desktop-m:p-10">
+    <header className="font-montserrat overflow-x-hidden">
+      <nav className="bg-trkblack border-gray-200 shadow-md fixed w-full z-50 top-0 start-0">
+        <div className="flex flex-wrap items-center justify-between mx-auto p-4">
           <Link
             to="/"
             onClick={(e) => {
@@ -110,11 +122,7 @@ function Navbar() {
             }}
             className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
           >
-            <img
-              src={tarakiLogo}
-              className="w-28 laptop-s:absolute laptop-s:left-2/4 laptop-s:-translate-x-1/2 laptop-m:w-32 desktop-m:w-40"
-              alt="TARAKI LOGO HERE"
-            />
+            {/* <img src={tarakiLogo} className="h-8" alt="Taraki Logo" /> */}
           </Link>
           <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
             <button
@@ -161,7 +169,7 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-gray-900 hover:text-orange-600 rounded-lg cursor-pointer"
+                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
                 >
                   About
                 </Link>
@@ -177,7 +185,7 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-gray-900 hover:text-orange-600 rounded-lg cursor-pointer"
+                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
                 >
                   TARAKIs
                 </Link>
@@ -187,7 +195,7 @@ function Navbar() {
                 <div className="dropdown">
                   <span className="rounded-md">
                     <button
-                      className="inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-white  rounded-md hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800"
+                      className="inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md text-white hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800"
                       type="button"
                       aria-haspopup="true"
                       aria-expanded="true"
@@ -200,16 +208,16 @@ function Navbar() {
                         fill="currentColor"
                       >
                         <path
-                          fill-rule="evenodd"
+                          fillRule="evenodd"
                           d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                         ></path>
                       </svg>
                     </button>
                   </span>
                   <div className="opacity-0 invisible dropdown-menu transition-all duration-300 transform origin-top-right -translate-y-2 scale-100">
                     <div
-                      className="absolute laptop-s:w-40 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg outline-none"
+                      className="absolute laptop-s:w-40 mt-2 origin-top-right bg-white dark:bg-trkblack divide-y divide-gray-100 dark:divide-gray-800 rounded-md shadow-lg outline-none border-0"
                       aria-labelledby="headlessui-menu-button-1"
                       id="headlessui-menu-items-117"
                       role="menu"
@@ -279,7 +287,7 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-gray-900 hover:text-orange-600 rounded-lg cursor-pointer"
+                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
                 >
                   FAQ
                 </Link>
@@ -291,7 +299,7 @@ function Navbar() {
                     closeNavbar();
                   }}
                   activeClassName="text-orange-600"
-                  className="block py-2 px-3 tablet-m:p-0 text-gray-900 hover:text-orange-600 rounded-lg cursor-pointer"
+                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
                 >
                   Engagement
                 </Link>
@@ -491,6 +499,31 @@ function Navbar() {
               )}
             </div>
           )}
+          <div className="flex items-center space-x-2">
+            <button
+              aria-label="Toggle dark mode"
+              className={`ml-2 px-2 py-1 rounded focus:outline-none transition-transform duration-300 ease-in-out
+      ${darkMode ? "bg-white text-trkblack" : "bg-trkblack text-white"}
+      hover:scale-110 active:scale-95 shadow-none`}
+              style={{ border: "none", boxShadow: "none" }}
+              onClick={() => setDarkMode((prev) => !prev)}
+            >
+              <span
+                className="inline-block transition-transform duration-300 ease-in-out"
+                style={{ transform: darkMode ? "rotate(0deg)" : "rotate(20deg)" }}
+              >
+                {darkMode ? (
+                  <span role="img" aria-label="Light mode">
+                    🌞
+                  </span>
+                ) : (
+                  <span role="img" aria-label="Dark mode">
+                    🌙
+                  </span>
+                )}
+              </span>
+            </button>
+          </div>
         </div>
       </nav>
     </header>
