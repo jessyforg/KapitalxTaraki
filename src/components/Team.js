@@ -3,7 +3,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import ateJez from "../components/imgs/team/ate-jez.webp";
 import maamT from "../components/imgs/team/thelma.webp";
-import pia from "../components/imgs/team/pia.png";
+import pia from "../components/imgs/team/pia.webp";
 import "./styles.css";
 
 function TarakiTeam() {
@@ -37,14 +37,14 @@ function TarakiTeam() {
         <div className="cont tablet:px-8 phone:py-2">
           <section className="mt-16 tablet:mt-12 text-center">
             <h1
-              className="font-semibold text-md tablet:text-lg tablet-m:text-2xl laptop-s:text-3xl laptop-m:text-[2.3rem] desktop-m:text-[2.9rem] desktop-m:mb-7 aos-init"
+              className="font-montserrat font-extrabold text-md tablet:text-lg tablet-m:text-2xl laptop-s:text-3xl laptop-m:text-[2.3rem] desktop-m:text-[2.9rem] desktop-m:mb-7 aos-init"
               data-aos="fade-down"
               data-aos-delay="200"
             >
               TARAKIs
             </h1>
             <p
-              className="font-light tablet:font-normal tablet:leading-6 text-sm tablet:text-md tablet-m:text-lg tablet-m:px-24 tablet:px-20 px-10 mt-5 tablet:mt-2 laptop-s:text-lg laptop-m:text-[1.4rem] desktop-m:text-[1.6rem] laptop-s:mx-40 laptop-m:mx-80 aos-init"
+              className="font-montserrat font-light tablet:font-normal tablet:leading-6 text-sm tablet:text-md tablet-m:text-lg tablet-m:px-24 tablet:px-20 px-10 mt-5 tablet:mt-2 laptop-s:text-lg laptop-m:text-[1.4rem] desktop-m:text-[1.6rem] laptop-s:mx-40 laptop-m:mx-80 aos-init"
               data-aos="fade-up"
               data-aos-delay="600"
             >
@@ -63,13 +63,13 @@ function TarakiTeam() {
                     style={{ backgroundImage: `url(${maamT})` }}
                   ></div>
                   <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                    <h1 className="text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
+                    <h1 className="font-montserrattext-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
                       Dr. Thelma D. Palaoag
                     </h1>
-                    <h1 className="text-[0.9rem] tablet:text-lg tablet-m:text-xl">
+                    <h1 className="font-montserrat text-[0.9rem] tablet:text-lg tablet-m:text-xl">
                       Project Leader
                     </h1>
-                    <p className="bg-white font-extralight text-[0.8rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
+                    <p className="font-montserrat bg-white font-extralight text-[0.8rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
                       Dr. Thelma brings over 20 years of experience in
                       technology and innovation. Her visionary leadership has
                       been instrumental in shaping TARAKI's strategic direction.
@@ -150,13 +150,13 @@ function TarakiTeam() {
                     style={{ backgroundImage: `url(${ateJez})` }}
                   ></div>
                   <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                    <h1 className="text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
+                    <h1 className="font-montserrat text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
                       Jezelle Q. Oliva
                     </h1>
-                    <h1 className="text-[0.9rem] tablet:text-lg tablet-m:text-xl">
+                    <h1 className="font-montserrat text-[0.9rem] tablet:text-lg tablet-m:text-xl">
                       Startup Community Enabler
                     </h1>
-                    <p className="bg-white font-extralight text-[0.8rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
+                    <p className="font-montserrat bg-white font-extralight text-[0.8rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
                       Jezelle is an educator, empowering TARAKI startups, and
                       fosters community growth through spearheading innovative
                       initiatives.
@@ -238,13 +238,13 @@ function TarakiTeam() {
                     style={{ backgroundImage: `url(${pia})` }}
                   ></div>
                   <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                    <h1 className="text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
+                    <h1 className="font-montserrat text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
                       Pia Bernardine T. Capuyan
                     </h1>
-                    <h1 className="text-[0.9rem] tablet:text-lg tablet-m:text-xl">
+                    <h1 className=" font-montserrattext-[0.9rem] tablet:text-lg tablet-m:text-xl">
                       Project Assistant
                     </h1>
-                    <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
+                    <p className="font-montserrat bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
                     An experienced writer witha  background in architecture, combining creativity with technical insight. 
                     She helps drive fresh ideas and solutions within TARAKI.
                     </p>
@@ -333,14 +333,14 @@ function TarakiTeam() {
                   style={{ backgroundImage: `url(${maamT})` }}
                 ></div>
                 <div className="absolute top-0 left-0 h-full px-3 flex items-center justify-center bg-white transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:left-1/3">
-                  <div className="flex flex-col justify-center  tablet:px-3">
-                    <h1 className="text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
+                  <div className="font-montserrat flex flex-col justify-center  tablet:px-3">
+                    <h1 className="font-montserrat text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
                       Dr. Thelma D. Palaoag
                     </h1>
-                    <h1 className="text-[0.8rem] tablet:text-lg tablet-m:text-xl laptop-m:text-2xl">
+                    <h1 className="text-[0.8rem] font-montserrat tablet:text-lg tablet-m:text-xl laptop-m:text-2xl">
                       Project Leader
                     </h1>
-                    <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] laptop-m:text-[1.4rem] leading-relaxed">
+                    <p className="bg-white font-montserrat font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] laptop-m:text-[1.4rem] leading-relaxed">
                       Dr. Thelma brings over 20 years of experience in
                       technology and innovation. Her visionary leadership has
                       been instrumental in shaping TARAKI's strategic direction.
@@ -426,14 +426,14 @@ function TarakiTeam() {
                   style={{ backgroundImage: `url(${ateJez})` }}
                 ></div>
                 <div className="absolute top-0 left-0 h-full px-3 flex items-center justify-center bg-white transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:left-1/3">
-                  <div className="flex flex-col justify-center  tablet:px-3">
-                    <h1 className="text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
+                  <div className="font-montserrat flex flex-col justify-center  tablet:px-3">
+                    <h1 className="font-montserrat text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
                       Jezelle Q. Oliva
                     </h1>
-                    <h1 className="text-[0.8rem] tablet:text-lg tablet-m:text-xl laptop-m:text-2xl">
+                    <h1 className="font-montserrat text-[0.8rem] tablet:text-lg tablet-m:text-xl laptop-m:text-2xl">
                       Startup Community Enabler
                     </h1>
-                    <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] laptop-m:text-[1.4rem] leading-relaxed">
+                    <p className="font-montserrat bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] laptop-m:text-[1.4rem] leading-relaxed">
                       Jezelle is an educator, empowering TARAKI startups, and
                       fosters community growth through spearheading innovative
                       initiatives.
@@ -520,13 +520,13 @@ function TarakiTeam() {
                 ></div>
                 <div className="absolute top-0 left-0 h-full px-3 flex items-center justify-center bg-white transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:left-1/3">
                   <div className="flex flex-col justify-center  tablet:px-3">
-                    <h1 className="text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
+                    <h1 className="font-montserrat text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
                     Pia Bernardine T. Capuyan
                     </h1>
-                    <h1 className="text-[0.8rem] tablet:text-lg tablet-m:text-xl">
+                    <h1 className="font-montserrat text-[0.8rem] font-montserrat tablet:text-lg tablet-m:text-xl">
                       Project Assistant
                     </h1>
-                    <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
+                    <p className="font-montserrat bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
                     An experienced writer witha  background in architecture, combining creativity with technical insight. 
                     She helps drive fresh ideas and solutions within TARAKI.
                     </p>
@@ -614,13 +614,13 @@ function TarakiTeam() {
                   style={{ backgroundImage: `url(${maamT})` }}
                 ></div>
                 <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                  <h1 className="laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
+                  <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Dr. Thelma D. Palaoag
                   </h1>
-                  <h1 className="laptop-s:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat laptop-s:text-xl desktop-m:text-2xl">
                     Project Leader
                   </h1>
-                  <p className="bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[1.65rem] laptop-s:pb-[1.7rem] desktop-m:pb-[3.2rem]">
+                  <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[1.65rem] laptop-s:pb-[1.7rem] desktop-m:pb-[3.2rem]">
                     20 years of experience in technology and innovation. Her
                     visionary leadership has been instrumental in shaping
                     TARAKI's strategic direction.
@@ -704,14 +704,14 @@ function TarakiTeam() {
                   className="bg-cover bg-center w-[100%] tablet:w-[100%] h-full"
                   style={{ backgroundImage: `url(${ateJez})` }}
                 ></div>
-                <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                  <h1 className="laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
+                <div className=" flex flex-col justify-center px-2 py-2 tablet:px-3">
+                  <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Jezelle Q. Oliva
                   </h1>
-                  <h1 className="laptop-s:text-lg laptop-m:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat laptop-s:text-lg laptop-m:text-xl desktop-m:text-2xl">
                     Startup Community Enabler
                   </h1>
-                  <p className="bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[3.2rem] laptop-s:pb-[3.27rem] laptop-m:pb-[3.4rem] desktop-m:pb-[3.19rem]">
+                  <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[3.2rem] laptop-s:pb-[3.27rem] laptop-m:pb-[3.4rem] desktop-m:pb-[3.19rem]">
                     An educator, empowering TARAKI startups, and fosters
                     community growth through spearheading innovative
                     initiatives.
@@ -796,13 +796,13 @@ function TarakiTeam() {
                   style={{ backgroundImage: `url(${pia})` }}
                 ></div>
                 <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                  <h1 className="laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
+                  <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Pia Bernardine T. Capuyan
                   </h1>
-                  <h1 className="laptop-s:text-lg  laptop-m:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat laptop-s:text-lg  laptop-m:text-xl desktop-m:text-2xl">
                     Project Assistant
                   </h1>
-                  <p className="bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed laptop-l:pb-[1.65rem] desktop-s:pb-[1.6rem] desktop-m:pb-[1.475rem]">
+                  <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed laptop-l:pb-[1.65rem] desktop-s:pb-[1.6rem] desktop-m:pb-[1.475rem]">
                     An experienced writer witha  background in architecture, combining creativity with technical insight. 
                     She helps drive fresh ideas and solutions within TARAKI.
                   </p>

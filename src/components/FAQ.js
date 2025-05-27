@@ -1,24 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import arrow from "./imgs/arrow-down.svg";
 
 function FAQs() {
   useEffect(() => {
-    AOS.init({
-      duration: 1000, // Animation duration
-      easing: "ease-in-out", // Easing function
-      once: false,
-    });
+    AOS.init({ duration: 700, easing: "ease-in-out", once: false });
   }, []);
-  const [activeIndex, setActiveIndex] = useState(null);
 
+  const [activeIndex, setActiveIndex] = useState(null);
   const toggleFAQ = (index) => {
-    if (activeIndex === index) {
-      setActiveIndex(null);
-    } else {
-      setActiveIndex(index);
-    }
+    setActiveIndex(activeIndex === index ? null : index);
   };
 
   const faqItems = [
@@ -45,65 +36,56 @@ function FAQs() {
   ];
 
   return (
-    <div>
-      <div className="cont">
-        <section
-          id="faq"
-          className="flex flex-col justify-start mt-5 tablet:mt-12 bg-trkblack px-8 pt-5 pb-8 tablet:px-8 aos-init"
-          data-aos="fade-down"
-        >
-          <section className="text-center">
-            <h1
-              className="tablet-m:hidden font-semibold text-md tablet-m:text-xl text-white aos-init"
-              data-aos="fade-down"
-            >
-              FAQs
-            </h1>
-            <h1
-              className="phone:hidden tablet-m:block font-semibold text-md tablet-m:text-2xl text-white laptop-m:text-3xl desktop-m:text-4xl desktop-s:text-[2rem] aos-init"
-              data-aos="fade-down"
-            >
-              Frequently Asked Questions
-            </h1>
-          </section>
+    <div className="w-full flex flex-col items-center justify-center py-16 bg-white dark:bg-[#181818] min-h-screen">
+      <h2 className="text-3xl font-bold mb-8 text-orange-600">
+        Frequently Asked Questions
+      </h2>
+      <div className="max-w-3xl mx-auto flex flex-col gap-6">
+        {faqItems.map((item, idx) => (
           <div
-            className="tablet:mx-[1.8rem] laptop-s:mx-40 laptop-m:mx-40 desktop-s:mx-40 desktop-m:mx-40 aos-init"
-            data-aos="fade-right"
+            key={idx}
+            data-aos="fade-up"
+            data-aos-delay={idx * 100}
+            className="border-2 border-orange-600 rounded-lg px-4 bg-white dark:bg-[#181818] shadow-md transition-all duration-200"
           >
-            <div className="m-2 space-y-2 laptop-s:my-5">
-              {faqItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="group flex flex-col gap-2 rounded-lg bg-white p-3 text-black"
+            <button
+              className="w-full text-left py-5 focus:outline-none flex items-center justify-between text-trkblack dark:text-white text-lg font-semibold transition-colors duration-300"
+              onClick={() => toggleFAQ(idx)}
+            >
+              {item.question}
+              <span
+                className={`ml-4 transition-transform duration-300 ${
+                  activeIndex === idx ? "rotate-180" : ""
+                }`}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  className="text-trkblack dark:text-white"
                 >
-                  <div
-                    className="flex cursor-pointer items-center justify-between laptop-s:text-xl laptop-m:text-2xl desktop-m:text-3xl font-regular"
-                    onClick={() => toggleFAQ(index)}
-                  >
-                    <span>{item.question}</span>
-                    <img
-                      src={arrow}
-                      className={`h-5 w-5 transition-all duration-200 ${
-                        activeIndex === index ? "-rotate-180" : ""
-                      }`}
-                      alt=""
-                    />
-                  </div>
-                  <div
-                    className={`overflow-hidden transition-all duration-500 ${
-                      activeIndex === index
-                        ? "max-h-screen opacity-100 phone:text-[1rem] laptop-s:text-lg desktop-s:text-xl text-gray-400"
-                        : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <hr className="h-px my-3 bg-gray-300 border-0" />
-                    {item.answer}
-                  </div>
-                </div>
-              ))}
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.585l3.71-3.355a.75.75 0 111.02 1.1l-4.25 3.85a.75.75 0 01-1.02 0l-4.25-3.85a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div
+              className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                activeIndex === idx
+                  ? "max-h-40 opacity-100 translate-y-0"
+                  : "max-h-0 opacity-0 -translate-y-2"
+              }`}
+            >
+              <div className="px-2 pb-5 text-trkblack dark:text-white text-base font-normal transition-colors duration-300">
+                {item.answer}
+              </div>
             </div>
           </div>
-        </section>
+        ))}
       </div>
     </div>
   );

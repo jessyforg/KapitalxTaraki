@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import tarakiLogo from "./imgs/TARAKI 10X WHITE.png";
 
 function Navbar() {
   const form = useRef();
@@ -113,8 +112,8 @@ function Navbar() {
 
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
-     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] bg-trkblack/80 backdrop-blur-md border border-white/10 shadow-lg rounded-full transition-all duration-300">
-      <div className="flex items-center justify-between mx-auto px-6 py-3">
+      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${ darkMode ? 'bg-trkblack/80 text-white border border-white/20': 'bg-gray-50/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>      
+        <div className="flex items-center justify-between mx-auto px-6 py-3">
           <Link
             to="/"
             onClick={(e) => {
@@ -127,7 +126,12 @@ function Navbar() {
             }}
             className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
           >
-            <img src={tarakiLogo} alt="TARAKI LOGO" className="h-10 w-auto object-contain" />
+            <img
+              src={darkMode ? require("./imgs/TARAKI 10X WHITE.png") : require("./imgs/taraki-logo-black2.png")}
+              className="h-8 transition-all duration-300"
+              alt="Taraki Logo"
+              style={{ filter: darkMode ? "invert(0)" : "invert(0)" }}
+            />
           </Link>
           <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
             <button
@@ -174,7 +178,7 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
+                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
                 >
                   About
                 </Link>
@@ -190,20 +194,20 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
+                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-xl cursor-pointer`}
                 >
                   TARAKIs
                 </Link>
               </li>
 
               <li>
-                <div className="dropdown">
+                <div className="dropdown relative group">
                   <span className="rounded-md">
                     <button
-                      className="inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md text-white hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800"
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
                       type="button"
                       aria-haspopup="true"
-                      aria-expanded="true"
+                      aria-expanded="false"
                       aria-controls="headlessui-menu-items-117"
                     >
                       <span>Explore</span>
@@ -216,68 +220,61 @@ function Navbar() {
                           fillRule="evenodd"
                           d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                           clipRule="evenodd"
-                        ></path>
+                        />
                       </svg>
                     </button>
                   </span>
-                  <div className="opacity-0 invisible dropdown-menu transition-all duration-300 transform origin-top-right -translate-y-2 scale-100">
-                    <div
-                      className="absolute laptop-s:w-40 mt-2 origin-top-right bg-white dark:bg-trkblack divide-y divide-gray-100 dark:divide-gray-800 rounded-md shadow-lg outline-none border-0"
-                      aria-labelledby="headlessui-menu-button-1"
-                      id="headlessui-menu-items-117"
-                      role="menu"
-                    >
-                      <div className="py-1">
-                        <li>
-                          <Link
-                            to="/"
-                            onClick={(e) => {
-                              scroller.scrollTo("program", {
-                                smooth: true,
-                                duration: 1000,
-                                offset: -120,
-                              });
-                              closeNavbar();
-                            }}
-                            className="text-gray-700 flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer hover:bg-orange-100"
-                          >
-                            Programs
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            to="/"
-                            onClick={(e) => {
-                              scroller.scrollTo("framework", {
-                                smooth: true,
-                                duration: 1000,
-                                offset: -120,
-                              });
-                              closeNavbar();
-                            }}
-                            className="text-gray-700 flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer hover:bg-orange-100"
-                          >
-                            Framework
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            to="/"
-                            onClick={(e) => {
-                              scroller.scrollTo("events", {
-                                smooth: true,
-                                duration: 1000,
-                                offset: -120,
-                              });
-                              closeNavbar();
-                            }}
-                            className="text-gray-700 flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer hover:bg-orange-100"
-                          >
-                            Events
-                          </Link>
-                        </li>
-                      </div>
-                    </div>
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-md shadow-lg z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack' : 'bg-white'}`}> 
+                    <ul className="py-1">
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            scroller.scrollTo("program", {
+                              smooth: true,
+                              duration: 1000,
+                              offset: -120,
+                            });
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Programs
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            scroller.scrollTo("framework", {
+                              smooth: true,
+                              duration: 1000,
+                              offset: -120,
+                            });
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Framework
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            scroller.scrollTo("events", {
+                              smooth: true,
+                              duration: 1000,
+                              offset: -120,
+                            });
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Events
+                        </Link>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </li>
@@ -292,7 +289,7 @@ function Navbar() {
                     });
                     closeNavbar();
                   }}
-                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
+                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
                 >
                   FAQ
                 </Link>
@@ -304,7 +301,7 @@ function Navbar() {
                     closeNavbar();
                   }}
                   activeClassName="text-orange-600"
-                  className="block py-2 px-3 tablet-m:p-0 text-white hover:text-orange-600 rounded-lg cursor-pointer"
+                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
                 >
                   Engagement
                 </Link>
@@ -316,7 +313,7 @@ function Navbar() {
             {window.location.pathname === "/" && (
               <button
                 onClick={openModal}
-                className="phone:hidden tablet-m:block bg-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
+                className="phone:hidden tablet-m:block bg-orange-500 text-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-orange-600 rounded-md hover:bg-orange-600 hover:text-white hover:border-orange-700 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
                 type="button"
               >
                 <span>GET STARTED</span>

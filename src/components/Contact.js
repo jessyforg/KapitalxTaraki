@@ -4,7 +4,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import logo from "../components/imgs/taraki-black.svg";
 
-function Contacts() {
+function Contacts({darkMode}) {
   useEffect(() => {
     AOS.init({
       duration: 800, // Animation duration
@@ -29,9 +29,14 @@ function Contacts() {
               className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
             >
               <img
-                src={logo}
-                className="h-14 laptop-m:h-20"
+                src={
+                  darkMode
+                    ? require("./imgs/TARAKI 10X WHITE.png")
+                    : require("./imgs/taraki-logo-black2.png")
+                }
+                className="h-14 laptop-m:h-20 transition-all duration-300"
                 alt="TARAKI LOGO HERE"
+                style={{ filter: darkMode ? "invert(0)" : "invert(0)" }}
               />
             </Link>
           </section>
