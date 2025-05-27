@@ -5,7 +5,6 @@ import aware from "../components/imgs/aware.webp";
 import ready from "../components/imgs/ready.webp";
 import know from "../components/imgs/knowledge.webp";
 import inno from "../components/imgs/inno.webp";
-import './styles.css';
 
 function Program() {
   useEffect(() => {
@@ -39,7 +38,7 @@ function Program() {
 
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-5 laptop-s:rounded-lg font-montserrat-semibold"
+              className="tablet:flex tablet:flex-col tablet:px-5 laptop-s:rounded-lg"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -65,12 +64,17 @@ function Program() {
             data-aos="fade-right"
           >
             <div
-              className="mx-auto mt-5 rounded-lg bg-cover bg-center w-72 h-52 tablet:w-[100rem] tablet-m:w-[130rem] tablet:h-[14rem] tablet:order-2 laptop-s:w-[130rem] laptop-m:w-[140rem] desktop-m:w-[200rem] laptop-s:h-[20rem] desktop-m:h-[30rem]"
+              className="mx-auto mt-5 rounded-lg bg-cover bg-center w-72 h-52 tablet:w-[100rem] tablet-m:w-[130rem] tablet:h-[14rem] tablet:order-2 laptop-s:w-[130rem] laptop-m:w-[140rem] desktop-m:w-[200rem] laptop-s:h-[20rem] desktop-m:h-[30rem] bg-black"
               style={{ backgroundImage: `url(${ready})` }}
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-0 bg-white tablet:rounded-lg font-montserrat-semibold"
+              className="tablet:flex tablet:flex-col tablet:px-0 tablet:bg-gradient-to-r tablet:from-trkwhite tablet:to-trkblack tablet:rounded-lg
+              tablet:py-[0.9rem] tablet:pl-4 tablet:mr-4 tablet:mt-5
+              tablet-m:py-[0.8rem] tablet-m:pl-4 tablet-m:mr-4 tablet-m:mt-5
+              laptop-s:py-[4.5rem] laptop-s:pl-4 laptop-s:mr-4 laptop-s:mt-5 
+              desktop-s:py-[5.5rem]
+              desktop-m:py-[7.8rem] desktop-m:pl-4 desktop-m:mr-4 desktop-m:mt-5"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -91,7 +95,7 @@ function Program() {
           </div>
           <div
             id="sectionCont"
-            className="tablet:flex tablet:justify-between tablet:items-center tablet:mt-5 tablet:px-14 tablet-m:px-[4rem] aos-init"
+            className="tablet:flex tablet:justify-between tablet:items-center tablet:mt-5 tablet:px-14 tablet-m:px-[4rem] aos-init border-4 border-white light:border-black rounded-lg my-4"
             data-aos="fade-right"
           >
             <div
@@ -100,7 +104,7 @@ function Program() {
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-5 font-montserrat-semibold"
+              className="tablet:flex tablet:flex-col tablet:px-5"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"
@@ -122,16 +126,21 @@ function Program() {
           </div>
           <div
             id="sectionCont"
-            className="tablet:flex tablet:justify-between tablet:items-center tablet:px-14 tablet:mt-5 tablet-m:px-[4rem] aos-init"
+            className="tablet:flex tablet:justify-between tablet:items-center tablet:px-14 tablet:mt-5 tablet-m:px-[4rem] aos-init border-4 broder-white borderfrom-trkwhite to-trkblack  rounded-lg my-4"
             data-aos="fade-right"
           >
             <div
-              className="mx-auto mt-5 rounded-lg bg-cover bg-center w-72 h-52 tablet:w-[85rem] tablet-m:w-[110rem] tablet:h-[14rem] tablet:order-2 laptop-s:w-[114rem] laptop-m:w-[124rem] desktop-m:w-[180rem] laptop-s:h-[20rem] desktop-m:h-[30rem]"
+              className="mx-auto mt-5 rounded-lg bg-cover bg-center w-72 h-52 tablet:w-[85rem] tablet-m:w-[110rem] tablet:h-[14rem] tablet:order-2 laptop-s:w-[114rem] laptop-m:w-[124rem] desktop-m:w-[180rem] laptop-s:h-[20rem] desktop-m:h-[30rem] bg-black"
               style={{ backgroundImage: `url(${inno})` }}
             ></div>
             <div
               id="sectionTextCont"
-              className="tablet:flex tablet:flex-col tablet:px-0 bg-white tablet:rounded-lg font-montserrat-semibold"
+              className="tablet:flex tablet:flex-col tablet:px-0 tablet:bg-gradient-to-r tablet:from-trkwhite tablet:to-trkblack tablet:rounded-lg
+              tablet:py-[1.5rem] tablet:pl-4 tablet:mr-4 tablet:mt-5
+              tablet-m:py-[1rem] tablet-m:pl-4 tablet-m:mr-4 tablet-m:mt-5
+              laptop-s:py-[4.5rem] laptop-s:pl-4 laptop-s:mr-4 laptop-s:mt-5 
+              desktop-s:py-[5.5rem]
+              desktop-m:py-[7.8rem] desktop-m:pl-4 desktop-m:mr-4 desktop-m:mt-5"
             >
               <h1
                 className="text-center tablet:text-left text-sm tablet:text-[0.9rem] tablet-m:text-xl laptop-s:text-2xl laptop-m:text-[2rem] desktop-m:text-[2.5rem] font-semibold mt-5 px-8 tablet:px-0 aos-init"

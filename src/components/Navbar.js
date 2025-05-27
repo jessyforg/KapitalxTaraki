@@ -3,6 +3,8 @@ import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
 import { Link } from "react-router-dom";
 import "./styles.css";
+import LoginForm from "./LoginForm";
+import SignupForm from "./SignupForm";
 
 function Navbar() {
   const form = useRef();
@@ -106,24 +108,25 @@ function Navbar() {
     localStorage.setItem("taraki-dark-mode", darkMode);
   }, [darkMode]);
 
+  const [authTab, setAuthTab] = useState("login");
+
   return (
     <header className="font-montserrat overflow-x-hidden">
-      <nav className="bg-trkblack border-gray-200 shadow-md fixed w-full z-50 top-0 start-0">
-        <div className="flex flex-wrap items-center justify-between mx-auto p-4">
-          <Link
-            to="/"
-            onClick={(e) => {
-              scroller.scrollTo("home", {
-                smooth: true,
-                duration: 1000,
-                offset: -50,
-              });
-              closeNavbar();
-            }}
-            className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
-          >
-            {/* <img src={tarakiLogo} className="h-8" alt="Taraki Logo" /> */}
-          </Link>
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] bg-trkblack/80 backdrop-blur-md border border-white/10 shadow-lg rounded-full transition-all duration-300">
+        <div className="flex items-center justify-between mx-auto px-6 py-3">
+          {/* Centered TARAKI Logo */}
+          <div className="flex-1 flex justify-start items-top left">
+            <img
+              src={require("./imgs/taraki-logo-black.png")}
+              alt="TARAKI Logo"
+              className="h-10 w-auto dark:hidden"
+            />
+            <img
+              src={require("./imgs/TARAKI 10X WHITE.png")}
+              alt="TARAKI Logo"
+              className="h-10 w-auto hidden dark:inline-block"
+            />
+          </div>
           <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
             <button
               data-collapse-toggle="navbar-cta"
@@ -306,226 +309,79 @@ function Navbar() {
               </li>
             </ul>
           </div>
-          <button
-            onClick={openModal}
-            className="phone:hidden tablet-m:block bg-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg"
-          >
-            Contact
-          </button>
-          {isModalOpen && (
-            <div
-              ref={modalRef}
-              className="main-modal fixed w-full h-100 inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster"
-            >
-              <div className="border border-orange-600 modal-container bg-white w-[60rem] laptop-s:w-[65rem] mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
-                <div className="modal-content py-4 text-left px-6">
-                  <div className="flex justify-between items-center">
-                    <p className="text-2xl font-bold">Connect with us today!</p>
-                    <div
-                      className="modal-close cursor-pointer z-50"
-                      onClick={modalClose}
-                    >
-                      <div className="bg-none p-2 rounded-lg hover:bg-gray-200">
-                        <svg
-                          className="fill-current text-black"
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 18 18"
-                        >
-                          <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                  <p className=" font-extralight text-sm text-gray-500 pb-3 ">
-                    Let us know what you think about
-                  </p>
-                  <hr></hr>
-                  <form ref={form} onSubmit={sendEmail}>
-                    <div className="flex justify-evenly items-center">
-                      <div className="my-3">
-                        <label
-                          htmlFor="name"
-                          className="block mb-2 text-sm font-medium text-gray-900"
-                        >
-                          Your name
-                        </label>
-                        <div className="flex">
-                          <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border rounded-e-0 border-gray-300 border-e-0 rounded-s-md">
-                            <svg
-                              className="w-6 h-5 text-gray-500"
-                              aria-hidden="true"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z" />
-                            </svg>
-                          </span>
-                          <input
-                            type="text"
-                            id="user_name"
-                            name="user_name"
-                            className="rounded-none rounded-e-lg bg-gray-50 border text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-0 laptop-s:flex-1 min-w-0 w-[27rem] laptop-s:w-[30rem] text-sm border-gray-300 p-4"
-                            placeholder="Enter your name"
-                            required
-                          />
-                        </div>
-
-                        <label
-                          htmlFor="email"
-                          className="block my-2 text-sm font-medium text-gray-900"
-                        >
-                          Your email
-                        </label>
-                        <div className="flex">
-                          <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border rounded-e-0 border-gray-300 border-e-0 rounded-s-md">
-                            <svg
-                              className="w-6 h-5 text-gray-500"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M2.038 5.61A2.01 2.01 0 0 0 2 6v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6c0-.12-.01-.238-.03-.352l-.866.65-7.89 6.032a2 2 0 0 1-2.429 0L2.884 6.288l-.846-.677Z" />
-                              <path d="M20.677 4.117A1.996 1.996 0 0 0 20 4H4c-.225 0-.44.037-.642.105l.758.607L12 10.742 19.9 4.7l.777-.583Z" />
-                            </svg>
-                          </span>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            className="rounded-none rounded-e-lg bg-gray-50 border text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-0 laptop-s:flex-1 min-w-0 w-[27rem] laptop-s:w-[30rem] text-sm border-gray-300 p-4"
-                            placeholder="example@email.com"
-                            required
-                          />
-                        </div>
-                        <label
-                          htmlFor="number"
-                          className="block my-2 text-sm font-medium text-gray-900"
-                        >
-                          Your mobile number
-                        </label>
-                        <div className="flex">
-                          <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border rounded-e-0 border-gray-300 border-e-0 rounded-s-md">
-                            <svg
-                              className="w-6 h-8 text-gray-500"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                fill=""
-                                d="M7.978 4a2.553 2.553 0 0 0-1.926.877C4.233 6.7 3.699 8.751 4.153 10.814c.44 1.995 1.778 3.893 3.456 5.572 1.68 1.679 3.577 3.018 5.57 3.459 2.062.456 4.115-.073 5.94-1.885a2.556 2.556 0 0 0 .001-3.861l-1.21-1.21a2.689 2.689 0 0 0-3.802 0l-.617.618a.806.806 0 0 1-1.14 0l-1.854-1.855a.807.807 0 0 1 0-1.14l.618-.62a2.692 2.692 0 0 0 0-3.803l-1.21-1.211A2.555 2.555 0 0 0 7.978 4Z"
-                              />
-                            </svg>
-                          </span>
-                          <input
-                            type="text"
-                            id="number"
-                            name="number"
-                            className="rounded-none rounded-e-lg bg-gray-50 border text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-0 laptop-s:flex-1 min-w-0 w-[27rem] laptop-s:w-[30rem] text-sm border-gray-300 p-4"
-                            placeholder="Enter your contact number"
-                            required
-                          />
-                        </div>
-
-                        <label
-                          htmlFor="message"
-                          className="block my-2 text-sm font-medium text-gray-900"
-                        >
-                          Your message
-                        </label>
-                        <textarea
-                          id="message"
-                          name="message"
-                          rows="4"
-                          className="block p-2.5 flex-0 laptop-s:flex-1 min-w-0 w-[30rem] laptop-s:w-[33rem] text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Leave a message..."
-                          required
-                        ></textarea>
-                        <div className="flex justify-end pt-2">
-                          <button
-                            type="submit"
-                            value="send"
-                            className="focus:outline-none px-4 w-full bg-orange-500 p-3 rounded-lg text-white hover:bg-orange-400"
-                          >
-                            Submit
-                          </button>
-                        </div>
-                      </div>
-                      <div className="shadow-lg w-96 h-[28rem] ml-8">
-                        <iframe
-                          title="University of Cordilleras Location"
-                          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3853.9072788242074!2d120.5901796201217!3d16.410273498776423!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3391a1685e7b7073%3A0xe6bda988e8558d2!2sUniversity%20of%20Cordilleras%20Legarda!5e0!3m2!1sen!2sph!4v1719022546794!5m2!1sen!2sph"
-                          width="384"
-                          height="448"
-                          style={{ border: 0 }}
-                          allowFullScreen=""
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          className="rounded-md shadow-md"
-                        ></iframe>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
-              {showAlert && (
-                <>
-                  <div className="fixed inset-0 z-50 bg-black bg-opacity-70 animate__animated animate__fadeIn animate__faster"></div>
-                  <div className="bg-gray-100 absolute z-50 rounded-md p-8 laptop-s:px-20 flex flex-col top-[28rem] laptop-s:top-[15rem] items-center animate__animated animate__fadeInDown animate__faster">
-                    <svg
-                      className="stroke-2 stroke-current text-green-600 h-28 w-28 mr-2 flex-shrink-0"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M0 0h24v24H0z" stroke="none" />
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M9 12l2 2 4-4" />
-                    </svg>
-
-                    <div className="text-green-700">
-                      <div className="font-bold text-2xl">
-                        Email has been sent!
-                      </div>
-
-                      <div>Please wait for TARAKI team to get back to you.</div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
           <div className="flex items-center space-x-2">
+            {/* Auth Modal Toggle Button - Only show on homepage */}
+            {window.location.pathname === "/" && (
+              <button
+                onClick={openModal}
+                className="phone:hidden tablet-m:block bg-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
+                type="button"
+              >
+                <span>GET STARTED</span>
+              </button>
+            )}
             <button
               aria-label="Toggle dark mode"
-              className={`ml-2 px-2 py-1 rounded focus:outline-none transition-transform duration-300 ease-in-out
-      ${darkMode ? "bg-white text-trkblack" : "bg-trkblack text-white"}
-      hover:scale-110 active:scale-95 shadow-none`}
-              style={{ border: "none", boxShadow: "none" }}
+              className={`relative w-12 h-6 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300 focus:outline-none group`}
+              style={{ border: "none" }} // Remove border in all modes
               onClick={() => setDarkMode((prev) => !prev)}
             >
               <span
-                className="inline-block transition-transform duration-300 ease-in-out"
-                style={{ transform: darkMode ? "rotate(0deg)" : "rotate(20deg)" }}
+                className={`absolute left-0 top-0 w-full h-full rounded-full transition-shadow duration-300 group-hover:shadow-lg group-active:shadow-xl ${
+                  darkMode ? "shadow-orange-400/60" : "shadow-gray-400/40"
+                }`}
+                style={{ pointerEvents: "none" }}
+              ></span>
+              <span
+                className={`w-5 h-5 bg-white dark:bg-orange-500 rounded-full shadow-md transform transition-transform duration-300 ${
+                  darkMode ? "translate-x-6" : "translate-x-0"
+                } group-hover:scale-110 group-active:scale-95 flex items-center justify-center text-lg`}
               >
-                {darkMode ? (
-                  <span role="img" aria-label="Light mode">
-                    🌞
-                  </span>
-                ) : (
-                  <span role="img" aria-label="Dark mode">
-                    🌙
-                  </span>
-                )}
+                {darkMode ? "🌙" : "☀️"}
               </span>
             </button>
           </div>
         </div>
       </nav>
+      {/* Auth Modal - Only show if isModalOpen is true */}
+      {isModalOpen && window.location.pathname === "/" && (
+        <div
+          ref={modalRef}
+          className="main-modal fixed w-full h-100 inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster"
+          style={{ display: "flex" }}
+        >
+          <div className="modal-container bg-white dark:bg-[#232323] rounded-lg shadow-lg max-w-md w-full p-0 relative animate-slideInFromTop">
+            <div className="flex justify-center items-center border-b border-gray-200 dark:border-gray-700">
+              <button
+                className={`flex-1 py-4 text-lg font-semibold transition-colors duration-200 ${authTab === 'login' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
+                onClick={() => setAuthTab('login')}
+              >
+                Log in
+              </button>
+              <button
+                className={`flex-1 py-4 text-lg font-semibold transition-colors duration-200 ${authTab === 'signup' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
+                onClick={() => setAuthTab('signup')}
+              >
+                Sign up
+              </button>
+            </div>
+            <div className="p-8">
+              {authTab === 'login' ? (
+                <LoginForm authTab={authTab} setAuthTab={setAuthTab} />
+              ) : (
+                <SignupForm authTab={authTab} setAuthTab={setAuthTab} />
+              )}
+            </div>
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-orange-600 text-2xl"
+              onClick={modalClose}
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

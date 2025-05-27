@@ -5,3 +5,13 @@
   font-family: "Satoshi-Variable";
   src: url("../src/Satoshi-Variable.ttf");
 }
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap');
+
+body, html {
+  font-family: 'Montserrat', 'Montserrat SemiBold', 'Satoshi-Variable', 'Satoshi', sans-serif !important;
+  transition: background 0.3s, color 0.3s;
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', 'Montserrat SemiBold', 'Satoshi-Variable', 'Satoshi', sans-serif !important;
+}
