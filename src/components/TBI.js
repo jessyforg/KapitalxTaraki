@@ -1,7 +1,7 @@
 import React from "react";
 import { scroller } from "react-scroll";
 import { Link, useNavigate } from "react-router-dom";
-import tarakiLogo from "../components/imgs/taraki-black.svg";
+import tarakiLogo from "../components/imgs/TARAKI 10X WHITE.png";
 import "aos/dist/aos.css";
 import Intto from "./imgs/InTTO.svg";
 import UP from "./imgs/SILBI_TBI.svg";

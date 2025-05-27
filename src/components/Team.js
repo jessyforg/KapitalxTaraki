@@ -3,7 +3,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import ateJez from "../components/imgs/team/ate-jez.webp";
 import maamT from "../components/imgs/team/thelma.webp";
-import sirjade from "../components/imgs/team/jade.webp";
+import pia from "../components/imgs/team/pia.png";
 import "./styles.css";
 
 function TarakiTeam() {
@@ -235,20 +235,18 @@ function TarakiTeam() {
                 <div className="swiper-slide shadow-lg bg-white flex flex-col justify-center items-center w-[100%] tablet:w-full tablet:my-4  tablet:h-64 tablet-m:h-80 h-[26rem] my-5">
                   <div
                     className="bg-cover bg-center w-[100%] tablet:w-[100%] h-full"
-                    style={{ backgroundImage: `url(${sirjade})` }}
+                    style={{ backgroundImage: `url(${pia})` }}
                   ></div>
                   <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
                     <h1 className="text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
-                      Jade P. Jimenez
+                      Pia Bernardine T. Capuyan
                     </h1>
                     <h1 className="text-[0.9rem] tablet:text-lg tablet-m:text-xl">
                       Project Assistant
                     </h1>
                     <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
-                      Jade is a seasoned technologist with a passion for
-                      cutting-edge innovations. He oversees all technology
-                      initiatives, ensuring TARAKI remains at the forefront of
-                      industry advancements.
+                    An experienced writer witha  background in architecture, combining creativity with technical insight. 
+                    She helps drive fresh ideas and solutions within TARAKI.
                     </p>
                     <section className="flex space-x-7 tablet:space-x-8 mt-1 tablet:mt-2 tablet-m:mt-6">
                       <svg
@@ -518,21 +516,19 @@ function TarakiTeam() {
               >
                 <div
                   className="bg-cover bg-center h-full w-full transition-all duration-500 group-hover:w-1/3"
-                  style={{ backgroundImage: `url(${sirjade})` }}
+                  style={{ backgroundImage: `url(${pia})` }}
                 ></div>
                 <div className="absolute top-0 left-0 h-full px-3 flex items-center justify-center bg-white transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:left-1/3">
                   <div className="flex flex-col justify-center  tablet:px-3">
                     <h1 className="text-[0.9rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] laptop-m:text-[2rem] font-semibold text-orange-700">
-                      Jade p. Jimenez
+                    Pia Bernardine T. Capuyan
                     </h1>
                     <h1 className="text-[0.8rem] tablet:text-lg tablet-m:text-xl">
                       Project Assistant
                     </h1>
                     <p className="bg-white font-extralight text-[0.7rem] tablet:mt-2 tablet-m:mt-6 tablet:text-[1rem] tablet-m:text-[1.1rem] leading-relaxed">
-                      Jade is a seasoned technologist with a passion for
-                      cutting-edge innovations. He oversees all technology
-                      initiatives, ensuring TARAKI remains at the forefront of
-                      industry advancements.
+                    An experienced writer witha  background in architecture, combining creativity with technical insight. 
+                    She helps drive fresh ideas and solutions within TARAKI.
                     </p>
                     <section className="flex space-x-3 tablet:space-x-8 mt-1 tablet:mt-2 tablet-m:mt-6">
                       <svg
@@ -797,20 +793,18 @@ function TarakiTeam() {
               >
                 <div
                   className="bg-cover bg-center w-[100%] tablet:w-[100%] h-full"
-                  style={{ backgroundImage: `url(${sirjade})` }}
+                  style={{ backgroundImage: `url(${pia})` }}
                 ></div>
                 <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
                   <h1 className="laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
-                    Jade P. Jimenez
+                    Pia Bernardine T. Capuyan
                   </h1>
                   <h1 className="laptop-s:text-lg  laptop-m:text-xl desktop-m:text-2xl">
                     Project Assistant
                   </h1>
                   <p className="bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed laptop-l:pb-[1.65rem] desktop-s:pb-[1.6rem] desktop-m:pb-[1.475rem]">
-                    A seasoned technologist with a passion for cutting-edge
-                    innovations. He oversees all technology initiatives,
-                    ensuring TARAKI remains at the forefront of industry
-                    advancements.
+                    An experienced writer witha  background in architecture, combining creativity with technical insight. 
+                    She helps drive fresh ideas and solutions within TARAKI.
                   </p>
                   <section className="flex space-x-7 tablet:space-x-8 mt-1 tablet:mt-2 tablet-m:mt-6">
                     <svg

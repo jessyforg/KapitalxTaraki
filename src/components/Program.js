@@ -95,7 +95,7 @@ function Program() {
           </div>
           <div
             id="sectionCont"
-            className="tablet:flex tablet:justify-between tablet:items-center tablet:mt-5 tablet:px-14 tablet-m:px-[4rem] aos-init border-4 border-white light:border-black rounded-lg my-4"
+            className="tablet:flex tablet:justify-between tablet:items-center tablet:px-14 tablet:mt-5 tablet-m:px-[4rem] aos-init my-4"
             data-aos="fade-right"
           >
             <div
@@ -126,7 +126,7 @@ function Program() {
           </div>
           <div
             id="sectionCont"
-            className="tablet:flex tablet:justify-between tablet:items-center tablet:px-14 tablet:mt-5 tablet-m:px-[4rem] aos-init border-4 broder-white borderfrom-trkwhite to-trkblack  rounded-lg my-4"
+            className="tablet:flex tablet:justify-between tablet:items-center tablet:px-14 tablet:mt-5 tablet-m:px-[4rem] aos-init my-4"
             data-aos="fade-right"
           >
             <div

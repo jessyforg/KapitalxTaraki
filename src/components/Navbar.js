@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
+import tarakiLogo from "./imgs/TARAKI 10X WHITE.png";
 
 function Navbar() {
   const form = useRef();
@@ -111,22 +112,23 @@ function Navbar() {
   const [authTab, setAuthTab] = useState("login");
 
   return (
-    <header className="font-montserrat overflow-x-hidden">
-      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] bg-trkblack/80 backdrop-blur-md border border-white/10 shadow-lg rounded-full transition-all duration-300">
-        <div className="flex items-center justify-between mx-auto px-6 py-3">
-          {/* Centered TARAKI Logo */}
-          <div className="flex-1 flex justify-start items-top left">
-            <img
-              src={require("./imgs/taraki-logo-black.png")}
-              alt="TARAKI Logo"
-              className="h-10 w-auto dark:hidden"
-            />
-            <img
-              src={require("./imgs/TARAKI 10X WHITE.png")}
-              alt="TARAKI Logo"
-              className="h-10 w-auto hidden dark:inline-block"
-            />
-          </div>
+    <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
+     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] bg-trkblack/80 backdrop-blur-md border border-white/10 shadow-lg rounded-full transition-all duration-300">
+      <div className="flex items-center justify-between mx-auto px-6 py-3">
+          <Link
+            to="/"
+            onClick={(e) => {
+              scroller.scrollTo("home", {
+                smooth: true,
+                duration: 1000,
+                offset: -50,
+              });
+              closeNavbar();
+            }}
+            className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
+          >
+            <img src={tarakiLogo} alt="TARAKI LOGO" className="h-10 w-auto object-contain" />
+          </Link>
           <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
             <button
               data-collapse-toggle="navbar-cta"
@@ -156,8 +158,8 @@ function Navbar() {
             </button>
           </div>
           <div
-            className="items-center justify-between hidden w-full tablet-m:flex tablet-m:w-auto mx-auto laptop-s:flex-1"
-            id="navbar-cta"
+          className="items-center justify-center hidden w-full tablet-m:flex tablet-m:w-auto mx-auto laptop-s:flex-1"
+           id="navbar-cta"
             ref={navbarStickyRef}
           >
             <ul className="flex flex-col font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem]">
