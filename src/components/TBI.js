@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { scroller } from "react-scroll";
 import { Link, useNavigate } from "react-router-dom";
-import tarakiLogo from "../components/imgs/TARAKI 10X WHITE.png";
+import tarakiLogoBlack from "../components/imgs/taraki-black.svg";
+import tarakiLogoWhite from "../components/imgs/TARAKI 10X WHITE.png";
 import "aos/dist/aos.css";
 import Intto from "./imgs/InTTO.svg";
 import UP from "./imgs/SILBI_TBI.svg";
@@ -17,6 +18,21 @@ import Benjie from "./imgs/investors/Benjie.webp";
 
 function TBI() {
   const navigate = useNavigate();
+  // Track dark mode
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+  const [fadeIn, setFadeIn] = useState(false);
+
+  React.useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    setFadeIn(true);
+  }, []);
 
   const handleScrollToHome = () => {
     scroller.scrollTo("Home", { smooth: true, duration: 1000, offset: -400 });
@@ -25,8 +41,8 @@ function TBI() {
 
   return (
     <>
-      <nav className="bg-white border-gray-200 shadow-md fixed w-full z-50 top-0 start-0">
-        <div className="flex flex-wrap items-center justify-between mx-auto p-4 tablet-m:px-8 laptop-s:p-7 desktop-m:p-10">
+     <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}> 
+        <div className="flex items-center justify-center mx-auto h-20 px-6 tablet-m:px-8 laptop-s:px-10 desktop-m:px-12">
           <Link
             to="/"
             onClick={(e) => {
@@ -39,23 +55,16 @@ function TBI() {
             className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
           >
             <img
-              src={tarakiLogo}
-              className="w-28 laptop-s:absolute laptop-s:left-2/4 laptop-s:-translate-x-1/2 laptop-m:w-32 desktop-m:w-40"
+              src={darkMode ? tarakiLogoWhite : tarakiLogoBlack}
+              className="w-40 h-12 laptop-s:w-44 laptop-s:h-14 laptop-m:w-48 laptop-m:h-16 desktop-m:w-52 desktop-m:h-20 object-contain mx-auto"
               alt="TARAKI LOGO HERE"
+              style={{ filter: 'none' }}
             />
-          </Link>
-          <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
-            <button
-              onClick={handleScrollToHome}
-              className="bg-white phone:py-3 phone:px-3 tablet-m:px-3 tablet-m:py-2 laptop-s:px-5 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg"
-            >
-              Return to home
-            </button>
-          </div>
+          </Link> 
         </div>
       </nav>
 
-      <div className="font-satoshi mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
+      <div className={`font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40 transition-opacity duration-700 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators
         </h1>

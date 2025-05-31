@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
+import { FaUserCircle } from "react-icons/fa";
 
 function Navbar() {
   const form = useRef();
@@ -109,10 +110,64 @@ function Navbar() {
   }, [darkMode]);
 
   const [authTab, setAuthTab] = useState("login");
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("taraki-signup-user");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user ? user.name : "");
+  const [editEmail, setEditEmail] = useState(user ? user.email : "");
+
+  // Listen for login/signup changes
+  useEffect(() => {
+    const handleStorage = () => {
+      const stored = localStorage.getItem("taraki-signup-user");
+      setUser(stored ? JSON.parse(stored) : null);
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Called after login/signup
+  const handleAuthSuccess = () => {
+    const stored = localStorage.getItem("taraki-signup-user");
+    setUser(stored ? JSON.parse(stored) : null);
+    setIsModalOpen(false);
+  };
+
+  // Save profile edits
+  const handleProfileSave = () => {
+    const updated = { ...user, name: editName, email: editEmail };
+    setUser(updated);
+    localStorage.setItem("taraki-signup-user", JSON.stringify(updated));
+    setIsEditing(false);
+  };
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("taraki-signup-user");
+    setUser(null);
+    setIsEditing(false);
+  };
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileOpen]);
 
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
-      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${ darkMode ? 'bg-trkblack/80 text-white border border-white/20': 'bg-gray-50/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>      
+      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
         <div className="flex items-center justify-between mx-auto px-6 py-3">
           <Link
             to="/"
@@ -224,7 +279,7 @@ function Navbar() {
                       </svg>
                     </button>
                   </span>
-                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-md shadow-lg z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack' : 'bg-white'}`}> 
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
                     <ul className="py-1">
                       <li>
                         <Link
@@ -308,12 +363,50 @@ function Navbar() {
               </li>
             </ul>
           </div>
-          <div className="flex items-center space-x-2">
-            {/* Auth Modal Toggle Button - Only show on homepage */}
-            {window.location.pathname === "/" && (
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="relative" ref={profileRef}>
+                <button
+                  className="text-orange-500 text-3xl focus:outline-none"
+                  title="Profile"
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  aria-haspopup="true"
+                  aria-expanded={isProfileOpen}
+                >
+                  <FaUserCircle />
+                </button>
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#232323] rounded-lg shadow-lg p-4 z-50">
+                    {isEditing ? (
+                      <div>
+                        <input
+                          className="w-full mb-2 p-2 border rounded"
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                        />
+                        <input
+                          className="w-full mb-2 p-2 border rounded"
+                          value={editEmail}
+                          onChange={e => setEditEmail(e.target.value)}
+                        />
+                        <button className="bg-orange-500 text-white px-3 py-1 rounded mr-2" onClick={handleProfileSave}>Save</button>
+                        <button className="text-gray-500 px-3 py-1" onClick={() => setIsEditing(false)}>Cancel</button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="font-bold text-lg mb-1">{user.name}</div>
+                        <div className="text-sm text-gray-500 mb-2">{user.email}</div>
+                        <button className="bg-orange-500 text-white px-3 py-1 rounded mr-2" onClick={() => setIsEditing(true)}>Edit</button>
+                        <button className="text-gray-500 px-3 py-1" onClick={handleLogout}>Logout</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
               <button
                 onClick={openModal}
-                className="phone:hidden tablet-m:block bg-orange-500 text-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-orange-600 rounded-md hover:bg-orange-600 hover:text-white hover:border-orange-700 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
+                className="phone:hidden tablet-m:block bg-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
                 type="button"
               >
                 <span>GET STARTED</span>
@@ -321,8 +414,8 @@ function Navbar() {
             )}
             <button
               aria-label="Toggle dark mode"
-              className={`relative w-12 h-6 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300 focus:outline-none group`}
-              style={{ border: "none" }} // Remove border in all modes
+              className={`relative w-12 h-6 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300 focus:outline-none group shadow-md hover:scale-105 active:scale-95`}
+              style={{ border: "none" }}
               onClick={() => setDarkMode((prev) => !prev)}
             >
               <span
@@ -332,9 +425,7 @@ function Navbar() {
                 style={{ pointerEvents: "none" }}
               ></span>
               <span
-                className={`w-5 h-5 bg-white dark:bg-orange-500 rounded-full shadow-md transform transition-transform duration-300 ${
-                  darkMode ? "translate-x-6" : "translate-x-0"
-                } group-hover:scale-110 group-active:scale-95 flex items-center justify-center text-lg`}
+                className={`w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center text-lg group-hover:scale-110 group-active:scale-95 bg-orange-500 text-white ${darkMode ? 'translate-x-6' : 'translate-x-0'}`}
               >
                 {darkMode ? "🌙" : "☀️"}
               </span>
@@ -366,9 +457,9 @@ function Navbar() {
             </div>
             <div className="p-8">
               {authTab === 'login' ? (
-                <LoginForm authTab={authTab} setAuthTab={setAuthTab} />
+                <LoginForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} />
               ) : (
-                <SignupForm authTab={authTab} setAuthTab={setAuthTab} />
+                <SignupForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} />
               )}
             </div>
             <button

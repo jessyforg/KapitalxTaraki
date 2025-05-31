@@ -1,50 +1,107 @@
 import React, { useState } from "react";
+import { FaGoogle, FaFacebookF, FaMicrosoft } from 'react-icons/fa';
 
-export default function LoginForm({ authTab, setAuthTab }) {
+export default function LoginForm({ authTab, setAuthTab, onAuthSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setLoginError("");
+    // Get user from localStorage (demo only)
+    const user = JSON.parse(localStorage.getItem('taraki-signup-user'));
+    if (!user || user.email !== email) {
+      setLoginError("Account does not exist. Please sign up first.");
+      return;
+    }
+    if (user.password !== btoa(password)) {
+      setLoginError("Incorrect password. Please try again.");
+      return;
+    }
+    setLoginError("");
+    if (onAuthSuccess) onAuthSuccess();
+  };
 
   return (
-    <div className="flex-1 flex flex-col justify-between px-8 py-8 md:py-10 bg-white dark:bg-[#232323]">
+    <div
+      className={
+        'w-full max-w-md mx-auto rounded-lg shadow-lg p-8 transition-colors duration-300 animate-fadeIn ' +
+        (document.documentElement.classList.contains('dark')
+          ? 'bg-black text-white'
+          : 'bg-white text-orange-600')
+      }
+      style={{
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#000' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#ff6600',
+        maxWidth: '400px', // Set modal to medium size
+        minWidth: '320px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
       <div>
-        <h2 className="text-xl font-bold mb-4 text-center">Log in</h2>
-        <form className="space-y-4">
-          <input className="w-full p-2 border rounded dark:bg-[#232323] dark:text-white" type="email" placeholder="Email" required />
+        <h2 className="text-xl font-bold mb-4 text-center animate-slideInFromTop">Log in</h2>
+        <form className="space-y-6" onSubmit={handleLogin}>
+          <input
+            className={`w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+              document.documentElement.classList.contains('dark')
+                ? 'bg-[#232323] text-white border-gray-600'
+                : 'bg-white text-orange-600 border-orange-400'
+            }`}
+            type="email"
+            placeholder="Email"
+            required
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
           <div className="relative">
             <input
-              className="w-full p-2 border rounded dark:bg-[#232323] dark:text-white pr-10"
               type={showPassword ? "text" : "password"}
+              className="w-full p-3 rounded border border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-transparent text-inherit"
               placeholder="Password"
               required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
             />
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-600 text-sm focus:outline-none"
+            <span
+              className={`absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400 hover:text-orange-500 transition-transform duration-200 ${showPassword ? 'scale-110' : ''}`}
               onClick={() => setShowPassword((prev) => !prev)}
-              tabIndex={-1}
+              tabIndex={0}
+              role="button"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575M6.343 6.343A7.963 7.963 0 004 9c0 4.418 3.582 8 8 8 1.657 0 3.22-.403 4.575-1.125M17.657 17.657A7.963 7.963 0 0020 15c0-4.418-3.582-8-8-8-1.657 0-3.22.403-4.575 1.125M3 3l18 18" /></svg>
+                // Eye open SVG
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                // Eye closed SVG
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 002.25 12s3.75 7.5 9.75 7.5c1.956 0 3.693-.377 5.18-1.01M6.228 6.228A10.45 10.45 0 0112 4.5c6 0 9.75 7.5 9.75 7.5a10.46 10.46 0 01-4.293 4.774M6.228 6.228l11.544 11.544M6.228 6.228L3 3m15 15l-3-3" />
+                </svg>
               )}
-            </button>
+            </span>
           </div>
+          {loginError && (
+            <div className="text-red-500 text-xs text-center animate-pulse mt-1">{loginError}</div>
+          )}
           <a href="#" className="block text-xs text-blue-600 mt-1 mb-2 hover:underline text-left">Forgot your password?</a>
           <button type="submit" className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Log in</button>
         </form>
-        <div className="flex items-center justify-center gap-4 mt-6 mb-2">
-          <button className="flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-full p-2 bg-white dark:bg-[#232323] hover:bg-gray-100 dark:hover:bg-[#232323] transition" aria-label="Log in with Google">
-            {/* Official Google G logo SVG */}
-            <svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g><path d="M44.5 20H24v8.5h11.7C34.9 33.1 30.1 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c2.9 0 5.6 1 7.7 2.7l6.3-6.3C34.6 5.5 29.6 3 24 3 12.9 3 4 11.9 4 24s8.9 21 20 21c11 0 20-8.9 20-21 0-1.3-.1-2.7-.4-4z" fill="#4285F4"/><path d="M6.3 14.7l6.6 4.8C14.7 16.1 19 13 24 13c2.9 0 5.6 1 7.7 2.7l6.3-6.3C34.6 5.5 29.6 3 24 3c-7.7 0-14.4 4.4-17.7 10.7z" fill="#34A853"/><path d="M24 43c5.4 0 10.2-1.8 13.9-4.9l-6.7-5.5C29.4 36 24 36 24 36c-5.4 0-9.9-3.5-11.3-8.1l-6.6 5.1C9.6 38.6 16.3 43 24 43z" fill="#FBBC05"/><path d="M43.6 20.1H42V20H24v8h11.3C34.5 32.5 29.4 36 24 36c-5.4 0-9.9-3.5-11.3-8.1l-6.6 5.1C9.6 38.6 16.3 43 24 43c5.4 0 10.2-1.8 13.9-4.9l-6.7-5.5C29.4 36 24 36 24 36c-5.4 0-9.9-3.5-11.3-8.1l-6.6 5.1C9.6 38.6 16.3 43 24 43z" fill="#EA4335"/><path d="M44.5 20H24v8.5h11.7C34.9 33.1 30.1 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c2.9 0 5.6 1 7.7 2.7l6.3-6.3C34.6 5.5 29.6 3 24 3 12.9 3 4 11.9 4 24s8.9 21 20 21c11 0 20-8.9 20-21 0-1.3-.1-2.7-.4-4z" fill="none"/></g></svg>
+        {/* Social Login Icons Only */}
+        <div className="flex flex-row gap-4 justify-center mt-4">
+          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
+            <FaGoogle size={28} className="text-orange-500" />
           </button>
-          <button className="flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-full p-2 bg-[#1877F3] hover:bg-[#145db2] text-white transition" aria-label="Log in with Facebook">
-            {/* Facebook SVG */}
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M29 0H3C1.343 0 0 1.343 0 3v26c0 1.657 1.343 3 3 3h13V20h-4v-5h4v-3.5C16 8.57 18.239 7 21.021 7c1.312 0 2.438.097 2.765.141v3.204h-1.898c-1.49 0-1.788.708-1.788 1.75V15h4.5l-.5 5h-4v12h7c1.657 0 3-1.343 3-3V3c0-1.657-1.343-3-3-3z"/></svg>
+          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
+            <FaFacebookF size={28} className="text-orange-500" />
           </button>
-          <button className="flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-full p-2 bg-[#2F2F2F] hover:bg-[#1a1a1a] text-white transition" aria-label="Log in with Microsoft">
-            {/* Microsoft SVG */}
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><rect x="2" y="2" width="9" height="9" fill="#F35325"/><rect x="13" y="2" width="9" height="9" fill="#81BC06"/><rect x="2" y="13" width="9" height="9" fill="#05A6F0"/><rect x="13" y="13" width="9" height="9" fill="#FFBA08"/></g></svg>
+          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
+            <FaMicrosoft size={28} className="text-orange-500" />
           </button>
         </div>
         <div className="text-center text-sm mt-4">
