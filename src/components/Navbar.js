@@ -222,144 +222,215 @@ function Navbar() {
             ref={navbarStickyRef}
           >
             <ul className="flex flex-col font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem]">
-              <li>
-                <Link
-                  to="/"
-                  onClick={(e) => {
-                    scroller.scrollTo("about", {
-                      smooth: true,
-                      duration: 1000,
-                      offset: -400,
-                    });
-                    closeNavbar();
-                  }}
-                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/"
-                  onClick={(e) => {
-                    scroller.scrollTo("team", {
-                      smooth: true,
-                      duration: 1000,
-                      offset: -280,
-                    });
-                    closeNavbar();
-                  }}
-                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-xl cursor-pointer`}
-                >
-                  TARAKIs
-                </Link>
-              </li>
-
-              <li>
-                <div className="dropdown relative group">
-                  <span className="rounded-md">
-                    <button
-                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
-                      type="button"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                      aria-controls="headlessui-menu-items-117"
-                    >
-                      <span>Explore</span>
-                      <svg
-                        className="w-5 h-5 ml-2 -mr-1"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
+              <li className="dropdown relative group">
+                <span className="rounded-md">
+                  <button
+                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    Home
+                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <ul className="py-1">
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("objectives", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </span>
-                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
-                    <ul className="py-1">
-                      <li>
-                        <Link
-                          to="/"
-                          onClick={(e) => {
-                            scroller.scrollTo("program", {
-                              smooth: true,
-                              duration: 1000,
-                              offset: -120,
-                            });
-                            closeNavbar();
-                          }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                        >
-                          Programs
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/"
-                          onClick={(e) => {
-                            scroller.scrollTo("framework", {
-                              smooth: true,
-                              duration: 1000,
-                              offset: -120,
-                            });
-                            closeNavbar();
-                          }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                        >
-                          Framework
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/"
-                          onClick={(e) => {
-                            scroller.scrollTo("events", {
-                              smooth: true,
-                              duration: 1000,
-                              offset: -120,
-                            });
-                            closeNavbar();
-                          }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                        >
-                          Events
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
+                        Objectives
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("team", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        TARAKIs
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("FAQs", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        FAQ
+                      </Link>
+                    </li>
+                  </ul>
                 </div>
               </li>
-              <li>
-                <Link
-                  to="/"
-                  onClick={(e) => {
-                    scroller.scrollTo("faq", {
-                      smooth: true,
-                      duration: 1000,
-                      offset: -100,
-                    });
-                    closeNavbar();
-                  }}
-                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
-                >
-                  FAQ
-                </Link>
+              <li className="dropdown relative group">
+                <span className="rounded-md">
+                  <button
+                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    Ecosystem
+                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <ul className="py-1">
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("tbi", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        TBI
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("mentors", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        Mentors
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("framework", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        Framework
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
               </li>
-              <li>
-                <Link
-                  to="/tbi"
-                  onClick={(e) => {
-                    closeNavbar();
-                  }}
-                  activeClassName="text-orange-600"
-                  className={`block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer`}
-                >
-                  Engagement
-                </Link>
+              <li className="dropdown relative group">
+                <span className="rounded-md">
+                  <button
+                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    About
+                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <ul className="py-1">
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("programs", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        Programs
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("events", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        Events
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scroller.scrollTo("newsletter", {
+                            smooth: true,
+                            duration: 1000,
+                            offset: -50,
+                          });
+                          closeNavbar();
+                        }}
+                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      >
+                        Newsletter
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
               </li>
             </ul>
           </div>
@@ -406,7 +477,7 @@ function Navbar() {
             ) : (
               <button
                 onClick={openModal}
-                className="phone:hidden tablet-m:block bg-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
+                className="phone:hidden tablet-m:block bg-orange-500 hover:bg-orange-600 text-white tablet-m:px-3 tablet-m:py-2 laptop-s:px-8 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md laptop-m:text-lg font-semibold flex items-center justify-center gap-2 shadow-md transition-colors duration-200"
                 type="button"
               >
                 <span>GET STARTED</span>
