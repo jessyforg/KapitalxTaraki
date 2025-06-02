@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
@@ -98,7 +98,11 @@ function Navbar() {
 
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("taraki-dark-mode") === "true";
+    try {
+      return localStorage.getItem("taraki-dark-mode") === "true";
+    } catch (e) {
+      return false;
+    }
   });
   useEffect(() => {
     if (darkMode) {
@@ -106,13 +110,19 @@ function Navbar() {
     } else {
       document.documentElement.classList.remove("dark");
     }
-    localStorage.setItem("taraki-dark-mode", darkMode);
+    try {
+      localStorage.setItem("taraki-dark-mode", darkMode);
+    } catch (e) {}
   }, [darkMode]);
 
   const [authTab, setAuthTab] = useState("login");
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("taraki-signup-user");
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem("taraki-signup-user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user ? user.name : "");
@@ -121,8 +131,12 @@ function Navbar() {
   // Listen for login/signup changes
   useEffect(() => {
     const handleStorage = () => {
-      const stored = localStorage.getItem("taraki-signup-user");
-      setUser(stored ? JSON.parse(stored) : null);
+      try {
+        const stored = localStorage.getItem("taraki-signup-user");
+        setUser(stored ? JSON.parse(stored) : null);
+      } catch (e) {
+        setUser(null);
+      }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
@@ -130,8 +144,12 @@ function Navbar() {
 
   // Called after login/signup
   const handleAuthSuccess = () => {
-    const stored = localStorage.getItem("taraki-signup-user");
-    setUser(stored ? JSON.parse(stored) : null);
+    try {
+      const stored = localStorage.getItem("taraki-signup-user");
+      setUser(stored ? JSON.parse(stored) : null);
+    } catch (e) {
+      setUser(null);
+    }
     setIsModalOpen(false);
   };
 
@@ -139,13 +157,17 @@ function Navbar() {
   const handleProfileSave = () => {
     const updated = { ...user, name: editName, email: editEmail };
     setUser(updated);
-    localStorage.setItem("taraki-signup-user", JSON.stringify(updated));
+    try {
+      localStorage.setItem("taraki-signup-user", JSON.stringify(updated));
+    } catch (e) {}
     setIsEditing(false);
   };
 
   // Logout
   const handleLogout = () => {
-    localStorage.removeItem("taraki-signup-user");
+    try {
+      localStorage.removeItem("taraki-signup-user");
+    } catch (e) {}
     setUser(null);
     setIsEditing(false);
   };
@@ -431,6 +453,20 @@ function Navbar() {
                     </li>
                   </ul>
                 </div>
+              </li>
+              <li>
+                <NavLink
+                  to="/tbi"
+                  onClick={(e) => {
+                    closeNavbar();
+                  }}
+                  className={({ isActive }) =>
+                    `block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer` +
+                    (isActive ? ' text-orange-600' : '')
+                  }
+                >
+                  Engagement
+                </NavLink>
               </li>
             </ul>
           </div>

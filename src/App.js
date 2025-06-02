@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ReactDOM from "react-dom";
 import Navbar from "./components/Navbar.js";
 import Home from "./components/Home.js";
 import About from "./components/About.js";
@@ -13,6 +12,9 @@ import Contact from "./components/Contact.js";
 import Footer from "./components/Footer.js";
 import TBI from "./components/TBI.js";
 import InTTOTBI from "./components/InTTOTBI.js";
+import React, { useEffect } from 'react';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 function MainPage() {
   return (
@@ -32,7 +34,11 @@ function MainPage() {
   );
 }
 
-export default function App() {
+function App() {
+  useEffect(() => {
+    AOS.init();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -44,4 +50,4 @@ export default function App() {
   );
 }
 
-ReactDOM.render(<App />, document.getElementById("root"));
+export default App;

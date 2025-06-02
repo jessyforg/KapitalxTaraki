@@ -11,7 +11,13 @@ export default function LoginForm({ authTab, setAuthTab, onAuthSuccess }) {
     e.preventDefault();
     setLoginError("");
     // Get user from localStorage (demo only)
-    const user = JSON.parse(localStorage.getItem('taraki-signup-user'));
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('taraki-signup-user'));
+    } catch (e) {
+      setLoginError("Unable to access storage. Please check your browser settings.");
+      return;
+    }
     if (!user || user.email !== email) {
       setLoginError("Account does not exist. Please sign up first.");
       return;
