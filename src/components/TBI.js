@@ -41,29 +41,6 @@ function TBI() {
 
   return (
     <>
-     <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}> 
-        <div className="flex items-center justify-center mx-auto h-20 px-6 tablet-m:px-8 laptop-s:px-10 desktop-m:px-12">
-          <Link
-            to="/"
-            onClick={(e) => {
-              scroller.scrollTo("home", {
-                smooth: true,
-                duration: 1000,
-                offset: -50,
-              });
-            }}
-            className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
-          >
-            <img
-              src={darkMode ? tarakiLogoWhite : tarakiLogoBlack}
-              className="w-40 h-12 laptop-s:w-44 laptop-s:h-14 laptop-m:w-48 laptop-m:h-16 desktop-m:w-52 desktop-m:h-20 object-contain mx-auto"
-              alt="TARAKI LOGO HERE"
-              style={{ filter: 'none' }}
-            />
-          </Link> 
-        </div>
-      </nav>
-
       <div className={`font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40 transition-opacity duration-700 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators

@@ -30,36 +30,6 @@ export default function InTTOTBI() {
 
   return (
     <>
-      <nav className="bg-white border-gray-200 shadow-md fixed w-full z-50 top-0 start-0">
-        <div className="flex flex-wrap items-center justify-between mx-auto p-4 tablet-m:px-8 laptop-s:p-7 desktop-m:p-10">
-          <Link
-            to="/"
-            onClick={(e) => {
-              scroller.scrollTo("home", {
-                smooth: true,
-                duration: 1000,
-                offset: -50,
-              });
-            }}
-            className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
-          >
-            <img
-              src={tarakiLogo}
-              className="w-28 laptop-s:absolute laptop-s:left-2/4 laptop-s:-translate-x-1/2 laptop-m:w-32 desktop-m:w-40"
-              alt="TARAKI LOGO HERE"
-            />
-          </Link>
-          <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
-            <button
-              onClick={handleScrollToHome}
-              className="bg-white phone:py-3 phone:px-3 tablet-m:px-3 tablet-m:py-2 laptop-s:px-5 laptop-s:py-3 text-[0.8rem] laptop-s:text-sm border border-trkblack rounded-md hover:bg-trkblack hover:text-white hover:border-orange-600 laptop-m:text-lg"
-            >
-              Return to Engagement
-            </button>
-          </div>
-        </div>
-      </nav>
-
       <section className="font-satoshi mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
         <img
           src={Intto}

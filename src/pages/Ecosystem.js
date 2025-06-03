@@ -1,4 +1,5 @@
 import React from "react";
+import Navbar from "../components/Navbar";
 import TBI from "../components/TBI";
 import InTTOTBI from "../components/InTTOTBI";
 import Framework from "../components/Framework";
@@ -6,6 +7,7 @@ import Framework from "../components/Framework";
 function Ecosystem() {
   return (
     <div className="font-montserrat">
+      <Navbar />
       {/* TBI Section */}
       <section id="tbi">
         <TBI />

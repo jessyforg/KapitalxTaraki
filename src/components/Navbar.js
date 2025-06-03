@@ -335,10 +335,16 @@ function Navbar() {
                   <ul className="py-1">
                     <li>
                       <Link
-                        to="/"
-                        onClick={(e) => {
+                        to="/ecosystem#tbi"
+                        onClick={e => {
                           e.preventDefault();
-                          scrollToSection("tbi");
+                          if (location.pathname === '/ecosystem') {
+                            const el = document.getElementById('tbi');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            window.location.href = '/ecosystem#tbi';
+                          }
+                          closeNavbar();
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -347,10 +353,16 @@ function Navbar() {
                     </li>
                     <li>
                       <Link
-                        to="/"
-                        onClick={(e) => {
+                        to="/ecosystem#mentors"
+                        onClick={e => {
                           e.preventDefault();
-                          scrollToSection("mentors");
+                          if (location.pathname === '/ecosystem') {
+                            const el = document.getElementById('mentors');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            window.location.href = '/ecosystem#mentors';
+                          }
+                          closeNavbar();
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -359,10 +371,16 @@ function Navbar() {
                     </li>
                     <li>
                       <Link
-                        to="/"
-                        onClick={(e) => {
+                        to="/ecosystem#framework"
+                        onClick={e => {
                           e.preventDefault();
-                          scrollToSection("framework");
+                          if (location.pathname === '/ecosystem') {
+                            const el = document.getElementById('framework');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            window.location.href = '/ecosystem#framework';
+                          }
+                          closeNavbar();
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
