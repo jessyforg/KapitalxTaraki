@@ -15,6 +15,8 @@ import InTTOTBI from "./components/InTTOTBI.js";
 import React, { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import EventsPage from './pages/EventsPage';
+import Ecosystem from "./pages/Ecosystem";
 
 function MainPage() {
   return (
@@ -45,6 +47,8 @@ function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/Tbi" element={<TBI />} />
         <Route path="/Tbi/InTTO" element={<InTTOTBI />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/ecosystem" element={<Ecosystem />} />
       </Routes>
     </BrowserRouter>
   );

@@ -32,7 +32,7 @@ function TarakiTeam() {
   }, []);
 
   return (
-    <section>
+    <section id="team">
       <div className="font-satoshi overflow-x-hidden">
         <div className="cont tablet:px-8 phone:py-2">
           <section className="mt-16 tablet:mt-12 text-center">

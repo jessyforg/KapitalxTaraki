@@ -7,9 +7,9 @@ function FAQs() {
     AOS.init({ duration: 700, easing: "ease-in-out", once: false });
   }, []);
 
-  const [activeIndex, setActiveIndex] = useState(null);
+  const [openIndex, setOpenIndex] = useState(null);
   const toggleFAQ = (index) => {
-    setActiveIndex(activeIndex === index ? null : index);
+    setOpenIndex(openIndex === index ? null : index);
   };
 
   const faqItems = [
@@ -36,7 +36,7 @@ function FAQs() {
   ];
 
   return (
-    <div className="w-full flex flex-col items-center justify-center py-16 bg-white dark:bg-[#181818] min-h-screen">
+    <div id="FAQs" className="py-8 px-4 tablet:px-16 bg-transparent">
       <h2 className="text-3xl font-bold mb-8 text-orange-600">
         Frequently Asked Questions
       </h2>
@@ -55,7 +55,7 @@ function FAQs() {
               {item.question}
               <span
                 className={`ml-4 transition-transform duration-300 ${
-                  activeIndex === idx ? "rotate-180" : ""
+                  openIndex === idx ? "rotate-180" : ""
                 }`}
               >
                 <svg
@@ -75,7 +75,7 @@ function FAQs() {
             </button>
             <div
               className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                activeIndex === idx
+                openIndex === idx
                   ? "max-h-40 opacity-100 translate-y-0"
                   : "max-h-0 opacity-0 -translate-y-2"
               }`}

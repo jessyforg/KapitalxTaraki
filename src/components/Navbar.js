@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
@@ -10,6 +10,7 @@ import { FaUserCircle } from "react-icons/fa";
 function Navbar() {
   const form = useRef();
   const [showAlert, setShowAlert] = useState(false);
+  const location = useLocation();
 
   const sendEmail = (e) => {
     e.preventDefault();
@@ -187,6 +188,28 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
+  const scrollToSection = (sectionId) => {
+    // Only scroll if we're on the home page
+    if (location.pathname !== '/') {
+      // If not on home page, navigate to home page with hash
+      window.location.href = `/#${sectionId}`;
+      return;
+    }
+
+    // Check if element exists before scrolling
+    const element = document.getElementById(sectionId);
+    if (element) {
+      scroller.scrollTo(sectionId, {
+        smooth: true,
+        duration: 1000,
+        offset: -50,
+      });
+    } else {
+      console.warn(`Section with id "${sectionId}" not found`);
+    }
+    closeNavbar();
+  };
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
@@ -194,12 +217,7 @@ function Navbar() {
           <Link
             to="/"
             onClick={(e) => {
-              scroller.scrollTo("home", {
-                smooth: true,
-                duration: 1000,
-                offset: -50,
-              });
-              closeNavbar();
+              scrollToSection("home");
             }}
             className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
           >
@@ -265,12 +283,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("objectives", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("objectives");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -282,12 +295,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("team", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("team");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -299,12 +307,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("FAQs", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("FAQs");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -335,12 +338,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("tbi", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("tbi");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -352,12 +350,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("mentors", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("mentors");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -369,12 +362,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("framework", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("framework");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -405,12 +393,7 @@ function Navbar() {
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("programs", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("programs");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -418,33 +401,22 @@ function Navbar() {
                       </Link>
                     </li>
                     <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scroller.scrollTo("events", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                      <NavLink
+                        to="/events"
+                        className={({ isActive }) =>
+                          `flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors` +
+                          (isActive ? ' text-orange-600' : '')
+                        }
                       >
                         Events
-                      </Link>
+                      </NavLink>
                     </li>
                     <li>
                       <Link
                         to="/"
                         onClick={(e) => {
                           e.preventDefault();
-                          scroller.scrollTo("newsletter", {
-                            smooth: true,
-                            duration: 1000,
-                            offset: -50,
-                          });
-                          closeNavbar();
+                          scrollToSection("newsletter");
                         }}
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
@@ -454,20 +426,7 @@ function Navbar() {
                   </ul>
                 </div>
               </li>
-              <li>
-                <NavLink
-                  to="/tbi"
-                  onClick={(e) => {
-                    closeNavbar();
-                  }}
-                  className={({ isActive }) =>
-                    `block py-2 px-3 tablet-m:p-0 ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 rounded-lg cursor-pointer` +
-                    (isActive ? ' text-orange-600' : '')
-                  }
-                >
-                  Engagement
-                </NavLink>
-              </li>
+        
             </ul>
           </div>
           <div className="flex items-center gap-4">
