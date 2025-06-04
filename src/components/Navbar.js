@@ -526,7 +526,7 @@ function Navbar() {
               {user && (
                 <li>
                   <NavLink
-                    to="/dashboard"
+                    to={user.role === 'admin' ? '/admin' : '/dashboard'}
                     className={({ isActive }) =>
                       `inline-flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${isActive ? 'text-orange-600 font-bold' : (darkMode ? 'text-white' : 'text-trkblack')} hover:text-orange-600`
                     }
