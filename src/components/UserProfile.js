@@ -176,10 +176,8 @@ export default function UserProfile() {
 
   // Edit Profile Modal (real form)
   const EditProfileModal = () => {
-    const [form, setForm] = useState({
-      full_name: user.full_name || '',
+    const [formData, setFormData] = useState({
       location: user.location || '',
-      industry: user.industry || '',
       introduction: user.introduction || '',
       accomplishments: user.accomplishments || '',
       education: user.education || '',
@@ -188,24 +186,50 @@ export default function UserProfile() {
       birthdate: user.birthdate ? user.birthdate.slice(0, 10) : '',
       contact_number: user.contact_number || '',
       public_email: user.public_email || '',
+      industry: user.industry || '',
+      show_in_search: user.show_in_search !== undefined ? user.show_in_search : true,
+      show_in_messages: user.show_in_messages !== undefined ? user.show_in_messages : true,
+      show_in_pages: user.show_in_pages !== undefined ? user.show_in_pages : true,
+      facebook_url: user.facebook_url || '',
+      instagram_url: user.instagram_url || '',
+      linkedin_url: user.linkedin_url || ''
     });
+    const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const steps = [
+      { label: 'Personal Details' },
+      { label: 'Contact Information' },
+      { label: 'Professional Information' },
+      { label: 'About' },
+      { label: 'Social Links' },
+      { label: 'Privacy Settings' },
+    ];
 
     const handleChange = (e) => {
-      const { name, value } = e.target;
-      setForm((prev) => ({ ...prev, [name]: value }));
+      const { name, value, type, checked } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    };
+
+    const handleNext = (e) => {
+      e && e.preventDefault();
+      setStep((prev) => Math.min(prev + 1, steps.length - 1));
+    };
+
+    const handlePrev = (e) => {
+      e && e.preventDefault();
+      setStep((prev) => Math.max(prev - 1, 0));
     };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);
       setError('');
-      setSuccess('');
       try {
-        await api.updateUserProfile(user.id, form);
-        setSuccess('Profile updated!');
+        await api.updateUserProfile(user.id, formData);
         setShowEditModal(false);
         fetchProfile(user.id);
       } catch (err) {
@@ -215,78 +239,299 @@ export default function UserProfile() {
       }
     };
 
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-        <div className="bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-3xl relative">
-          <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl" onClick={() => setShowEditModal(false)}>&times;</button>
-          <h2 className="text-2xl font-bold text-white mb-4">Edit Profile</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Full Name</label>
-                <input name="full_name" value={form.full_name} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" />
+    const handleSkip = () => {
+      setShowEditModal(false);
+    };
+
+    // Step content rendering (copy renderStep from UserDetailsModal, using formData and handleChange)
+    const renderStep = () => {
+      switch (step) {
+        case 0:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Birthdate</label>
+                  <input
+                    type="date"
+                    name="birthdate"
+                    value={formData.birthdate}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                  <select
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  >
+                    {CAR_LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc}>{loc ? loc : 'Select location'}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Location</label>
-                <select name="location" value={form.location} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700">
-                  {CAR_LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>{loc ? loc : 'Select location'}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Industry</label>
-                <select name="industry" value={form.industry} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700">
-                  {INDUSTRIES.map((ind) => (
-                    <option key={ind} value={ind}>{ind ? ind : 'Select industry'}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Gender</label>
-                <select name="gender" value={form.gender} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700">
-                  <option value="">Select</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Birthdate</label>
-                <input type="date" name="birthdate" value={form.birthdate} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Contact Number</label>
-                <input name="contact_number" value={form.contact_number} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Public Email</label>
-                <input name="public_email" value={form.public_email} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" />
-              </div>
+              <div />
             </div>
-            <div className="space-y-4 flex flex-col h-full justify-between">
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Introduction</label>
-                <textarea name="introduction" value={form.introduction} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" rows={2} />
+          );
+        case 1:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number</label>
+                  <input
+                    type="tel"
+                    name="contact_number"
+                    value={formData.contact_number}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Your contact number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Public Email</label>
+                  <input
+                    type="email"
+                    name="public_email"
+                    value={formData.public_email}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Public email address"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Accomplishments</label>
-                <textarea name="accomplishments" value={form.accomplishments} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" rows={2} />
+              <div />
+            </div>
+          );
+        case 2:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Professional Information</h3>
+              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+                  <select
+                    name="industry"
+                    value={formData.industry}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  >
+                    {INDUSTRIES.map((ind) => (
+                      <option key={ind} value={ind}>{ind ? ind : 'Select industry'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Education</label>
+                  <textarea
+                    name="education"
+                    value={formData.education}
+                    onChange={handleChange}
+                    rows="2"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Your educational background"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employment</label>
+                  <textarea
+                    name="employment"
+                    value={formData.employment}
+                    onChange={handleChange}
+                    rows="2"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Your work experience"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accomplishments</label>
+                  <textarea
+                    name="accomplishments"
+                    value={formData.accomplishments}
+                    onChange={handleChange}
+                    rows="2"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Your notable achievements"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Education</label>
-                <textarea name="education" value={form.education} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" rows={2} />
+              <div />
+            </div>
+          );
+        case 3:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">About</h3>
+              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Introduction</label>
+                  <textarea
+                    name="introduction"
+                    value={formData.introduction}
+                    onChange={handleChange}
+                    rows="3"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="Tell us about yourself"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Employment</label>
-                <textarea name="employment" value={form.employment} onChange={handleChange} className="w-full p-2 rounded bg-[#181818] text-white border border-gray-700" rows={2} />
+              <div />
+            </div>
+          );
+        case 4:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Social Links</h3>
+              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facebook URL</label>
+                  <input
+                    type="url"
+                    name="facebook_url"
+                    value={formData.facebook_url}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="https://facebook.com/yourprofile"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instagram URL</label>
+                  <input
+                    type="url"
+                    name="instagram_url"
+                    value={formData.instagram_url}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="https://instagram.com/yourprofile"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    name="linkedin_url"
+                    value={formData.linkedin_url}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                    placeholder="https://linkedin.com/in/yourprofile"
+                  />
+                </div>
               </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              {success && <div className="text-green-500 text-sm">{success}</div>}
-              <div className="flex justify-end gap-2 mt-4">
-                <button type="button" className="px-4 py-2 rounded bg-gray-700 text-white" onClick={() => setShowEditModal(false)}>Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-orange-600 text-white font-semibold" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
+              <div />
+            </div>
+          );
+        case 5:
+          return (
+            <div className="flex flex-col flex-1 justify-between h-full">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Privacy Settings</h3>
+              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="show_in_search"
+                    checked={formData.show_in_search}
+                    onChange={handleChange}
+                    className="rounded text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show in search results</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="show_in_messages"
+                    checked={formData.show_in_messages}
+                    onChange={handleChange}
+                    className="rounded text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Allow messages from other users</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="show_in_pages"
+                    checked={formData.show_in_pages}
+                    onChange={handleChange}
+                    className="rounded text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show profile in public pages</span>
+                </label>
+              </div>
+              <div />
+            </div>
+          );
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
+        <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg w-full max-w-4xl min-h-[500px] h-[600px] animate-fadeIn flex">
+          {/* Stepper Sidebar */}
+          <div className="w-1/4 min-w-[200px] bg-gray-50 dark:bg-gray-900 rounded-l-2xl py-8 px-4 flex flex-col items-start h-full">
+            <h2 className="text-lg font-bold mb-6 text-black dark:text-white">Edit Profile</h2>
+            <ul className="space-y-4 w-full">
+              {steps.map((s, idx) => (
+                <li key={s.label} className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full border-2 ${step === idx ? 'bg-orange-500 border-orange-500' : step > idx ? 'bg-green-500 border-green-500' : 'bg-gray-300 border-gray-300'}`}></span>
+                  <span className={`text-sm ${step === idx ? 'font-bold text-orange-600' : 'text-gray-700 dark:text-gray-300'}`}>{s.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Main Content */}
+          <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-12 h-full">
+            {error && (
+              <div className="text-red-500 text-sm text-center mb-4">{error}</div>
+            )}
+            <div className="flex-1 flex flex-col justify-between">{renderStep()}</div>
+            <div className="flex justify-between pt-8">
+              <button
+                type="button"
+                onClick={handlePrev}
+                className={`px-6 py-2 rounded-lg transition-colors ${step === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                disabled={step === 0}
+              >
+                Previous
+              </button>
+              <div className="flex gap-2">
+                {step === steps.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                >
+                  {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save Profile') : 'Next'}
+                </button>
               </div>
             </div>
           </form>

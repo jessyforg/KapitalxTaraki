@@ -328,6 +328,7 @@ app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
     const userId = req.params.id;
 
     if (!profileImage) {
+      console.error('[Profile Image Update] No profileImage provided in request body:', req.body);
       return res.status(400).json({ error: 'Profile image data is required' });
     }
 
@@ -338,6 +339,7 @@ app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
+      console.error(`[Profile Image Update] No user found with id: ${userId}`);
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -352,8 +354,8 @@ app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
       user: user[0]
     });
   } catch (error) {
-    console.error('Error updating profile image:', error);
-    res.status(500).json({ error: 'Failed to update profile image' });
+    console.error('[Profile Image Update] Error updating profile image:', error, '\nRequest body:', req.body);
+    res.status(500).json({ error: 'Failed to update profile image', details: error.message });
   }
 });
 

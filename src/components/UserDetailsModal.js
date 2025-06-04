@@ -34,6 +34,7 @@ const steps = [
   { label: 'Contact Information' },
   { label: 'Professional Information' },
   { label: 'About' },
+  { label: 'Social Links' },
   { label: 'Privacy Settings' },
 ];
 
@@ -51,7 +52,10 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     industry: '',
     show_in_search: true,
     show_in_messages: true,
-    show_in_pages: true
+    show_in_pages: true,
+    facebook_url: '',
+    instagram_url: '',
+    linkedin_url: ''
   });
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -250,6 +254,48 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
           </div>
         );
       case 4:
+        return (
+          <div className="flex flex-col flex-1 justify-between h-full">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Social Links</h3>
+            <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facebook URL</label>
+                <input
+                  type="url"
+                  name="facebook_url"
+                  value={formData.facebook_url}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  placeholder="https://facebook.com/yourprofile"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instagram URL</label>
+                <input
+                  type="url"
+                  name="instagram_url"
+                  value={formData.instagram_url}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  placeholder="https://instagram.com/yourprofile"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">LinkedIn URL</label>
+                <input
+                  type="url"
+                  name="linkedin_url"
+                  value={formData.linkedin_url}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                />
+              </div>
+            </div>
+            <div />
+          </div>
+        );
+      case 5:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Privacy Settings</h3>

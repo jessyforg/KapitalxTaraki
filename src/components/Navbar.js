@@ -5,7 +5,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun } from "react-icons/fa";
+import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope } from "react-icons/fa";
 import userProfileAPI from '../api/userProfile';
 
 function Navbar() {
@@ -340,7 +340,7 @@ function Navbar() {
            id="navbar-cta"
             ref={navbarStickyRef}
           >
-            <ul className="flex flex-col font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem]">
+            <ul className="flex flex-row items-center justify-center font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
               <li className="dropdown relative group">
                 <span className="rounded-md">
                   <button
@@ -523,92 +523,31 @@ function Navbar() {
                   </ul>
                 </div>
               </li>
-        
+              {user && (
+                <li>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      `inline-flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${isActive ? 'text-orange-600 font-bold' : (darkMode ? 'text-white' : 'text-trkblack')} hover:text-orange-600`
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </div>
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="relative" ref={profileRef}>
-                <button
-                  className="flex items-center space-x-2 focus:outline-none"
-                  onClick={() => setIsProfileOpen((prev) => !prev)}
-                  aria-haspopup="true"
-                  aria-expanded={isProfileOpen}
-                >
-                  {user.profile_image ? (
-                    <img
-                      src={user.profile_image}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                      {user.full_name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+              <>
+                <button className="relative flex items-center justify-center" aria-label="Notifications">
+                  <FaBell size={22} className="text-orange-500" />
                 </button>
-                {isProfileOpen && (
-                  <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
-                    <div className="p-4 border-b border-gray-200 dark:border-white/10">
-                      <div className="flex items-center space-x-3">
-                        {user.profile_image ? (
-                          <img
-                            src={user.profile_image}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
-                            {user.full_name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-semibold text-lg">{user.full_name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <Link
-                      to="/profile"
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <FaUserCircle className="text-orange-500" />
-                      <span>Profile</span>
-                    </Link>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                    >
-                      <FaCog className="text-orange-500" />
-                      <span>Settings</span>
-                    </button>
-                    <button
-                      onClick={() => setDarkMode(prev => !prev)}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                    >
-                      {darkMode ? (
-                        <>
-                          <FaSun className="text-orange-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaMoon className="text-orange-500" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                    >
-                      <FaSignOutAlt />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                <button className="relative flex items-center justify-center" aria-label="Messages">
+                  <FaEnvelope size={22} className="text-orange-500" />
+                  <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">1</span>
+                </button>
+              </>
             ) : (
               <button
                 onClick={openModal}
@@ -618,6 +557,87 @@ function Navbar() {
                 <span>GET STARTED</span>
               </button>
             )}
+            <div className="relative" ref={profileRef}>
+              <button
+                className="flex items-center space-x-2 focus:outline-none"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                aria-haspopup="true"
+                aria-expanded={isProfileOpen}
+              >
+                {user.profile_image ? (
+                  <img
+                    src={user.profile_image}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </button>
+              {isProfileOpen && (
+                <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
+                  <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                    <div className="flex items-center space-x-3">
+                      {user.profile_image ? (
+                        <img
+                          src={user.profile_image}
+                          alt="Profile"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
+                          {user.full_name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-lg">{user.full_name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    to="/profile"
+                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                    onClick={() => setIsProfileOpen(false)}
+                  >
+                    <FaUserCircle className="text-orange-500" />
+                    <span>Profile</span>
+                  </Link>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                  >
+                    <FaCog className="text-orange-500" />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    onClick={() => setDarkMode(prev => !prev)}
+                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                  >
+                    {darkMode ? (
+                      <>
+                        <FaSun className="text-orange-500" />
+                        <span>Light Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaMoon className="text-orange-500" />
+                        <span>Dark Mode</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                  >
+                    <FaSignOutAlt />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>
