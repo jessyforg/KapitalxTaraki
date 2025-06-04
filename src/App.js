@@ -17,6 +17,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import EventsPage from './pages/EventsPage';
 import Ecosystem from "./pages/Ecosystem";
+import AdminDashboard from "./components/AdminDashboard.js";
 
 function MainPage() {
   return (
@@ -49,6 +50,7 @@ function App() {
         <Route path="/Tbi/InTTO" element={<InTTOTBI />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/ecosystem" element={<Ecosystem />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );
