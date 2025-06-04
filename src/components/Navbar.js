@@ -535,9 +535,9 @@ function Navbar() {
                   aria-haspopup="true"
                   aria-expanded={isProfileOpen}
                 >
-                  {profileImage ? (
+                  {user.profile_image ? (
                     <img
-                      src={profileImage}
+                      src={user.profile_image}
                       alt="Profile"
                       className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
                     />
@@ -551,9 +551,9 @@ function Navbar() {
                   <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
                     <div className="p-4 border-b border-gray-200 dark:border-white/10">
                       <div className="flex items-center space-x-3">
-                        {profileImage ? (
+                        {user.profile_image ? (
                           <img
-                            src={profileImage}
+                            src={user.profile_image}
                             alt="Profile"
                             className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
                           />

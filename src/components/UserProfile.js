@@ -59,15 +59,27 @@ export default function UserProfile() {
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [profileImageLoading, setProfileImageLoading] = useState(false);
+  const [profileImageError, setProfileImageError] = useState('');
+  const fileInputRef = React.useRef();
   const navigate = useNavigate();
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
-      const userObj = JSON.parse(stored);
-      setUser(userObj);
-      fetchProfile(userObj.id);
-      fetchSocialLinks(userObj.id);
+      try {
+        const userObj = JSON.parse(stored);
+        setUser(userObj);
+        fetchProfile(userObj.id);
+        // Make social links fetch optional
+        fetchSocialLinks(userObj.id).catch(err => {
+          console.warn('Failed to fetch social links:', err);
+          setSocialLinks({});
+        });
+      } catch (e) {
+        console.warn('Error accessing localStorage:', e);
+        setUser(null);
+      }
     }
   }, []);
 
@@ -75,6 +87,12 @@ export default function UserProfile() {
     try {
       const profile = await api.getUserProfile(userId);
       setUser(profile);
+      // Update localStorage with new profile data
+      try {
+        localStorage.setItem('user', JSON.stringify(profile));
+      } catch (e) {
+        console.warn('Error updating localStorage:', e);
+      }
     } catch (err) {
       setError('Failed to load profile');
     }
@@ -85,6 +103,7 @@ export default function UserProfile() {
       const links = await api.getUserSocialLinks(userId);
       setSocialLinks(links);
     } catch (err) {
+      console.warn('Failed to fetch social links:', err);
       setSocialLinks({});
     }
   };
@@ -95,10 +114,10 @@ export default function UserProfile() {
 
   // Profile picture logic: use DB value, else show icon
   const ProfilePicture = () => {
-    if (user.profile_picture_url && user.profile_picture_url.trim() !== "") {
+    if (user.profile_image && user.profile_image.trim() !== "") {
       return (
         <img
-          src={user.profile_picture_url}
+          src={user.profile_image}
           alt="Profile"
           className="w-36 h-36 rounded-full border-4 border-orange-500 object-cover bg-gray-800 shadow-lg"
         />
@@ -109,6 +128,36 @@ export default function UserProfile() {
           <FaUserCircle className="text-orange-400" size={120} />
         </div>
       );
+    }
+  };
+
+  // Handle profile image upload
+  const handleProfileImageClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setProfileImageLoading(true);
+    setProfileImageError('');
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Image = reader.result;
+          await api.updateProfileImage(user.id, base64Image);
+          fetchProfile(user.id);
+        } catch (err) {
+          setProfileImageError('Failed to update profile image');
+        } finally {
+          setProfileImageLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setProfileImageError('Failed to update profile image');
+      setProfileImageLoading(false);
     }
   };
 
@@ -275,7 +324,21 @@ export default function UserProfile() {
         <div className="w-full max-w-5xl bg-gradient-to-br from-[#232323] to-[#181818] rounded-2xl shadow-2xl p-8 flex flex-col md:flex-row gap-8 items-center mb-8 border border-orange-900/30 relative">
           <div className="flex flex-col items-center md:items-start gap-4 md:w-1/3">
             <ProfilePicture />
-            <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition mt-2"><FaCamera /> Change Picture</button>
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleProfileImageChange}
+            />
+            <button
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition mt-2"
+              onClick={handleProfileImageClick}
+              disabled={profileImageLoading}
+            >
+              {profileImageLoading ? 'Uploading...' : (<><FaCamera /> Change Picture</>)}
+            </button>
+            {profileImageError && <div className="text-red-500 text-xs mt-1">{profileImageError}</div>}
           </div>
           <div className="flex-1 flex flex-col items-center md:items-start gap-4">
             <div className="flex flex-col items-center md:items-start">

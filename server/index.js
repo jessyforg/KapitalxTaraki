@@ -200,11 +200,37 @@ const authenticateToken = (req, res, next) => {
 app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, full_name, email, role, is_verified, verification_status, profile_picture_url, location, introduction, accomplishments, education, employment, gender, birthdate, contact_number, public_email, industry, show_in_search, show_in_messages, show_in_pages, created_at, updated_at
+      `SELECT id, full_name, email, role, is_verified, verification_status, 
+              profile_image, profile_picture_url, location, introduction, 
+              accomplishments, education, employment, gender, birthdate, 
+              contact_number, public_email, industry, show_in_search, 
+              show_in_messages, show_in_pages, created_at, updated_at
        FROM users WHERE id = ?`,
       [req.params.id]
     );
-    res.json(rows[0] || null);
+    
+    if (!rows[0]) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // If profile_image is empty but profile_picture_url has data, copy it
+    if (!rows[0].profile_image && rows[0].profile_picture_url) {
+      await pool.query(
+        'UPDATE users SET profile_image = ? WHERE id = ?',
+        [rows[0].profile_picture_url, req.params.id]
+      );
+      rows[0].profile_image = rows[0].profile_picture_url;
+    }
+    // If profile_picture_url is empty but profile_image has data, copy it
+    else if (!rows[0].profile_picture_url && rows[0].profile_image) {
+      await pool.query(
+        'UPDATE users SET profile_picture_url = ? WHERE id = ?',
+        [rows[0].profile_image, req.params.id]
+      );
+      rows[0].profile_picture_url = rows[0].profile_image;
+    }
+
+    res.json(rows[0]);
   } catch (error) {
     console.error('Error getting user profile:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -301,16 +327,48 @@ app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
     const { profileImage } = req.body;
     const userId = req.params.id;
 
-    // Update user's profile image
-    await pool.query(
-      'UPDATE users SET profile_image = ? WHERE id = ?',
-      [profileImage, userId]
+    if (!profileImage) {
+      return res.status(400).json({ error: 'Profile image data is required' });
+    }
+
+    // Update both profile_image and profile_picture_url columns
+    const [result] = await pool.query(
+      'UPDATE users SET profile_image = ?, profile_picture_url = ? WHERE id = ?',
+      [profileImage, profileImage, userId]
     );
 
-    res.json({ message: 'Profile image updated successfully' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get updated user data
+    const [user] = await pool.query(
+      'SELECT id, full_name, email, profile_image, profile_picture_url FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    res.json({ 
+      message: 'Profile image updated successfully',
+      user: user[0]
+    });
   } catch (error) {
     console.error('Error updating profile image:', error);
     res.status(500).json({ error: 'Failed to update profile image' });
+  }
+});
+
+// Add social links endpoint
+app.get('/api/user/:id/social-links', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT facebook_url, twitter_url, instagram_url, linkedin_url 
+       FROM users WHERE id = ?`,
+      [req.params.id]
+    );
+    res.json(rows[0] || {});
+  } catch (error) {
+    console.error('Error getting social links:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

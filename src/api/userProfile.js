@@ -54,13 +54,19 @@ const userProfileAPI = {
     try {
       const response = await fetch(`${API_URL}/user/${userId}/profile-image`, {
         method: 'PUT',
-        headers: getHeaders(),
+        headers: {
+          ...getHeaders(),
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ profileImage }),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to update profile image');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile image');
+      }
       const data = await response.json();
-      return data.success;
+      return data;
     } catch (error) {
       console.error('Error updating profile image:', error);
       throw error;
