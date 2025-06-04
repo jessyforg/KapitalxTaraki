@@ -5,7 +5,8 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun } from "react-icons/fa";
+import userProfileAPI from '../api/userProfile';
 
 function Navbar() {
   const form = useRef();
@@ -102,9 +103,11 @@ function Navbar() {
     try {
       return localStorage.getItem("taraki-dark-mode") === "true";
     } catch (e) {
+      console.warn('Error accessing localStorage:', e);
       return false;
     }
   });
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -113,29 +116,34 @@ function Navbar() {
     }
     try {
       localStorage.setItem("taraki-dark-mode", darkMode);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Error accessing localStorage:', e);
+    }
   }, [darkMode]);
 
   const [authTab, setAuthTab] = useState("login");
   const [user, setUser] = useState(() => {
     try {
-      const stored = localStorage.getItem("taraki-signup-user");
+      const stored = localStorage.getItem('user');
       return stored ? JSON.parse(stored) : null;
     } catch (e) {
+      console.warn('Error accessing localStorage:', e);
       return null;
     }
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(user ? user.name : "");
+  const [editName, setEditName] = useState(user ? user.full_name : "");
   const [editEmail, setEditEmail] = useState(user ? user.email : "");
+  const [profileImage, setProfileImage] = useState(user?.profileImage || null);
 
   // Listen for login/signup changes
   useEffect(() => {
     const handleStorage = () => {
       try {
-        const stored = localStorage.getItem("taraki-signup-user");
+        const stored = localStorage.getItem('user');
         setUser(stored ? JSON.parse(stored) : null);
       } catch (e) {
+        console.warn('Error accessing localStorage:', e);
         setUser(null);
       }
     };
@@ -146,29 +154,47 @@ function Navbar() {
   // Called after login/signup
   const handleAuthSuccess = () => {
     try {
-      const stored = localStorage.getItem("taraki-signup-user");
+      const stored = localStorage.getItem('user');
       setUser(stored ? JSON.parse(stored) : null);
     } catch (e) {
+      console.warn('Error accessing localStorage:', e);
       setUser(null);
     }
     setIsModalOpen(false);
   };
 
   // Save profile edits
-  const handleProfileSave = () => {
-    const updated = { ...user, name: editName, email: editEmail };
-    setUser(updated);
+  const handleProfileSave = async () => {
     try {
-      localStorage.setItem("taraki-signup-user", JSON.stringify(updated));
-    } catch (e) {}
-    setIsEditing(false);
+      const success = await userProfileAPI.updateUserProfile(user.id, {
+        full_name: editName,
+        email: editEmail,
+        profileImage: profileImage
+      });
+      
+      if (success) {
+        const updatedUser = { ...user, full_name: editName, email: editEmail };
+        setUser(updatedUser);
+        try {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch (e) {
+          console.warn('Error accessing localStorage:', e);
+        }
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   // Logout
   const handleLogout = () => {
     try {
-      localStorage.removeItem("taraki-signup-user");
-    } catch (e) {}
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+    } catch (e) {
+      console.warn('Error accessing localStorage:', e);
+    }
     setUser(null);
     setIsEditing(false);
   };
@@ -209,6 +235,59 @@ function Navbar() {
     }
     closeNavbar();
   };
+
+  // Update handleImageUpload to work with database
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Image = reader.result;
+          const success = await userProfileAPI.updateProfileImage(user.id, base64Image);
+          if (success) {
+            const updatedUser = { ...user, profileImage: base64Image };
+            setUser(updatedUser);
+            setProfileImage(base64Image);
+            try {
+              localStorage.setItem("user", JSON.stringify(updatedUser));
+            } catch (e) {
+              console.warn('Error accessing localStorage:', e);
+            }
+          }
+        } catch (error) {
+          console.error('Error updating profile image:', error);
+          // You might want to show an error message to the user here
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Add useEffect to load user profile from database
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (user?.id) {
+        try {
+          const profile = await userProfileAPI.getUserProfile(user.id);
+          if (profile) {
+            const updatedUser = { ...user, ...profile };
+            setUser(updatedUser);
+            setProfileImage(profile.profile_image);
+            try {
+              localStorage.setItem("user", JSON.stringify(updatedUser));
+            } catch (e) {
+              console.warn('Error accessing localStorage:', e);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+        }
+      }
+    };
+
+    loadUserProfile();
+  }, [user?.id]);
 
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
@@ -451,39 +530,82 @@ function Navbar() {
             {user ? (
               <div className="relative" ref={profileRef}>
                 <button
-                  className="text-orange-500 text-3xl focus:outline-none"
-                  title="Profile"
+                  className="flex items-center space-x-2 focus:outline-none"
                   onClick={() => setIsProfileOpen((prev) => !prev)}
                   aria-haspopup="true"
                   aria-expanded={isProfileOpen}
                 >
-                  <FaUserCircle />
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                      {user.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </button>
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#232323] rounded-lg shadow-lg p-4 z-50">
-                    {isEditing ? (
-                      <div>
-                        <input
-                          className="w-full mb-2 p-2 border rounded"
-                          value={editName}
-                          onChange={e => setEditName(e.target.value)}
-                        />
-                        <input
-                          className="w-full mb-2 p-2 border rounded"
-                          value={editEmail}
-                          onChange={e => setEditEmail(e.target.value)}
-                        />
-                        <button className="bg-orange-500 text-white px-3 py-1 rounded mr-2" onClick={handleProfileSave}>Save</button>
-                        <button className="text-gray-500 px-3 py-1" onClick={() => setIsEditing(false)}>Cancel</button>
+                  <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
+                    <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                      <div className="flex items-center space-x-3">
+                        {profileImage ? (
+                          <img
+                            src={profileImage}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
+                            {user.full_name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold text-lg">{user.full_name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                        </div>
                       </div>
-                    ) : (
-                      <div>
-                        <div className="font-bold text-lg mb-1">{user.name}</div>
-                        <div className="text-sm text-gray-500 mb-2">{user.email}</div>
-                        <button className="bg-orange-500 text-white px-3 py-1 rounded mr-2" onClick={() => setIsEditing(true)}>Edit</button>
-                        <button className="text-gray-500 px-3 py-1" onClick={handleLogout}>Logout</button>
-                      </div>
-                    )}
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <FaUserCircle className="text-orange-500" />
+                      <span>Profile</span>
+                    </Link>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                    >
+                      <FaCog className="text-orange-500" />
+                      <span>Settings</span>
+                    </button>
+                    <button
+                      onClick={() => setDarkMode(prev => !prev)}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                    >
+                      {darkMode ? (
+                        <>
+                          <FaSun className="text-orange-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaMoon className="text-orange-500" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    >
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -496,24 +618,6 @@ function Navbar() {
                 <span>GET STARTED</span>
               </button>
             )}
-            <button
-              aria-label="Toggle dark mode"
-              className={`relative w-12 h-6 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300 focus:outline-none group shadow-md hover:scale-105 active:scale-95`}
-              style={{ border: "none" }}
-              onClick={() => setDarkMode((prev) => !prev)}
-            >
-              <span
-                className={`absolute left-0 top-0 w-full h-full rounded-full transition-shadow duration-300 group-hover:shadow-lg group-active:shadow-xl ${
-                  darkMode ? "shadow-orange-400/60" : "shadow-gray-400/40"
-                }`}
-                style={{ pointerEvents: "none" }}
-              ></span>
-              <span
-                className={`w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center text-lg group-hover:scale-110 group-active:scale-95 bg-orange-500 text-white ${darkMode ? 'translate-x-6' : 'translate-x-0'}`}
-              >
-                {darkMode ? "🌙" : "☀️"}
-              </span>
-            </button>
           </div>
         </div>
       </nav>

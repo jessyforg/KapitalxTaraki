@@ -18,6 +18,7 @@ import 'aos/dist/aos.css';
 import EventsPage from './pages/EventsPage';
 import Ecosystem from "./pages/Ecosystem";
 import AdminDashboard from "./components/AdminDashboard.js";
+import UserProfile from "./components/UserProfile";
 
 function MainPage() {
   return (
@@ -51,6 +52,7 @@ function App() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/ecosystem" element={<Ecosystem />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/profile" element={<UserProfile />} />
       </Routes>
     </BrowserRouter>
   );

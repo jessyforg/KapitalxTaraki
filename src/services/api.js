@@ -1,50 +1,184 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
+
+const getHeaders = () => {
+  try {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    };
+  } catch (error) {
+    console.warn('Error accessing localStorage:', error);
+    return {
+      'Content-Type': 'application/json',
+    };
+  }
+};
 
 const api = {
-  // Auth endpoints
+  // Authentication
   async register(userData) {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Registration failed');
+      }
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
+    }
   },
 
   async login(credentials) {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Login failed');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Login failed');
+    }
+  },
+
+  async verifyEmail(token) {
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Email verification failed');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Email verification failed');
+    }
+  },
+
+  // User Profile
+  async getUserProfile(userId) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}`, {
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch user profile');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch user profile');
+    }
+  },
+
+  async updateUserProfile(userId, profileData) {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/profile`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(profileData),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update profile');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update profile');
+    }
+  },
+
+  async updateProfileImage(userId, profileImage) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}/profile-image`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ profileImage }),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update profile image');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update profile image');
+    }
+  },
+
+  // Fetch user social links
+  async getUserSocialLinks(userId) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}/social-links`, {
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch user social links');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch user social links');
+    }
   },
 
   // Event endpoints
-  async createEvent(eventData, token) {
-    const response = await fetch(`${API_URL}/events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(eventData),
-    });
-    return response.json();
+  async createEvent(eventData) {
+    try {
+      const response = await fetch(`${API_URL}/events`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(eventData),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create event');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to create event');
+    }
   },
 
   async getEvents() {
-    const response = await fetch(`${API_URL}/events`);
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/events`, {
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch events');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch events');
+    }
   },
 
   async getEventById(id) {
-    const response = await fetch(`${API_URL}/events/${id}`);
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/events/${id}`, {
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch event');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch event');
+    }
   },
 };
 

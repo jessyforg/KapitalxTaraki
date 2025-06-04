@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { FaGoogle, FaFacebookF, FaMicrosoft } from "react-icons/fa";
+import api from '../services/api';
+import UserDetailsModal from './UserDetailsModal';
 
 export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
   const [showTerms, setShowTerms] = useState(false);
@@ -8,24 +10,100 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
   const [passwordError, setPasswordError] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState(null);
 
-  const saveSignupInfo = (name, email, password) => {
-    // For demo: hash password with btoa (not secure for real use)
-    const userInfo = {
-      name,
-      email,
-      password: btoa(password),
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('taraki-signup-user', JSON.stringify(userInfo));
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    return "";
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setPasswordError("");
-    saveSignupInfo(name, email, password);
+
+    // Validate password
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api.register({
+        full_name: name,
+        email,
+        password
+      });
+
+      // Store token and user data
+      if (response.token && response.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+
+        setRegisteredUser(response.user);
+        setShowUserDetails(true);
+        setVerificationSent(true);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserDetailsComplete = () => {
+    setShowUserDetails(false);
     if (onAuthSuccess) onAuthSuccess();
   };
+
+  if (showUserDetails && registeredUser) {
+    return (
+      <UserDetailsModal
+        user={registeredUser}
+        onClose={() => setShowUserDetails(false)}
+        onComplete={handleUserDetailsComplete}
+      />
+    );
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn">
+          <h2 className="text-2xl font-bold mb-4 text-center text-black">Verify Your Email</h2>
+          <p className="text-center text-gray-600 mb-4">
+            We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+          </p>
+          <button
+            onClick={() => setVerificationSent(false)}
+            className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-lg shadow mt-2"
+          >
+            Back to Sign Up
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
@@ -45,6 +123,9 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
           </button>
         </div>
         <h2 className="text-2xl font-bold mb-4 text-center text-black">Sign up</h2>
+        {error && (
+          <div className="text-red-500 text-sm text-center mb-4">{error}</div>
+        )}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <input
             className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
@@ -102,7 +183,13 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
               </button>
             </label>
           </div>
-          <button type="submit" className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-lg shadow mt-2">Sign up</button>
+          <button 
+            type="submit" 
+            className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-lg shadow mt-2"
+            disabled={loading}
+          >
+            {loading ? 'Signing up...' : 'Sign up'}
+          </button>
         </form>
         <div className="flex flex-row gap-4 justify-center mt-6 mb-2">
           <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Google">

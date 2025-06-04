@@ -1,0 +1,320 @@
+const express = require('express');
+const mysql = require('mysql2/promise');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true
+}));
+app.use(express.json({ limit: '50mb' }));
+
+// JWT Secret
+const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
+
+// Database configuration
+const dbConfig = {
+  host: 'localhost',
+  user: 'root',
+  password: '', // Default XAMPP password is empty
+  database: 'taraki_db'
+};
+
+// Create connection pool
+const pool = mysql.createPool(dbConfig);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message 
+  });
+});
+
+// Authentication Routes
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { full_name, email, password } = req.body;
+
+    // Validate input
+    if (!full_name || !email || !password) {
+      return res.status(400).json({ 
+        error: 'All fields are required',
+        details: {
+          full_name: !full_name ? 'Full name is required' : null,
+          email: !email ? 'Email is required' : null,
+          password: !password ? 'Password is required' : null
+        }
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Check if user already exists
+    const [existingUsers] = await pool.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate verification token
+    const verificationToken = Math.random().toString(36).substring(2, 15);
+
+    // Insert new user
+    const [result] = await pool.query(
+      'INSERT INTO users (full_name, email, password, verification_token, role, is_verified) VALUES (?, ?, ?, ?, ?, ?)',
+      [full_name, email, hashedPassword, verificationToken, 'user', false]
+    );
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: result.insertId, email, role: 'user' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Return success response
+    res.status(201).json({
+      token,
+      user: {
+        id: result.insertId,
+        full_name,
+        email,
+        role: 'user',
+        is_verified: false
+      }
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = users[0];
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        is_verified: user.is_verified
+      }
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify email endpoint
+app.post('/api/auth/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    const [result] = await pool.query(
+      'UPDATE users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?',
+      [token]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'Invalid verification token' });
+    }
+
+    res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Protected Routes
+app.get('/api/user/:id', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, full_name, email, role, is_verified, verification_status, profile_picture_url, location, introduction, accomplishments, education, employment, gender, birthdate, contact_number, public_email, industry, show_in_search, show_in_messages, show_in_pages, created_at, updated_at
+       FROM users WHERE id = ?`,
+      [req.params.id]
+    );
+    res.json(rows[0] || null);
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/user/:id', authenticateToken, async (req, res) => {
+  try {
+    const { full_name, email } = req.body;
+    const [result] = await pool.query(
+      'UPDATE users SET full_name = ?, email = ? WHERE id = ?',
+      [full_name, email, req.params.id]
+    );
+    res.json({ success: result.affectedRows > 0 });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// User profile update endpoint
+app.put('/api/users/:userId/profile', authenticateToken, async (req, res) => {
+  const userId = req.params.userId;
+  const {
+    location,
+    introduction,
+    accomplishments,
+    education,
+    employment,
+    gender,
+    birthdate,
+    contact_number,
+    public_email,
+    industry,
+    show_in_search,
+    show_in_messages,
+    show_in_pages
+  } = req.body;
+
+  try {
+    const query = `
+      UPDATE users 
+      SET 
+        location = ?,
+        introduction = ?,
+        accomplishments = ?,
+        education = ?,
+        employment = ?,
+        gender = ?,
+        birthdate = ?,
+        contact_number = ?,
+        public_email = ?,
+        industry = ?,
+        show_in_search = ?,
+        show_in_messages = ?,
+        show_in_pages = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `;
+
+    await pool.query(query, [
+      location,
+      introduction,
+      accomplishments,
+      education,
+      employment,
+      gender,
+      birthdate,
+      contact_number,
+      public_email,
+      industry,
+      show_in_search,
+      show_in_messages,
+      show_in_pages,
+      userId
+    ]);
+
+    // Get updated user data
+    const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+    
+    res.json({
+      message: 'Profile updated successfully',
+      user: user[0]
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// Add profile image endpoint
+app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
+  try {
+    const { profileImage } = req.body;
+    const userId = req.params.id;
+
+    // Update user's profile image
+    await pool.query(
+      'UPDATE users SET profile_image = ? WHERE id = ?',
+      [profileImage, userId]
+    );
+
+    res.json({ message: 'Profile image updated successfully' });
+  } catch (error) {
+    console.error('Error updating profile image:', error);
+    res.status(500).json({ error: 'Failed to update profile image' });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+}); 
