@@ -7,7 +7,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3001',
+  origin: 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -25,6 +25,10 @@ const dbConfig = {
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
+
+// Now import and use the messages router
+const messagesRouter = require('./routes/messages')(pool);
+app.use('/api/messages', messagesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -87,7 +91,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: result.insertId, email, role: 'user' },
+      { id: result.insertId, email, role: 'user' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -136,7 +140,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '24h' }
     );

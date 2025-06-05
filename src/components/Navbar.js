@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope } from "react-icons/fa";
 import userProfileAPI from '../api/userProfile';
+import axios from 'axios';
 
 function Navbar() {
   const form = useRef();
   const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const sendEmail = (e) => {
     e.preventDefault();
@@ -289,6 +291,54 @@ function Navbar() {
     loadUserProfile();
   }, [user?.id]);
 
+  // Message preview dropdown state
+  const [msgDropdownOpen, setMsgDropdownOpen] = useState(false);
+  const [msgPreview, setMsgPreview] = useState([]);
+  const msgDropdownRef = useRef(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const closeDropdownTimeout = useRef();
+
+  // Fetch preview messages
+  const fetchMsgPreview = async () => {
+    setLoadingPreview(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/messages/preview', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setMsgPreview(res.data);
+    } catch (e) {
+      setMsgPreview([]);
+    }
+    setLoadingPreview(false);
+  };
+
+  // Open dropdown: fetch messages
+  const handleMsgDropdownOpen = () => {
+    clearTimeout(closeDropdownTimeout.current);
+    setMsgDropdownOpen(true);
+  };
+
+  // Close dropdown
+  const handleMsgDropdownClose = () => {
+    closeDropdownTimeout.current = setTimeout(() => {
+      setMsgDropdownOpen(false);
+    }, 200); // 200ms delay
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    if (!msgDropdownOpen) return;
+    function handleClickOutside(event) {
+      if (msgDropdownRef.current && !msgDropdownRef.current.contains(event.target)) {
+        setMsgDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [msgDropdownOpen]);
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
@@ -543,10 +593,78 @@ function Navbar() {
                 <button className="relative flex items-center justify-center" aria-label="Notifications">
                   <FaBell size={22} className="text-orange-500" />
                 </button>
-                <button className="relative flex items-center justify-center" aria-label="Messages">
-                  <FaEnvelope size={22} className="text-orange-500" />
-                  <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">1</span>
-                </button>
+                <div
+                  className="relative"
+                  ref={msgDropdownRef}
+                  onMouseEnter={handleMsgDropdownOpen}
+                  onMouseLeave={handleMsgDropdownClose}
+                >
+                  <button
+                    className="relative flex items-center justify-center"
+                    aria-label="Messages"
+                    onClick={e => {
+                      e.preventDefault();
+                      setMsgDropdownOpen(v => !v);
+                      if (!msgDropdownOpen) fetchMsgPreview();
+                    }}
+                  >
+                    <FaEnvelope size={22} className="text-orange-500" />
+                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">{msgPreview.length > 0 ? msgPreview.length : ''}</span>
+                  </button>
+                  {msgDropdownOpen && (
+                    <div
+                      className={`absolute right-0 mt-2 w-96 max-w-[90vw] rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}
+                    >
+                      <div className="p-4 border-b border-gray-200 dark:border-white/10 font-semibold">Messages</div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {loadingPreview ? (
+                          <div className="p-4 text-center text-gray-500">Loading...</div>
+                        ) : msgPreview.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">No messages</div>
+                        ) : (
+                          msgPreview.map(msg => {
+                            const isSent = msg.sender_id === user.id;
+                            const otherName = isSent ? msg.receiver_name : msg.sender_name;
+                            const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
+                            return (
+                              <button
+                                key={msg.message_id}
+                                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
+                                onClick={() => {
+                                  setMsgDropdownOpen(false);
+                                  navigate(`/messages?chat_with=${isSent ? msg.receiver_id : msg.sender_id}`);
+                                }}
+                              >
+                                {otherAvatar ? (
+                                  <img src={otherAvatar} alt={otherName} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
+                                ) : (
+                                  <FaUserCircle className="w-10 h-10 text-orange-500" />
+                                )}
+                                <div className="flex-1 text-left">
+                                  <div className="font-semibold text-sm truncate">{otherName}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {isSent ? <span className="text-orange-500 font-bold mr-1">Sent:</span> : <span className="text-green-600 font-bold mr-1">Received:</span>}
+                                    {msg.content.slice(0, 50)}{msg.content.length > 50 ? '…' : ''}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="border-t border-gray-200 dark:border-white/10 p-2 text-center">
+                        <button
+                          className="text-orange-600 hover:underline text-sm font-medium"
+                          onClick={() => {
+                            setMsgDropdownOpen(false);
+                            navigate('/messages');
+                          }}
+                        >View all messages</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <button
@@ -557,87 +675,89 @@ function Navbar() {
                 <span>GET STARTED</span>
               </button>
             )}
-            <div className="relative" ref={profileRef}>
-              <button
-                className="flex items-center space-x-2 focus:outline-none"
-                onClick={() => setIsProfileOpen((prev) => !prev)}
-                aria-haspopup="true"
-                aria-expanded={isProfileOpen}
-              >
-                {user.profile_image ? (
-                  <img
-                    src={user.profile_image}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                    {user.full_name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </button>
-              {isProfileOpen && (
-                <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
-                  <div className="p-4 border-b border-gray-200 dark:border-white/10">
-                    <div className="flex items-center space-x-3">
-                      {user.profile_image ? (
-                        <img
-                          src={user.profile_image}
-                          alt="Profile"
-                          className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
-                          {user.full_name.charAt(0).toUpperCase()}
+            {user && (
+              <div className="relative" ref={profileRef}>
+                <button
+                  className="flex items-center space-x-2 focus:outline-none"
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  aria-haspopup="true"
+                  aria-expanded={isProfileOpen}
+                >
+                  {user.profile_image ? (
+                    <img
+                      src={user.profile_image}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                      {user.full_name ? user.full_name.charAt(0).toUpperCase() : ''}
+                    </div>
+                  )}
+                </button>
+                {isProfileOpen && (
+                  <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
+                    <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                      <div className="flex items-center space-x-3">
+                        {user.profile_image ? (
+                          <img
+                            src={user.profile_image}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
+                            {user.full_name ? user.full_name.charAt(0).toUpperCase() : ''}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold text-lg">{user.full_name || ''}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || ''}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-semibold text-lg">{user.full_name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                       </div>
                     </div>
+                    <Link
+                      to="/profile"
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <FaUserCircle className="text-orange-500" />
+                      <span>Profile</span>
+                    </Link>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                    >
+                      <FaCog className="text-orange-500" />
+                      <span>Settings</span>
+                    </button>
+                    <button
+                      onClick={() => setDarkMode(prev => !prev)}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                    >
+                      {darkMode ? (
+                        <>
+                          <FaSun className="text-orange-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaMoon className="text-orange-500" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    >
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
                   </div>
-                  <Link
-                    to="/profile"
-                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <FaUserCircle className="text-orange-500" />
-                    <span>Profile</span>
-                  </Link>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                  >
-                    <FaCog className="text-orange-500" />
-                    <span>Settings</span>
-                  </button>
-                  <button
-                    onClick={() => setDarkMode(prev => !prev)}
-                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                  >
-                    {darkMode ? (
-                      <>
-                        <FaSun className="text-orange-500" />
-                        <span>Light Mode</span>
-                      </>
-                    ) : (
-                      <>
-                        <FaMoon className="text-orange-500" />
-                        <span>Dark Mode</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                  >
-                    <FaSignOutAlt />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </nav>

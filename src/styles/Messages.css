@@ -1,0 +1,7 @@
+.messages-page {
+  height: calc(100vh - 64px);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* ... rest of the CSS as previously provided ... */ 

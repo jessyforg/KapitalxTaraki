@@ -19,6 +19,7 @@ import EventsPage from './pages/EventsPage';
 import Ecosystem from "./pages/Ecosystem";
 import AdminDashboard from "./components/AdminDashboard.js";
 import UserProfile from "./components/UserProfile";
+import Messages from './pages/Messages';
 
 function MainPage() {
   return (
@@ -53,6 +54,7 @@ function App() {
         <Route path="/ecosystem" element={<Ecosystem />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </BrowserRouter>
   );
