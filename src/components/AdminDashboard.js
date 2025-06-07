@@ -1,7 +1,8 @@
-  import React, { useState } from 'react';
-  import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus} from 'react-icons/fi';
+import React, { useState } from 'react';
+  import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail} from 'react-icons/fi';
   import { FaTicketAlt } from 'react-icons/fa'; // Add ticket icon
   import './styles.css'; // For custom calendar and dashboard styles
+  import { ReactComponent as PhMap } from './imgs/ph.svg';
 
 
   const initialTabs = [
@@ -20,6 +21,22 @@
     email: 'admin@taraki.com',
     avatar: null, // You can use a static image or initials
   };
+
+  // Demo users for both dashboard notifications and users table
+  const demoUsers = [
+    { name: 'Demo User 1', email: 'demo1@email.com', role: 'Administrator', status: 'pending' },
+    { name: 'Demo User 2', email: 'demo2@email.com', role: 'Administrator', status: 'active' },
+    { name: 'Demo User 3', email: 'demo3@email.com', role: 'Investor', status: 'pending' },
+    { name: 'Demo User 4', email: 'demo4@email.com', role: 'Investor', status: 'active' },
+    { name: 'Demo User 5', email: 'demo5@email.com', role: 'Investor', status: 'active' },
+    { name: 'Demo User 6', email: 'demo6@email.com', role: 'Entrepreneur', status: 'pending' },
+    { name: 'Demo User 7', email: 'demo7@email.com', role: 'Entrepreneur', status: 'active' },
+    { name: 'Demo User 8', email: 'demo8@email.com', role: 'Entrepreneur', status: 'active' },
+    { name: 'Demo User 9', email: 'demo9@email.com', role: 'Entrepreneur', status: 'active' },
+    { name: 'Demo User 10', email: 'demo10@email.com', role: 'Entrepreneur', status: 'active' },
+  ];
+  // For notification bell: pending users
+  const notificationFilteredUsers = demoUsers.filter(u => u.status === 'pending');
 
   function AdminDashboard() {
     const [tabs] = useState(initialTabs); // Remove setTabs since it's unused
@@ -60,6 +77,39 @@
     const [showSuggestions, setShowSuggestions] = useState(false);
     // Debounce ref for location input
     const locationDebounceRef = React.useRef();
+    const [showMessages, setShowMessages] = useState(false);
+    // Add state for tickets and ticket modal
+    const [tickets, setTickets] = useState([
+      {
+        id: 1,
+        title: 'Consultation Request',
+        type: 'Consult',
+        status: 'Open',
+        submittedBy: 'Jane Doe',
+        date: '2025-06-05',
+        messages: [
+          { from: 'user', text: 'I need help with my startup idea.', time: '2025-06-05 10:00' },
+        ],
+      },
+      {
+        id: 2,
+        title: 'Bug Report',
+        type: 'Issue',
+        status: 'Open',
+        submittedBy: 'John Smith',
+        date: '2025-06-04',
+        messages: [
+          { from: 'user', text: 'There is a bug on the dashboard.', time: '2025-06-04 09:30' },
+        ],
+      },
+    ]);
+    const [activeTicket, setActiveTicket] = useState(null);
+    const [adminReply, setAdminReply] = useState('');
+    // Add state for ticket filters and search
+    const [ticketStatusFilter, setTicketStatusFilter] = useState('All Status');
+    const [ticketTypeFilter, setTicketTypeFilter] = useState('All Types');
+    const [ticketSearch, setTicketSearch] = useState('');
+    const [chatAnim, setChatAnim] = useState(false);
 
     // Update body class and localStorage on darkMode change
     React.useEffect(() => {
@@ -74,29 +124,30 @@
     // Helper to get events for a specific date
     const getEventsForDate = (dateStr) => events.filter(e => e.date === dateStr);
 
-    // Calendar rendering helpers
-    const getMonthMatrix = (date) => {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const matrix = [];
-      let week = [];
-      let dayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-      for (let i = 0; i < dayOfWeek; i++) week.push(null);
-      for (let d = 1; d <= lastDay.getDate(); d++) {
-        week.push(new Date(year, month, d));
-        if (week.length === 7) {
-          matrix.push(week);
-          week = [];
+    // Calendar rendering helpers      // Revised getMonthMatrix to align Sunday as 0, Monday as 1, ... Saturday as 6
+      const getMonthMatrix = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const matrix = [];
+        let week = [];
+        let dayOfWeek = firstDay.getDay(); // Sunday = 0, Monday = 1, ...
+        for (let i = 0; i < dayOfWeek; i++) week.push(null);
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          week.push(new Date(year, month, d));
+          if (week.length === 7) {
+            matrix.push(week);
+            week = [];
+          }
         }
-      }
-      if (week.length) {
-        while (week.length < 7) week.push(null);
-        matrix.push(week);
-      }
-      return matrix;
-    };
+        if (week.length) {
+          while (week.length < 7) week.push(null);
+          matrix.push(week);
+        }
+        return matrix;
+      };
+
 
     // Calendar navigation with animation
     const prevMonth = () => {
@@ -222,6 +273,7 @@
     const renderContent = () => {
       switch (activeTab) {
         case 'dashboard':
+          // Define filteredUsers before use
           // Show upcoming events from the events state (created by admin)
           const upcomingEvents = events
             .filter(e => new Date(e.date) >= new Date())
@@ -232,24 +284,58 @@
               {/* Topbar */}
               <div className="flex items-center justify-between mb-6">
                 <input type="text" placeholder="Search" className={`rounded-lg px-4 py-2 w-1/3 focus:outline-none ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`} />
-                {/* Removed duplicate settings button here */}
+                <div className="flex items-center gap-6">
+                  {/* Single Admin Notification Bell */}
+                  <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
+                    <FiBell size={22} className="text-orange-400 group-hover:text-orange-500 transition" />
+                    {(pendingRequests.length > 0 || (tickets && tickets.some(t => t.status === 'Open')) || (typeof notificationFilteredUsers !== 'undefined' && notificationFilteredUsers.length > 0)) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                    )}
+                  </button>
+                  {/* Messages Button (kept as is) */}
+                  <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
+                    <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    {(pendingRequests.length > 0 || tickets.some(t => t.status === 'Open')) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                    )}
+                  </button>
+                </div>
+                {/* Messages Modal */}
+                {showMessages && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className={`bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6 w-full max-w-md relative`}>
+                      <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowMessages(false)}>&times;</button>
+                      <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>User Messages</h2>
+                      <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
+                        {pendingRequests.length === 0 && <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>No new messages from users.</span>}
+                        {pendingRequests.map(req => (
+                          <div key={req.id} className={`rounded-lg p-3 border ${darkMode ? 'bg-[#181818] border-gray-700' : 'bg-orange-50 border-orange-300'}`}>
+                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>{req.name}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>{req.email}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Requested: {req.time} ago</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               {/* Stat Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                   <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Investors</span>
                   <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>189</span>
-                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-orange-800 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>+8.2%</span>
+                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>+8.2%</span>
                 </div>
                 <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                   <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Startups</span>
                   <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>53</span>
-                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-orange-800 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>-1.4%</span>
+                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>-1.4%</span>
                 </div>
                 <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                   <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Site Visitors</span>
                   <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>189</span>
-                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-orange-800 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>+8.2%</span>
+                  <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>+8.2%</span>
                 </div>
                 <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                   <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Upcoming Events</span>
@@ -482,11 +568,11 @@
                       <div className="absolute top-2 right-2 flex gap-2">
                         <button
                           className={`rounded-full p-1 flex items-center justify-center focus:outline-none transition ${darkMode ? 'bg-[#232323]' : 'bg-orange-100'}`}
-                          style={{ width: 28, height: 28 }}
+                          style={{ width: 28, height: 28, zIndex: 10 }}
                           onClick={() => setEventModal({ open: true, event, date: event.date })}
                           title="Edit Event"
                         >
-                          <FiEdit2 size={18} color={darkMode ? '#fff' : '#222'} />
+                          <FiEdit2 size={18} color={darkMode ? '#ff9800' : '#ff9800'} />
                         </button>
                         <button
                           className={`rounded-full p-1 flex items-center justify-center focus:outline-none transition ${darkMode ? 'bg-[#232323]' : 'bg-orange-100'}`}
@@ -494,9 +580,7 @@
                           onClick={() => handleDeleteEvent(event)}
                           title="Delete Event"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={darkMode ? '#fff' : '#222'} strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <span className={`text-lg font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} style={{lineHeight: 1}}>&times;</span>
                         </button>
                       </div>
                     </div>
@@ -785,19 +869,8 @@
           );
         case 'users':
           // User Management Page (screenshot replica)
-          const demoUsers = [
-            { name: 'Demo User 1', email: 'demo1@email.com', role: 'Administrator' },
-            { name: 'Demo User 2', email: 'demo2@email.com', role: 'Administrator' },
-            { name: 'Demo User 3', email: 'demo3@email.com', role: 'Investor' },
-            { name: 'Demo User 4', email: 'demo4@email.com', role: 'Investor' },
-            { name: 'Demo User 5', email: 'demo5@email.com', role: 'Investor' },
-            { name: 'Demo User 6', email: 'demo6@email.com', role: 'Entrepreneur' },
-            { name: 'Demo User 7', email: 'demo7@email.com', role: 'Entrepreneur' },
-            { name: 'Demo User 8', email: 'demo8@email.com', role: 'Entrepreneur' },
-            { name: 'Demo User 9', email: 'demo9@email.com', role: 'Entrepreneur' },
-            { name: 'Demo User 10', email: 'demo10@email.com', role: 'Entrepreneur' },
-          ];
-          const filteredUsers = demoUsers.filter(u => roleFilter === 'all' || u.role.toLowerCase() === roleFilter);
+          // Filter by role for the table
+          const usersTableFiltered = demoUsers.filter(u => roleFilter === 'all' || u.role.toLowerCase() === roleFilter);
           return (
             <div className="flex flex-col lg:flex-row gap-6 w-full">
               {/* User Management Table */}
@@ -845,7 +918,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map((user, idx) => (
+                      {usersTableFiltered.map((user, idx) => (
                         <tr key={idx} className={`${darkMode ? 'border-b border-[#333] hover:bg-[#181818]' : 'border-b border-orange-100 hover:bg-orange-50'} transition`}>
                           <td className="px-4 py-3 flex items-center gap-2">
                             <span className={`w-9 h-9 rounded-full flex items-center justify-center text-base font-bold ${darkMode ? 'bg-orange-700 text-white' : 'bg-orange-400 text-white'}`}>{user.name[0]}</span>
@@ -963,6 +1036,251 @@
               </button>
             </div>
           );
+        case 'sitePerformance':
+          return (
+            <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323] border-orange-700' : 'bg-white border-orange-400'}`}>
+              {/* Topbar for site performance */}
+              <div className="flex items-center justify-between mb-6">
+                <input type="text" placeholder="Search" className={`rounded-lg px-4 py-2 w-1/3 focus:outline-none ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`} />
+                <div className="flex items-center gap-6">
+                  {/* Single Admin Notification Bell */}
+                  <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
+                    <FiBell size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    {(pendingRequests.length > 0 || (tickets && tickets.some(t => t.status === 'Open')) || (typeof notificationFilteredUsers !== 'undefined' && notificationFilteredUsers.length > 0)) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                    )}
+                  </button>
+                  <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
+                    <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                  </button>
+                </div>
+                {/* Messages Modal */}
+                {showMessages && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className={`bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6 w-full max-w-md relative`}>
+                      <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowMessages(false)}>&times;</button>
+                      <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>User Messages</h2>
+                      <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
+                        {pendingRequests.length === 0 && <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>No new messages from users.</span>}
+                        {pendingRequests.map(req => (
+                          <div key={req.id} className={`rounded-lg p-3 border ${darkMode ? 'bg-[#181818] border-gray-700' : 'bg-orange-50 border-orange-300'}`}>
+                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>{req.name}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>{req.email}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Requested: {req.time} ago</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Site Performance Main Content */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Left column: Site Visitors & Avg Duration stacked */}
+                <div className="flex flex-col gap-6 md:col-span-1">
+                  <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#181818]' : 'bg-white border border-orange-200'}`}> 
+                    <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Site Visitors</span>
+                    <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>189</span>
+                    <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>▲ 8.2%</span>
+                  </div>
+                  <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#181818]' : 'bg-white border border-orange-200'}`}> 
+                    <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Avg. Duration</span>
+                    <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>6m 6s</span>
+                    <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>▲ 2.8%</span>
+                  </div>
+                </div>
+                {/* Center: Map & Region Bars styled as in screenshot */}
+                <div className={`rounded-xl shadow p-6 flex flex-col border-t-4 border-orange-600 md:col-span-2 ${darkMode ? 'bg-[#181818]' : 'bg-white border border-orange-200'}`}> 
+                  <div className="flex flex-row gap-6 items-center w-full">
+                    <div className="flex flex-col items-center w-1/2">
+                      <PhMap
+                        width={180}
+                        height={240}
+                        style={{objectFit: 'contain', background: darkMode ? '#181818' : '#fff'}}
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center">
+                      <span className={`font-semibold text-base mb-2 border-b border-gray-600 pb-1 ${darkMode ? 'text-white' : 'text-orange-700'}`}>Sessions by Region</span>
+                      <div className="flex flex-col gap-2 mt-2">
+                        {[
+                          { region: 'Abra', value: 20 },
+                          { region: 'Apayao', value: 40 },
+                          { region: 'Benguet', value: 60 },
+                          { region: 'Ifugao', value: 50 },
+                          { region: 'Kalinga', value: 70 },
+                          { region: 'Mountain Province', value: 80 },
+                        ].map((r, idx) => (
+                          <div key={r.region} className="flex items-center gap-3">
+                            <span className={`w-32 text-xs ${darkMode ? 'text-gray-300' : 'text-white'}`}>{r.region}</span>
+                            <div className="flex-1 h-2 rounded bg-gray-700/40 dark:bg-gray-800/60 relative max-w-[180px]">
+                              <div className={`absolute left-0 top-0 h-2 rounded bg-gradient-to-r ${darkMode ? 'from-orange-200 via-orange-500 to-orange-600' : 'from-orange-300 via-orange-400 to-orange-600'}`} style={{ width: `${r.value}%`, maxWidth: 180, minWidth: 10 }} />
+                            </div>
+                            <span className={`text-xs ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>{r.value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Line Chart Placeholder */}
+              <div className={`rounded-xl shadow p-6 flex-1 min-h-[300px] flex flex-col border-t-4 border-orange-600 ${darkMode ? 'bg-[#181818]' : 'bg-white border border-orange-200'}`}>
+                <span className={`font-semibold text-lg mb-2 text-center ${darkMode ? 'text-white' : 'text-orange-700'}`}>Site Performance Overview</span>
+                <div className="flex-1 flex items-center justify-center">
+                  {/* Simple SVG line chart placeholder */}
+                  <svg width="100%" height="180" viewBox="0 0 600 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline
+                      fill="none"
+                      stroke="#FF9800"
+                      strokeWidth="3"
+                      points="0,120 50,80 100,100 150,60 200,90 250,40 300,100 350,60 400,120 450,80 500,100 550,60 600,120"
+                    />
+                    {/* X axis */}
+                    <line x1="0" y1="160" x2="600" y2="160" stroke="#888" strokeWidth="1" />
+                    {/* Y axis */}
+                    <line x1="40" y1="20" x2="40" y2="160" stroke="#888" strokeWidth="1" />
+                    {/* X axis labels */}
+                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                      <text key={m} x={50*i+50} y="175" fontSize="12" fill={darkMode ? '#fff' : '#222'} textAnchor="middle">{m}</text>
+                    ))}
+                  </svg>
+                </div>
+              </div>
+            </div>
+          );
+        case 'tickets':
+          // Filtering logic
+          const filteredTickets = tickets.filter(ticket => {
+            const statusMatch = ticketStatusFilter === 'All Status' || ticket.status === ticketStatusFilter;
+            const typeMatch = ticketTypeFilter === 'All Types' || ticket.type === ticketTypeFilter;
+            const searchMatch = ticket.title.toLowerCase().includes(ticketSearch.toLowerCase()) || ticket.submittedBy.toLowerCase().includes(ticketSearch.toLowerCase());
+            return statusMatch && typeMatch && searchMatch;
+          });
+          return (
+            <div className="flex flex-col gap-6 w-full">
+              {/* Topbar */}
+              <div className="flex items-center justify-between mb-6">
+                <input type="text" placeholder="Search" value={ticketSearch} onChange={e => setTicketSearch(e.target.value)} className={`rounded-lg px-4 py-2 w-1/3 focus:outline-none ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`} />
+                <div className="flex items-center gap-6">
+                  {/* Single Admin Notification Bell */}
+                  <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
+                    <FiBell size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    {(pendingRequests.length > 0 || (tickets && tickets.some(t => t.status === 'Open')) || (typeof notificationFilteredUsers !== 'undefined' && notificationFilteredUsers.length > 0)) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                    )}
+                  </button>
+                  <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
+                    <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                  </button>
+                </div>
+                {/* Messages Modal */}
+                {showMessages && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className={`bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6 w-full max-w-md relative`}>
+                      <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowMessages(false)}>&times;</button>
+                      <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>User Messages</h2>
+                      <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
+                        {pendingRequests.length === 0 && <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>No new messages from users.</span>}
+                        {pendingRequests.map(req => (
+                          <div key={req.id} className={`rounded-lg p-3 border ${darkMode ? 'bg-[#181818] border-gray-700' : 'bg-orange-50 border-orange-300'}`}>
+                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>{req.name}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>{req.email}</span>
+                            <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Requested: {req.time} ago</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Ticket Filters */}
+              <div className={`flex gap-4 mb-4 ${darkMode ? 'bg-[#181818]' : 'bg-orange-50'} p-4 rounded-xl`}>
+                <select value={ticketStatusFilter} onChange={e => setTicketStatusFilter(e.target.value)} className={`rounded px-2 py-1 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
+                  <option>All Status</option>
+                  <option>Open</option>
+                  <option>Closed</option>
+                </select>
+                <select value={ticketTypeFilter} onChange={e => setTicketTypeFilter(e.target.value)} className={`rounded px-2 py-1 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
+                  <option>All Types</option>
+                  <option>Consult</option>
+                  <option>Issue</option>
+                </select>
+              </div>
+              {/* Tickets Table */}
+              <div className={`rounded-xl shadow p-0 min-h-[300px] flex flex-col border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                <div className="grid grid-cols-6 font-semibold text-orange-600 dark:text-orange-300 px-6 py-3 border-b border-orange-200 dark:border-gray-700 text-sm">
+                  <span>Title</span>
+                  <span>Type</span>
+                  <span>Status</span>
+                  <span>Submitted By</span>
+                  <span>Date</span>
+                  <span>Actions</span>
+                </div>
+                {filteredTickets.length === 0 && (
+                  <div className="text-center text-gray-400 py-8">No tickets found.</div>
+                )}
+                {filteredTickets.map(ticket => (
+                  <div key={ticket.id} className="grid grid-cols-6 items-center px-6 py-3 border-b border-orange-100 dark:border-gray-800 text-sm">
+                    <span className={darkMode ? 'text-white' : 'text-black'}>{ticket.title}</span>
+                    <span className={darkMode ? 'text-orange-300' : 'text-orange-700'}>{ticket.type}</span>
+                    <span className={ticket.status === 'Open' ? 'text-green-500' : 'text-gray-400'}>{ticket.status}</span>
+                    <span className={darkMode ? 'text-white' : 'text-black'}>{ticket.submittedBy}</span>
+                    <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{ticket.date}</span>
+                    <span>
+                      <button className={`px-3 py-1 rounded text-xs font-semibold transition ${darkMode ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-orange-500 text-white hover:bg-orange-600'}`} onClick={() => setActiveTicket(ticket)}>
+                        Respond
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Respond Modal */}
+              {activeTicket && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+                  <div className={`bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6 w-full max-w-lg relative`}>
+                    <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => { setActiveTicket(null); setAdminReply(''); setChatAnim(false); }}>&times;</button>
+                    <h2 className={`text-lg font-bold mb-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Ticket: {activeTicket.title}</h2>
+                    <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">From: {activeTicket.submittedBy} | {activeTicket.date}</div>
+                    <div className="border rounded p-3 mb-4 h-48 overflow-y-auto bg-gray-50 dark:bg-[#181818]">
+                      {activeTicket.messages.map((msg, idx, arr) => {
+                        const isLast = idx === arr.length - 1;
+                        return (
+                          <div key={idx} className={`mb-2 flex ${msg.from === 'admin' ? 'justify-end' : 'justify-start'} ${isLast && chatAnim ? 'animate-fadeInUp' : ''}`}>
+                            <div className={`px-3 py-2 rounded-lg max-w-[70%] text-sm ${msg.from === 'admin' ? (darkMode ? 'bg-orange-700 text-white' : 'bg-orange-200 text-orange-900') : (darkMode ? 'bg-gray-700 text-orange-200' : 'bg-orange-100 text-orange-700')}`}>
+                              <span>{msg.text}</span>
+                              <div className="text-[10px] text-right mt-1 opacity-60">{msg.time}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <form onSubmit={e => {
+                      e.preventDefault();
+                      if (!adminReply.trim()) return;
+                      const now = new Date();
+                      const time = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                      setTickets(tks => tks.map(t => t.id === activeTicket.id ? { ...t, messages: [...t.messages, { from: 'admin', text: adminReply, time }], status: 'Closed' } : t));
+                      setActiveTicket(t => t ? { ...t, messages: [...t.messages, { from: 'admin', text: adminReply, time }], status: 'Closed' } : null);
+                      setAdminReply('');
+                      setChatAnim(true);
+                      setTimeout(() => setChatAnim(false), 600);
+                    }} className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        className={`flex-1 rounded px-3 py-2 border focus:outline-none ${darkMode ? 'bg-[#232323] text-white border-gray-700' : 'bg-white text-black border-orange-200'}`}
+                        placeholder="Type your response..."
+                        value={adminReply}
+                        onChange={e => setAdminReply(e.target.value)}
+                      />
+                      <button type="submit" className={`px-4 py-2 rounded font-semibold transition ${darkMode ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-orange-500 text-white hover:bg-orange-600'}`}>Send</button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
         default:
           return null;
       }
@@ -1001,6 +1319,7 @@
                   ${activeTab === tab.id
                     ? (darkMode ? 'bg-orange-600 text-white shadow-md scale-[1.04]' : 'bg-orange-600 text-white shadow-md scale-[1.04]')
                     : (darkMode ? 'hover:bg-orange-900 text-gray-300' : 'hover:bg-orange-100 text-gray-700')}
+
                   `}
                 onClick={() => setActiveTab(tab.id)}
               >
@@ -1073,5 +1392,5 @@
       </div>
     );
   }
-
-  export default AdminDashboard;
+    
+export default AdminDashboard;
