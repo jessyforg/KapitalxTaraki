@@ -91,15 +91,15 @@ function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-2 md:p-6">
       <Navbar />
       {/* Add spacing between navbar and events section */}
       <div className="h-10 md:h-24 lg:h-28" />
       {/* Main content */}
-      <div className="w-full flex flex-col items-center">
-        <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100">
+      <div className="flex-1 w-full max-w-full mx-auto flex flex-col items-center">
+        <div className="w-full max-w-full bg-white rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100">
           {/* Left: Filters, Tabs, Event List */}
-          <div className="flex-[2_2_0%] md:pr-12">
+          <div className="flex-[1_1_0%] md:pr-12">
             <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
               <select
                 className="border border-gray-300 rounded px-3 py-2 text-black focus:outline-none bg-gray-50"
@@ -176,7 +176,7 @@ function EventsPage() {
             </div>
           </div>
           {/* Right: Calendar */}
-          <div className="w-full md:w-64 lg:w-72 mt-8 md:mt-0 flex flex-col items-center">
+          <div className="w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center">
             <div className="bg-white rounded-lg shadow border border-[#ea580c]/30 p-4 w-full">
               <Calendar
                 value={calendarDate}
