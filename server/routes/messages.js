@@ -23,18 +23,37 @@ module.exports = (pool) => {
     try {
       const userId = req.user.id;
       const showArchived = req.query.archived === '1';
+      // New query: get last message details for each conversation
       const query = `
-        SELECT DISTINCT u.id, u.full_name, u.role, u.profile_picture_url,
-               (SELECT MAX(sent_at) FROM messages 
-                WHERE (sender_id = u.id AND receiver_id = ?) 
-                OR (sender_id = ? AND receiver_id = u.id)) as last_message_time
-        FROM messages m
-        JOIN users u ON (m.sender_id = u.id OR m.receiver_id = u.id)
+        SELECT
+          u.id,
+          u.full_name,
+          u.role,
+          u.profile_picture_url,
+          m2.content AS last_message,
+          m2.sender_id AS last_sender_id,
+          m2.receiver_id AS last_receiver_id,
+          m2.request_status AS last_request_status,
+          m2.sent_at AS last_message_time
+        FROM (
+          SELECT
+            CASE
+              WHEN m.sender_id = ? THEN m.receiver_id
+              ELSE m.sender_id
+            END AS other_user_id,
+            MAX(m.sent_at) AS last_message_time
+          FROM messages m
+          WHERE m.sender_id = ? OR m.receiver_id = ?
+          GROUP BY other_user_id
+        ) lm
+        JOIN users u ON u.id = lm.other_user_id
+        JOIN messages m2 ON (
+          ((m2.sender_id = ? AND m2.receiver_id = u.id) OR (m2.sender_id = u.id AND m2.receiver_id = ?))
+          AND m2.sent_at = lm.last_message_time
+        )
         LEFT JOIN user_conversations uc ON uc.user_id = ? AND uc.other_user_id = u.id
-        WHERE (m.sender_id = ? OR m.receiver_id = ?) 
-        AND u.id != ?
-        AND (uc.archived IS NULL OR uc.archived = ?)
-        ORDER BY last_message_time DESC`;
+        WHERE (uc.archived IS NULL OR uc.archived = ?)
+        ORDER BY lm.last_message_time DESC`;
       const [conversations] = await pool.query(query, [
         userId, userId, userId, userId, userId, userId, showArchived ? 1 : 0
       ]);

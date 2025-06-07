@@ -69,6 +69,12 @@ function Messages() {
   // Add new state for selected chat user object
   const [selectedChatUser, setSelectedChatUser] = useState(null);
 
+  // Add selectedRequest state
+  const [selectedRequest, setSelectedRequest] = useState(null); // request object, only for requests
+
+  // Add state for toggling info sidebar
+  const [showInfoSidebar, setShowInfoSidebar] = useState(true);
+
   // API Configuration
   const api = axios.create({
     baseURL: 'http://localhost:5000/api',
@@ -81,6 +87,7 @@ function Messages() {
   const fetchConversations = async () => {
     try {
       const response = await api.get(`/messages/conversations?archived=${showArchived}`);
+      console.log('Fetched conversations:', response.data); // DEBUG
       setConversations(response.data);
     } catch (err) {
       setError('Failed to fetch conversations');
@@ -104,6 +111,7 @@ function Messages() {
     try {
       const response = await api.get(`/messages/${userId}`);
       setMessages(response.data);
+      console.log('Fetched messages:', response.data);
       scrollToBottom();
     } catch (err) {
       setError('Failed to fetch messages');
@@ -164,20 +172,19 @@ function Messages() {
 
     try {
       setLoading(true);
-      const response = await api.post(`/messages/${selectedChat}`, formData, {
+      await api.post(`/messages/${selectedChat}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      setMessages(prev => [...prev, response.data]);
       setMessageInput('');
       setFileInput(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      scrollToBottom();
+      // Re-fetch messages after sending
+      fetchMessages(selectedChat);
     } catch (err) {
-      // Show a specific error if a message request is already pending
       if (err.response && err.response.data && err.response.data.error === 'A message request is already pending') {
         setError('You already have a pending message request with this user. Please wait for them to respond.');
       } else {
@@ -310,7 +317,15 @@ function Messages() {
 
   useEffect(() => {
     if (selectedChat) {
-      fetchMessages(selectedChat);
+      if (selectedCategory === 'requests') {
+        const req = requests.find(r => r.request_id === selectedChat);
+        if (req) {
+          const otherUserId = req.sender_id === user.id ? req.receiver_id : req.sender_id;
+          fetchMessages(otherUserId);
+        }
+      } else {
+        fetchMessages(selectedChat);
+      }
     }
   }, [selectedChat]);
 
@@ -318,29 +333,39 @@ function Messages() {
     fetchCategories();
   }, []);
 
-  // Update chatUser logic to use selectedChatUser as fallback
+  // Refactor chatUser logic to always find the correct user
   const chatUser = selectedChat
     ? conversations.find(c => c.id === selectedChat)
       || searchResults.find(u => u.id === selectedChat)
       || selectedChatUser
     : null;
 
+  const isRequest = selectedCategory === 'requests' && selectedRequest && selectedRequest.status === 'pending';
+
   // Helper: Get shared files from messages
   const sharedFiles = messages
     .flatMap(msg => msg.files || [])
     .filter((file, idx, arr) => file && arr.findIndex(f => f.id === file.id) === idx);
 
-  // Helper: Get last message time
-  const getLastMessageTime = (conv) => {
-    if (conv.lastMessageTime) return conv.lastMessageTime;
-    if (conv.lastMessage && conv.lastMessageTime) return conv.lastMessageTime;
-    return '';
-  };
+  // Helper: Format last message time
+  function formatLastMessageTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+      // Show only time, no milliseconds
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      // Show only date
+      return date.toLocaleDateString();
+    }
+  }
 
   // Filter conversations by selected category
-  const filteredConversations = selectedCategory
-    ? conversations.filter(c => c.category_id === selectedCategory)
-    : conversations;
+  const filteredConversations = selectedCategory === 'all'
+    ? conversations
+    : conversations.filter(c => c.category_id === selectedCategory);
 
   let chatsToShow = filteredConversations;
   if (selectedCategory === 'requests') {
@@ -350,6 +375,7 @@ function Messages() {
   } else if (selectedCategory !== 'all') {
     chatsToShow = conversations.filter(c => c.category_id === selectedCategory);
   }
+  console.log('chatsToShow:', chatsToShow); // DEBUG
 
   if (storageError) {
     return (
@@ -366,7 +392,7 @@ function Messages() {
   }
 
   return (
-    <div className="trk-messages-page min-h-screen bg-[#f5f6fa] dark:bg-[#181818] flex flex-col w-full h-screen p-2 md:p-6">
+    <div className="trk-messages-page min-h-screen bg-[#181818] flex flex-col w-full h-screen p-2 md:p-6">
       {error && (
         <div className="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <span className="block sm:inline">{error}</span>
@@ -381,9 +407,9 @@ function Messages() {
           </button>
         </div>
       )}
-      <div className="flex flex-1 w-full h-full max-w-full mx-auto rounded-[2rem] shadow-lg border border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#181818] overflow-hidden p-4 md:p-8">
-        {/* Leftmost Sidebar: Categories */}
-        <aside className="w-20 min-w-[64px] bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-6 gap-2 h-full rounded-2xl mr-4">
+      <div className="flex flex-1 w-full h-full max-w-full mx-auto gap-6 items-stretch justify-center">
+        {/* Categories Sidebar - floating */}
+        <aside className="w-20 min-w-[64px] bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-6 gap-2 h-full rounded-2xl shadow-xl">
           {/* Built-in folders */}
           <button
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
@@ -422,21 +448,8 @@ function Messages() {
             <FaPlus size={24} />
           </button>
         </aside>
-        {/* Add Category Modal */}
-        {showAddCategory && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <form className="bg-white dark:bg-[#232323] rounded-2xl shadow-2xl p-8 max-w-sm w-full relative" onSubmit={handleAddCategory}>
-              <button className="absolute top-3 right-3 text-orange-500 hover:text-orange-700" onClick={() => setShowAddCategory(false)} type="button">
-                <FaTimes size={24} />
-              </button>
-              <h2 className="text-xl font-bold text-orange-600 mb-4">Add Category</h2>
-              <input className="w-full rounded-lg border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 px-3 text-trkblack dark:text-white mb-4" placeholder="Category name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} required />
-              <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-5 py-2 font-semibold shadow w-full">Add</button>
-            </form>
-          </div>
-        )}
-        {/* Chat List Sidebar */}
-        <aside className="w-80 bg-white dark:bg-[#232323] border-r border-trkblack/10 dark:border-white/10 flex flex-col items-center py-8 px-4 h-full rounded-2xl mr-4">
+        {/* Chat List Sidebar - floating */}
+        <aside className="w-80 bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-8 px-4 h-full rounded-2xl shadow-xl">
           {/* User Profile */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 mb-2 overflow-hidden">
@@ -513,10 +526,14 @@ function Messages() {
                       key={user.id}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 transition text-left hover:bg-orange-100 dark:hover:bg-orange-900"
                       onClick={() => {
-                        setSelectedChat(user.id);
-                        setSelectedChatUser(user);
-                        setSearch("");
-                        setSearchResults([]);
+                        if (user.id !== undefined && user.id !== null) {
+                          setSelectedChat(user.id);
+                          setSelectedChatUser(user);
+                          setSearch("");
+                          setSearchResults([]);
+                        } else {
+                          console.warn('User has no id:', user);
+                        }
                       }}
                     >
                       <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
@@ -534,83 +551,57 @@ function Messages() {
             ) : (
               <>
                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 pt-2 pb-1 font-semibold uppercase tracking-wide">Last chats</div>
-                {chatsToShow.map(conv => (
-                  <div
-                    key={
-                      selectedCategory === 'requests'
-                        ? `request-${conv.request_id || conv.id || conv.sender_id || Math.random()}`
-                        : conv.id || conv.message_id
-                    }
-                    className="relative group"
-                  >
+                {chatsToShow.map(conv => {
+                  const isActive = selectedChat === conv.id;
+                  const lastMsgPrefix = conv.last_sender_id === user.id ? 'You: ' : '';
+                  return (
                     <div
+                      key={conv.id}
                       className={classNames(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 transition text-left",
-                        selectedChat === conv.id ? "bg-orange-100 dark:bg-orange-900 border-l-4 border-orange-500" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                        'relative group',
+                        isActive ? 'bg-orange-100 dark:bg-orange-900 border-l-4 border-orange-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+                        'rounded-2xl' // Increased border radius
                       )}
                       onClick={() => {
                         setSelectedChat(conv.id);
+                        setSelectedRequest(null);
                         setSelectedChatUser(null);
                       }}
                     >
-                      <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
-                        {conv.avatar ? <img src={conv.avatar} alt={conv.name} className="w-10 h-10 rounded-full object-cover" /> : <FaUser />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-trkblack dark:text-white truncate">{conv.name || conv.full_name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage || conv.content}</div>
-                      </div>
-                      {/* Pending badge */}
-                      {conv.request_status === 'pending' && (
-                        <span className="ml-2 px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold">Pending</span>
-                      )}
-                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{getLastMessageTime(conv)}</div>
-                      <div className="ml-auto flex items-center gap-2">
-                        <div
-                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setOpenCategoryMenu(openCategoryMenu === conv.id ? null : conv.id);
-                          }}
-                        >
-                          <FaEllipsisV />
+                      <div className="w-full flex items-center gap-3 px-3 py-2 rounded-2xl mb-1 transition text-left">
+                        <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
+                          {conv.profile_picture_url ? (
+                            <img src={conv.profile_picture_url} alt={conv.full_name} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <FaUser />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-trkblack dark:text-white truncate">{conv.full_name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {lastMsgPrefix}{conv.last_message}
+                          </div>
+                        </div>
+                        {conv.last_request_status === 'pending' && (
+                          <span className="ml-2 px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold">Pending</span>
+                        )}
+                        <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                          {formatLastMessageTime(conv.last_message_time)}
                         </div>
                       </div>
                     </div>
-                    {/* Category dropdown */}
-                    {openCategoryMenu === conv.id && (
-                      <div className="absolute right-0 top-10 z-50 bg-white dark:bg-[#232323] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg w-48">
-                        <div className="p-2 text-xs text-gray-500 dark:text-gray-400">Assign to category</div>
-                        {categories.map(cat => (
-                          <div
-                            key={`${conv.id}-${cat.id}`}
-                            className="w-full text-left px-4 py-2 hover:bg-orange-100 dark:hover:bg-orange-900 transition cursor-pointer"
-                            onClick={async e => {
-                              e.stopPropagation();
-                              await api.post(`/messages/categories/${cat.id}/assign`, { otherUserId: conv.id });
-                              setOpenCategoryMenu(null);
-                              fetchCategories();
-                              fetchConversations();
-                            }}
-                          >
-                            {cat.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </>
             )}
           </div>
         </aside>
-
-        {/* Center Chat Area */}
-        <main className="flex-1 flex flex-col bg-[#f5f6fa] dark:bg-[#181818] relative">
+        {/* Center Chat Area - floating */}
+        <main className="flex-1 flex flex-col bg-[#232323] dark:bg-[#232323] rounded-2xl shadow-xl p-0 relative z-10" style={{ minWidth: 0 }}>
           {selectedChat && chatUser ? (
             <>
               {/* Chat Header */}
-              <div className="flex items-center gap-3 px-8 py-5 border-b border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]">
+              <div className="flex items-center gap-3 px-8 py-5 border-b border-trkblack/10 dark:border-white/10 bg-[#232323] dark:bg-[#232323] rounded-t-2xl">
                 <div className="w-12 h-12 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
                   {chatUser.profile_picture_url || chatUser.profile_image ? (
                     <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={chatUser.full_name || chatUser.name} className="w-12 h-12 rounded-full object-cover border-2 border-orange-500" />
@@ -625,82 +616,103 @@ function Messages() {
                   </div>
                 </div>
                 {/* Accept/Decline for pending requests (recipient only) */}
-                {chatUser.request_status === 'pending' && user.id === selectedChat && (
+                {isRequest && user.id === selectedRequest.receiver_id && (
                   <div className="flex gap-2">
                     <button
                       className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold"
-                      onClick={() => handleRequestAction(chatUser.id, 'approve')}
+                      onClick={() => handleRequestAction(selectedRequest.sender_id, 'approve')}
                     >
                       ✔ Accept
                     </button>
                     <button
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
-                      onClick={() => handleRequestAction(chatUser.id, 'reject')}
+                      onClick={() => handleRequestAction(selectedRequest.sender_id, 'reject')}
                     >
                       ❌ Decline
                     </button>
                   </div>
                 )}
-                <button className="text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded p-2" onClick={() => setShowChatInfo(true)}>
+                <button className="text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-full p-2" onClick={() => setShowInfoSidebar(v => !v)}>
                   <FaInfoCircle size={22} />
                 </button>
               </div>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4 bg-[#f5f6fa] dark:bg-[#181818]">
-                {messages.map(msg => (
-                  <div
-                    key={msg.message_id || msg.id}
-                    className={classNames(
-                      "max-w-[70%] px-5 py-3 rounded-2xl text-sm shadow-sm",
-                      msg.sender_id === user.id
-                        ? "bg-orange-500 text-white self-end rounded-br-md"
-                        : "bg-white dark:bg-[#232323] text-trkblack dark:text-white self-start rounded-bl-md"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-xs">
-                        {msg.sender_id === user.id ? 'You' : chatUser.name}
-                      </span>
-                      <span className="text-[10px] text-gray-400 ml-2">{msg.time || ''}</span>
-                    </div>
-                    <div>{msg.content}</div>
-                    {msg.files?.map(file => (
-                      <div key={file.id || file.file_id} className="mt-2">
-                        {file.type.startsWith('image/') ? (
-                          <img src={file.url} alt={file.name} className="max-w-[200px] rounded-lg" />
-                        ) : (
-                          <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center gap-1">
-                            <FaPaperclip className="inline" />
-                            {file.name}
-                          </a>
-                        )}
-                      </div>
-                    ))}
+              {/* Main chat area: show request UI only for requests, otherwise show messages */}
+              {isRequest ? (
+                <div className="flex-1 flex flex-col items-center justify-center px-8 py-6">
+                  <div className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-xl p-6 mb-4 w-full max-w-lg text-center">
+                    <div className="font-semibold text-lg mb-2">Message Request</div>
+                    <div className="mb-2">{selectedRequest.full_name} wants to chat with you:</div>
+                    <div className="italic text-gray-700 dark:text-gray-300 mb-2">"{selectedRequest.intro_message || selectedRequest.content}"</div>
+                    <div className="text-xs text-gray-500">Sent at: {selectedRequest.sent_at ? new Date(selectedRequest.sent_at).toLocaleString() : ''}</div>
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-              {/* Message Input */}
-              <form className="flex items-center gap-2 px-8 py-5 border-t border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]" onSubmit={handleSendMessage}>
-                <label className="cursor-pointer text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded p-2">
-                  <FaPaperclip size={20} />
-                  <input
-                    type="file"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={e => setFileInput(e.target.files[0])}
-                  />
-                </label>
-                <input
-                  className="flex-1 rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-3 px-5 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Write your message..."
-                  value={messageInput}
-                  onChange={e => setMessageInput(e.target.value)}
-                />
-                <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 font-semibold shadow">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                </button>
-              </form>
+                </div>
+              ) : (
+                <>
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4 bg-[#f5f6fa] dark:bg-[#181818]">
+                    {messages.length === 0 ? (
+                      <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
+                        <FaUserCircle size={60} className="mb-2 text-orange-500" />
+                        <div className="text-lg font-semibold">No messages yet. Start the conversation!</div>
+                      </div>
+                    ) : (
+                      messages.map(msg => (
+                        <div
+                          key={msg.message_id || msg.id}
+                          className={classNames(
+                            "max-w-[70%] px-5 py-3 rounded-2xl text-sm shadow-sm",
+                            msg.sender_id === user.id
+                              ? "bg-orange-500 text-white self-end rounded-br-md"
+                              : "bg-white dark:bg-[#232323] text-trkblack dark:text-white self-start rounded-bl-md"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-xs">
+                              {msg.sender_id === user.id ? 'You' : chatUser?.name || chatUser?.full_name}
+                            </span>
+                            <span className="text-[10px] text-gray-400 ml-2">{msg.time || ''}</span>
+                          </div>
+                          <div>{msg.content}</div>
+                          {msg.files?.map(file => (
+                            <div key={file.id || file.file_id} className="mt-2">
+                              {file.type && file.type.startsWith('image/') ? (
+                                <img src={file.url} alt={file.name} className="max-w-[200px] rounded-lg" />
+                              ) : (
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                                  <FaPaperclip className="inline" />
+                                  {file.name}
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  {/* Message Input */}
+                  <form className="flex items-center gap-2 px-8 py-5 border-t border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]" onSubmit={handleSendMessage}>
+                    <label className="cursor-pointer text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded p-2">
+                      <FaPaperclip size={20} />
+                      <input
+                        type="file"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={e => setFileInput(e.target.files[0])}
+                      />
+                    </label>
+                    <input
+                      className="flex-1 rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-3 px-5 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="Write your message..."
+                      value={messageInput}
+                      onChange={e => setMessageInput(e.target.value)}
+                    />
+                    <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 font-semibold shadow">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </button>
+                  </form>
+                </>
+              )}
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
@@ -709,10 +721,9 @@ function Messages() {
             </div>
           )}
         </main>
-
-        {/* Right Sidebar: Chat Info & Shared Files */}
-        {selectedChat && chatUser && (
-          <aside className="w-80 bg-white dark:bg-[#232323] border-l border-trkblack/10 dark:border-white/10 flex flex-col py-6 px-4">
+        {/* Right Sidebar: Chat Info & Shared Files - floating */}
+        {selectedChat && chatUser && showInfoSidebar && (
+          <aside className="w-80 bg-[#232323] dark:bg-[#232323] rounded-2xl shadow-xl flex flex-col py-6 px-4 relative z-10">
             {/* Chat Info */}
             <div className="flex flex-col items-center mb-8">
               <div className="w-16 h-16 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 mb-2 overflow-hidden">
@@ -748,6 +759,19 @@ function Messages() {
           </aside>
         )}
       </div>
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <form className="bg-white dark:bg-[#232323] rounded-2xl shadow-2xl p-8 max-w-sm w-full relative" onSubmit={handleAddCategory}>
+            <button className="absolute top-3 right-3 text-orange-500 hover:text-orange-700" onClick={() => setShowAddCategory(false)} type="button">
+              <FaTimes size={24} />
+            </button>
+            <h2 className="text-xl font-bold text-orange-600 mb-4">Add Category</h2>
+            <input className="w-full rounded-lg border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 px-3 text-trkblack dark:text-white mb-4" placeholder="Category name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} required />
+            <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-5 py-2 font-semibold shadow w-full">Add</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
