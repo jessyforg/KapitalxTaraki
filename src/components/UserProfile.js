@@ -1,70 +1,336 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import api from '../services/api';
+import userProfileAPI from '../api/userProfile';
 import {
-  FaEnvelope, FaMapMarkerAlt, FaPhone, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaArrowLeft, FaUserCircle, FaUser, FaCheckCircle, FaBriefcase, FaTrophy, FaGraduationCap, FaInfoCircle, FaIdBadge, FaShareAlt, FaBell, FaEnvelopeOpenText, FaCamera, FaEdit, FaKey
+  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt
 } from 'react-icons/fa';
 
-const badgeColors = {
-  user: 'bg-orange-600',
-  admin: 'bg-blue-600',
-  entrepreneur: 'bg-orange-600',
+// Format date to YYYY-MM-DD to avoid timezone issues
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  
+  // If it's already in YYYY-MM-DD format, return as is
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateString;
+  }
+  
+  try {
+    // Create date object and adjust for timezone
+    const date = new Date(dateString);
+    // Get the date in local timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return '';
+  }
 };
 
-const CAR_LOCATIONS = [
-  '',
-  'Abra',
-  'Apayao',
-  'Benguet',
-  'Ifugao',
-  'Kalinga',
-  'Mountain Province',
-  'Baguio City',
-];
+// Move these components outside the main function so they are not re-created on every render
+function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user }) {
+  // Handle date change
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setGeneralInfo({ ...generalInfo, birthdate: newDate });
+  };
 
-const INDUSTRIES = [
-  '',
-  'Agriculture',
-  'Education',
-  'Healthcare',
-  'Tourism',
-  'Information Technology',
-  'Manufacturing',
-  'Retail',
-  'Construction',
-  'Finance',
-  'Government',
-  'Transportation',
-  'Arts & Culture',
-  'Other',
-];
-
-function capitalizeFirst(str) {
-  if (!str || typeof str !== 'string') return str;
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  return (
+    <div className="bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-orange-600">General Information</h2>
+        {!isEditingGeneral && (
+          <button onClick={() => setIsEditingGeneral(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-6 text-base">
+        <div>
+          <div className="text-gray-600 mb-1">First Name</div>
+          <input id="general-firstName" name="general-firstName" type="text" value={generalInfo.firstName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, firstName: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+        </div>
+        <div>
+          <div className="text-gray-600 mb-1">Last Name</div>
+          <input id="general-lastName" name="general-lastName" type="text" value={generalInfo.lastName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, lastName: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+        </div>
+        <div>
+          <div className="text-gray-600 mb-1">Date of Birth</div>
+          <input
+            id="general-birthdate"
+            name="general-birthdate"
+            type="date"
+            value={formatDate(generalInfo.birthdate)}
+            disabled={!isEditingGeneral}
+            onChange={handleDateChange}
+            className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+          />
+        </div>
+        <div>
+          <div className="text-gray-600 mb-1">Gender</div>
+          {isEditingGeneral ? (
+            <select
+              id="general-gender"
+              name="general-gender"
+              value={generalInfo.gender}
+              onChange={e => setGeneralInfo({ ...generalInfo, gender: e.target.value })}
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+          ) : (
+            <input id="general-gender" name="general-gender" type="text" value={generalInfo.gender} disabled className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          )}
+        </div>
+        <div>
+          <div className="text-gray-600 mb-1">Phone</div>
+          <input id="general-contact_number" name="general-contact_number" type="text" value={generalInfo.contact_number} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, contact_number: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+        </div>
+        <div>
+          <div className="text-gray-600 mb-1">Email</div>
+          <input id="general-email" name="general-email" type="text" value={generalInfo.email} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, email: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+        </div>
+        <div className="col-span-2">
+          <div className="text-gray-600 mb-1">Address</div>
+          <input id="general-location" name="general-location" type="text" value={generalInfo.location} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, location: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+        </div>
+      </div>
+      {isEditingGeneral && (
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSaveGeneral} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+          <button onClick={() => { setIsEditingGeneral(false); setGeneralInfo({
+            firstName: user?.first_name || '',
+            lastName: user?.last_name || '',
+            birthdate: user?.birthdate || '',
+            gender: user?.gender || '',
+            contact_number: user?.contact_number || '',
+            email: user?.email || '',
+            location: user?.location || ''
+          }); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-function formatBirthdate(dateString) {
-  if (!dateString) return <span className="italic text-gray-400">Not specified</span>;
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return <span className="italic text-gray-400">Not specified</span>;
-  // Format: Month day, year
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user }) {
+  return (
+    <div className="bg-white rounded-2xl shadow p-6 border border-gray-200 h-auto min-h-0 mb-12">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-xl font-bold text-orange-600">About</h2>
+        {!isEditingAbout && (
+          <button onClick={() => setIsEditingAbout(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+      {isEditingAbout ? (
+        <textarea value={about} onChange={e => setAbout(e.target.value)} className="w-full bg-gray-100 rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line" />
+      ) : (
+        <div className="bg-gray-100 rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line">{about}</div>
+      )}
+      {isEditingAbout && (
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSaveAbout} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+          <button onClick={() => { setIsEditingAbout(false); setAbout(user?.introduction || ''); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfessionalBackgroundCard({ employments: initialEmployments, setEmployments, isEditingProfessional, setIsEditingProfessional, handleSaveProfessional, user }) {
+  // Use local state for editing
+  const [localEmployments, setLocalEmployments] = useState(initialEmployments || []);
+
+  // Update local state when initialEmployments changes and not editing
+  useEffect(() => {
+    if (!isEditingProfessional) {
+      setLocalEmployments(initialEmployments || []);
+    }
+  }, [initialEmployments, isEditingProfessional]);
+
+  // Add new employment
+  const handleAddEmployment = () => {
+    setLocalEmployments([
+      ...localEmployments,
+      {
+        company: '',
+        title: '',
+        industry: '',
+        hire_date: '',
+        employment_type: '',
+        is_current: false
+      }
+    ]);
+  };
+
+  // Remove employment by index
+  const handleRemoveEmployment = (idx) => {
+    setLocalEmployments(localEmployments.filter((_, i) => i !== idx));
+  };
+
+  // Handle employment field change
+  const handleEmploymentChange = (idx, field, value) => {
+    setLocalEmployments(prev => {
+      const newEmps = [...prev];
+      newEmps[idx] = { ...newEmps[idx], [field]: value };
+      return newEmps;
+    });
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    await handleSaveProfessional(localEmployments);
+    setIsEditingProfessional(false);
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setLocalEmployments(initialEmployments || []);
+    setIsEditingProfessional(false);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow p-6 border border-gray-200">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-orange-600">Professional Background</h3>
+        {!isEditingProfessional && (
+          <button
+            onClick={() => setIsEditingProfessional(true)}
+            className="text-orange-500 font-semibold hover:underline"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+      {!isEditingProfessional ? (
+        <div>
+          {localEmployments.length === 0 && <div className="text-gray-500">No professional background added.</div>}
+          {localEmployments.map((emp, idx) => (
+            <div key={`view-${idx}`} className="border-b last:border-b-0 py-3 flex justify-between items-center">
+              <div>
+                <div className="font-semibold">{emp.company}</div>
+                <div className="text-gray-600">{emp.title}</div>
+              </div>
+              <div className="text-gray-500">
+                {emp.is_current ? "Current" : (emp.hire_date ? new Date(emp.hire_date).getFullYear() : "")}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          {localEmployments.map((emp, idx) => (
+            <div key={`edit-${idx}`} className="mb-4 border-b pb-4 last:border-b-0 last:pb-0">
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={emp.company || ''}
+                  onChange={e => handleEmploymentChange(idx, 'company', e.target.value)}
+                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Company Name"
+                />
+                <input
+                  type="text"
+                  value={emp.title || ''}
+                  onChange={e => handleEmploymentChange(idx, 'title', e.target.value)}
+                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Title"
+                />
+              </div>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={emp.industry || ''}
+                  onChange={e => handleEmploymentChange(idx, 'industry', e.target.value)}
+                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Industry"
+                />
+                <input
+                  type="date"
+                  value={emp.hire_date ? emp.hire_date.slice(0, 10) : ''}
+                  onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
+                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Hire Date"
+                />
+              </div>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={emp.employment_type || ''}
+                  onChange={e => handleEmploymentChange(idx, 'employment_type', e.target.value)}
+                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Employment Type"
+                />
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={emp.is_current || false}
+                    onChange={e => handleEmploymentChange(idx, 'is_current', e.target.checked)}
+                  />
+                  Current
+                </label>
+                <button onClick={() => handleRemoveEmployment(idx)} className="text-red-500 ml-2">Remove</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={handleAddEmployment} className="bg-orange-500 text-white px-4 py-2 rounded mt-2">Add Employment</button>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+            <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function UserProfile() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
-  const [socialLinks, setSocialLinks] = useState({});
   const [error, setError] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [profileImageLoading, setProfileImageLoading] = useState(false);
-  const [profileImageError, setProfileImageError] = useState('');
-  const fileInputRef = React.useRef();
+  const fileInputRef = useRef();
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('personal');
+  // Determine if viewing own profile
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+  const isOwnProfile = loggedInUser && user && String(loggedInUser.id) === String(user.id);
 
+  // Edit states and form data for each section
+  const [isEditingGeneral, setIsEditingGeneral] = useState(false);
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [isEditingProfessional, setIsEditingProfessional] = useState(false);
+  const [isEditingAcademic, setIsEditingAcademic] = useState(false);
+  const [isEditingSocial, setIsEditingSocial] = useState(false);
+
+  const [generalInfo, setGeneralInfo] = useState({
+    firstName: user?.first_name || '',
+    lastName: user?.last_name || '',
+    birthdate: user?.birthdate || '',
+    gender: user?.gender || '',
+    contact_number: user?.contact_number || '',
+    email: user?.email || '',
+    location: user?.location || ''
+  });
+  const [about, setAbout] = useState(user?.introduction || '');
+  const [employments, setEmployments] = useState(
+    Array.isArray(user?.employment) ? user.employment : user?.employment ? [user.employment] : []
+  );
+  const [academicProfile, setAcademicProfile] = useState([]);
+  const [socialLinks, setSocialLinks] = useState({
+    facebook_url: '',
+    twitter_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    microsoft_url: '',
+    whatsapp_url: '',
+    telegram_url: ''
+  });
+
+  // Fetch profile and social links only when id changes
   useEffect(() => {
     if (id) {
       fetchProfile(id);
@@ -84,11 +350,45 @@ export default function UserProfile() {
     }
   }, [id]);
 
+  // Sync generalInfo with user only when user or isEditingGeneral changes
+  useEffect(() => {
+    if (!isEditingGeneral) {
+      setGeneralInfo({
+        firstName: user?.first_name || '',
+        lastName: user?.last_name || '',
+        birthdate: formatDate(user?.birthdate) || '',
+        gender: user?.gender || '',
+        contact_number: user?.contact_number || '',
+        email: user?.email || '',
+        location: user?.location || ''
+      });
+    }
+  }, [user, isEditingGeneral]);
+
+  // Sync employments with user only when user or isEditingProfessional changes
+  useEffect(() => {
+    if (!isEditingProfessional) {
+      setEmployments(Array.isArray(user?.employment) ? user.employment : user?.employment ? [user.employment] : []);
+    }
+  }, [user, isEditingProfessional]);
+
+  // Sync about, academicProfile, and socialLinks as needed
+  useEffect(() => {
+    if (!isEditingAbout) {
+      setAbout(user?.introduction || '');
+    }
+    if (!isEditingAcademic) {
+      setAcademicProfile(user?.academic_profile || []);
+    }
+    if (!isEditingSocial) {
+      setSocialLinks(user?.social_links || {});
+    }
+  }, [user, isEditingAbout, isEditingAcademic, isEditingSocial]);
+
   const fetchProfile = async (userId) => {
     try {
       const profile = await api.getUserProfile(userId);
       setUser(profile);
-      // Only update localStorage if viewing own profile
       const loggedInUser = JSON.parse(localStorage.getItem('user'));
       if (loggedInUser && String(loggedInUser.id) === String(userId)) {
         localStorage.setItem('user', JSON.stringify(profile));
@@ -103,8 +403,215 @@ export default function UserProfile() {
       const links = await api.getUserSocialLinks(userId);
       setSocialLinks(links);
     } catch (err) {
-      console.warn('Failed to fetch social links:', err);
       setSocialLinks({});
+    }
+  };
+
+  // Save handlers
+  const handleSaveGeneral = async () => {
+    // Format the birthdate to ensure it's in YYYY-MM-DD format without timezone conversion
+    const birthdate = formatDate(generalInfo.birthdate);
+    
+    console.log('handleSaveGeneral called', {
+      first_name: generalInfo.firstName,
+      last_name: generalInfo.lastName,
+      email: generalInfo.email,
+      profile_image: user.profile_image,
+      birthdate,
+      gender: generalInfo.gender,
+      contact_number: generalInfo.contact_number,
+      location: generalInfo.location,
+      introduction: about,
+      industry: employments[0]?.industry || '',
+      show_in_search: user.show_in_search,
+      show_in_messages: user.show_in_messages,
+      show_in_pages: user.show_in_pages
+    });
+    
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        first_name: generalInfo.firstName,
+        last_name: generalInfo.lastName,
+        email: generalInfo.email,
+        profile_image: user.profile_image,
+        birthdate,
+        gender: generalInfo.gender,
+        contact_number: generalInfo.contact_number,
+        location: generalInfo.location,
+        introduction: about,
+        industry: employments[0]?.industry || '',
+        show_in_search: user.show_in_search,
+        show_in_messages: user.show_in_messages,
+        show_in_pages: user.show_in_pages,
+        employment: employments
+      });
+      setIsEditingGeneral(false);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update general information.');
+    }
+  };
+
+  const handleSaveAbout = async () => {
+    console.log('handleSaveAbout called', {
+      first_name: generalInfo.firstName,
+      last_name: generalInfo.lastName,
+      email: generalInfo.email,
+      profile_image: user.profile_image,
+      birthdate: generalInfo.birthdate,
+      gender: generalInfo.gender,
+      contact_number: generalInfo.contact_number,
+      location: generalInfo.location,
+      introduction: about,
+      industry: employments[0]?.industry || '',
+      show_in_search: user.show_in_search,
+      show_in_messages: user.show_in_messages,
+      show_in_pages: user.show_in_pages
+    });
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        first_name: generalInfo.firstName,
+        last_name: generalInfo.lastName,
+        email: generalInfo.email,
+        profile_image: user.profile_image,
+        birthdate: generalInfo.birthdate,
+        gender: generalInfo.gender,
+        contact_number: generalInfo.contact_number,
+        location: generalInfo.location,
+        introduction: about,
+        industry: employments[0]?.industry || '',
+        show_in_search: user.show_in_search,
+        show_in_messages: user.show_in_messages,
+        show_in_pages: user.show_in_pages,
+        employment: employments
+      });
+      setIsEditingAbout(false);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update about section.');
+    }
+  };
+
+  const handleSaveProfessional = async (updatedEmployments) => {
+    console.log('handleSaveProfessional called', {
+      first_name: generalInfo.firstName,
+      last_name: generalInfo.lastName,
+      email: generalInfo.email,
+      profile_image: user.profile_image,
+      birthdate: generalInfo.birthdate,
+      gender: generalInfo.gender,
+      contact_number: generalInfo.contact_number,
+      location: generalInfo.location,
+      introduction: about,
+      industry: updatedEmployments[0]?.industry || '',
+      show_in_search: user.show_in_search,
+      show_in_messages: user.show_in_messages,
+      show_in_pages: user.show_in_pages,
+      employment: updatedEmployments
+    });
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        first_name: generalInfo.firstName,
+        last_name: generalInfo.lastName,
+        email: generalInfo.email,
+        profile_image: user.profile_image,
+        birthdate: generalInfo.birthdate,
+        gender: generalInfo.gender,
+        contact_number: generalInfo.contact_number,
+        location: generalInfo.location,
+        introduction: about,
+        industry: updatedEmployments[0]?.industry || '',
+        show_in_search: user.show_in_search,
+        show_in_messages: user.show_in_messages,
+        show_in_pages: user.show_in_pages,
+        employment: updatedEmployments
+      });
+      setEmployments(updatedEmployments);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update professional background.');
+    }
+  };
+
+  const handleSaveAcademic = async () => {
+    console.log('handleSaveAcademic called', {
+      first_name: generalInfo.firstName,
+      last_name: generalInfo.lastName,
+      email: generalInfo.email,
+      profile_image: user.profile_image,
+      birthdate: generalInfo.birthdate,
+      gender: generalInfo.gender,
+      contact_number: generalInfo.contact_number,
+      location: generalInfo.location,
+      introduction: about,
+      industry: employments[0]?.industry || '',
+      show_in_search: user.show_in_search,
+      show_in_messages: user.show_in_messages,
+      show_in_pages: user.show_in_pages,
+      academic_profile: academicProfile
+    });
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        first_name: generalInfo.firstName,
+        last_name: generalInfo.lastName,
+        email: generalInfo.email,
+        profile_image: user.profile_image,
+        birthdate: generalInfo.birthdate,
+        gender: generalInfo.gender,
+        contact_number: generalInfo.contact_number,
+        location: generalInfo.location,
+        introduction: about,
+        industry: employments[0]?.industry || '',
+        show_in_search: user.show_in_search,
+        show_in_messages: user.show_in_messages,
+        show_in_pages: user.show_in_pages,
+        academic_profile: academicProfile
+      });
+      setIsEditingAcademic(false);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update academic profile.');
+    }
+  };
+
+  const handleSaveSocial = async () => {
+    console.log('handleSaveSocial called', {
+      first_name: generalInfo.firstName,
+      last_name: generalInfo.lastName,
+      email: generalInfo.email,
+      profile_image: user.profile_image,
+      birthdate: generalInfo.birthdate,
+      gender: generalInfo.gender,
+      contact_number: generalInfo.contact_number,
+      location: generalInfo.location,
+      introduction: about,
+      industry: employments[0]?.industry || '',
+      show_in_search: user.show_in_search,
+      show_in_messages: user.show_in_messages,
+      show_in_pages: user.show_in_pages,
+      social_links: socialLinks
+    });
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        first_name: generalInfo.firstName,
+        last_name: generalInfo.lastName,
+        email: generalInfo.email,
+        profile_image: user.profile_image,
+        birthdate: generalInfo.birthdate,
+        gender: generalInfo.gender,
+        contact_number: generalInfo.contact_number,
+        location: generalInfo.location,
+        introduction: about,
+        industry: employments[0]?.industry || '',
+        show_in_search: user.show_in_search,
+        show_in_messages: user.show_in_messages,
+        show_in_pages: user.show_in_pages,
+        social_links: socialLinks
+      });
+      setIsEditingSocial(false);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update social links.');
     }
   };
 
@@ -112,577 +619,331 @@ export default function UserProfile() {
     return <div className="flex flex-col min-h-screen"><Navbar /><div className="flex-1 flex justify-center items-center text-gray-200 bg-[#181818]">Please log in to view your profile.</div></div>;
   }
 
-  // Profile picture logic: use DB value, else show icon
-  const ProfilePicture = () => {
-    if (user.profile_image && user.profile_image.trim() !== "") {
-      return (
-        <img
-          src={user.profile_image}
-          alt="Profile"
-          className="w-36 h-36 rounded-full border-4 border-orange-500 object-cover bg-gray-800 shadow-lg"
-        />
-      );
-    } else {
-      return (
-        <div className="w-36 h-36 rounded-full border-4 border-orange-500 bg-gray-800 flex items-center justify-center shadow-lg">
-          <FaUserCircle className="text-orange-400" size={120} />
+  // Sidebar
+  const Sidebar = () => (
+    <div className="bg-white rounded-2xl shadow w-[270px] h-[calc(100vh-110px)] flex flex-col items-center py-6 px-6 pb-8 mr-8 border border-gray-200 overflow-y-auto min-h-0">
+      <div className="flex flex-col items-center mb-8">
+        <div className="mb-3 relative group">
+          {user.profile_image && user.profile_image.trim() !== '' ? (
+            <img src={user.profile_image} alt="Profile" className="w-28 h-28 rounded-full object-cover border-4 border-orange-500 bg-gray-100 mb-2" />
+          ) : (
+            <div className="w-28 h-28 rounded-full bg-orange-500 flex items-center justify-center mb-2">
+              <FaUser className="text-white" size={60} />
+            </div>
+          )}
+          {/* Profile picture upload button */}
+          <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const reader = new window.FileReader();
+                  reader.onloadend = async () => {
+                    try {
+                      const base64Image = reader.result;
+                      await userProfileAPI.updateProfileImage(user.id, base64Image);
+                      fetchProfile(user.id);
+                    } catch (error) {
+                      alert('Failed to update profile image.');
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
+            <span className="text-xs text-orange-500 font-semibold">Edit</span>
+          </label>
         </div>
-      );
-    }
-  };
-
-  // Handle profile image upload
-  const handleProfileImageClick = () => {
-    if (fileInputRef.current) fileInputRef.current.click();
-  };
-
-  const handleProfileImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setProfileImageLoading(true);
-    setProfileImageError('');
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64Image = reader.result;
-          await api.updateProfileImage(user.id, base64Image);
-          fetchProfile(user.id);
-        } catch (err) {
-          setProfileImageError('Failed to update profile image');
-        } finally {
-          setProfileImageLoading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setProfileImageError('Failed to update profile image');
-      setProfileImageLoading(false);
-    }
-  };
-
-  // Helper to show value or placeholder, with optional transform
-  const showValue = (val, emptyText = 'Not specified', transform) => {
-    if (!val || val.trim() === '') return <span className="italic text-gray-400">{emptyText}</span>;
-    return transform ? transform(val) : val;
-  };
-
-  // Role badge
-  const roleLabel = user.role === 'admin' ? 'Admin' : (user.role === 'entrepreneur' ? 'Entrepreneur' : 'User');
-  const roleColor = badgeColors[user.role] || 'bg-orange-600';
-
-  // Verified badge
-  const isVerified = user.is_verified === 1 || user.is_verified === true;
-
-  // Determine if viewing own profile
-  const loggedInUser = JSON.parse(localStorage.getItem('user'));
-  const isOwnProfile = loggedInUser && user && String(loggedInUser.id) === String(user.id);
-
-  // Edit Profile Modal (real form)
-  const EditProfileModal = () => {
-    const [formData, setFormData] = useState({
-      location: user.location || '',
-      introduction: user.introduction || '',
-      accomplishments: user.accomplishments || '',
-      education: user.education || '',
-      employment: user.employment || '',
-      gender: user.gender || '',
-      birthdate: user.birthdate ? user.birthdate.slice(0, 10) : '',
-      contact_number: user.contact_number || '',
-      public_email: user.public_email || '',
-      industry: user.industry || '',
-      show_in_search: user.show_in_search !== undefined ? user.show_in_search : true,
-      show_in_messages: user.show_in_messages !== undefined ? user.show_in_messages : true,
-      show_in_pages: user.show_in_pages !== undefined ? user.show_in_pages : true,
-      facebook_url: user.facebook_url || '',
-      instagram_url: user.instagram_url || '',
-      linkedin_url: user.linkedin_url || ''
-    });
-    const [step, setStep] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const steps = [
-      { label: 'Personal Details' },
-      { label: 'Contact Information' },
-      { label: 'Professional Information' },
-      { label: 'About' },
-      { label: 'Social Links' },
-      { label: 'Privacy Settings' },
-    ];
-
-    const handleChange = (e) => {
-      const { name, value, type, checked } = e.target;
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    };
-
-    const handleNext = (e) => {
-      e && e.preventDefault();
-      setStep((prev) => Math.min(prev + 1, steps.length - 1));
-    };
-
-    const handlePrev = (e) => {
-      e && e.preventDefault();
-      setStep((prev) => Math.max(prev - 1, 0));
-    };
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setLoading(true);
-      setError('');
-      try {
-        await api.updateUserProfile(user.id, formData);
-        setShowEditModal(false);
-        fetchProfile(user.id);
-      } catch (err) {
-        setError(err.message || 'Failed to update profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const handleSkip = () => {
-      setShowEditModal(false);
-    };
-
-    // Step content rendering (copy renderStep from UserDetailsModal, using formData and handleChange)
-    const renderStep = () => {
-      switch (step) {
-        case 0:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Birthdate</label>
-                  <input
-                    type="date"
-                    name="birthdate"
-                    value={formData.birthdate}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
-                  <select
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  >
-                    {CAR_LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>{loc ? loc : 'Select location'}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div />
-            </div>
-          );
-        case 1:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number</label>
-                  <input
-                    type="tel"
-                    name="contact_number"
-                    value={formData.contact_number}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Your contact number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Public Email</label>
-                  <input
-                    type="email"
-                    name="public_email"
-                    value={formData.public_email}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Public email address"
-                  />
-                </div>
-              </div>
-              <div />
-            </div>
-          );
-        case 2:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Professional Information</h3>
-              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
-                  <select
-                    name="industry"
-                    value={formData.industry}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  >
-                    {INDUSTRIES.map((ind) => (
-                      <option key={ind} value={ind}>{ind ? ind : 'Select industry'}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Education</label>
-                  <textarea
-                    name="education"
-                    value={formData.education}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Your educational background"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employment</label>
-                  <textarea
-                    name="employment"
-                    value={formData.employment}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Your work experience"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accomplishments</label>
-                  <textarea
-                    name="accomplishments"
-                    value={formData.accomplishments}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Your notable achievements"
-                  />
-                </div>
-              </div>
-              <div />
-            </div>
-          );
-        case 3:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">About</h3>
-              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Introduction</label>
-                  <textarea
-                    name="introduction"
-                    value={formData.introduction}
-                    onChange={handleChange}
-                    rows="3"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="Tell us about yourself"
-                  />
-                </div>
-              </div>
-              <div />
-            </div>
-          );
-        case 4:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Social Links</h3>
-              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facebook URL</label>
-                  <input
-                    type="url"
-                    name="facebook_url"
-                    value={formData.facebook_url}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="https://facebook.com/yourprofile"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instagram URL</label>
-                  <input
-                    type="url"
-                    name="instagram_url"
-                    value={formData.instagram_url}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="https://instagram.com/yourprofile"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">LinkedIn URL</label>
-                  <input
-                    type="url"
-                    name="linkedin_url"
-                    value={formData.linkedin_url}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                    placeholder="https://linkedin.com/in/yourprofile"
-                  />
-                </div>
-              </div>
-              <div />
-            </div>
-          );
-        case 5:
-          return (
-            <div className="flex flex-col flex-1 justify-between h-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Privacy Settings</h3>
-              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="show_in_search"
-                    checked={formData.show_in_search}
-                    onChange={handleChange}
-                    className="rounded text-orange-500 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Show in search results</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="show_in_messages"
-                    checked={formData.show_in_messages}
-                    onChange={handleChange}
-                    className="rounded text-orange-500 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Allow messages from other users</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="show_in_pages"
-                    checked={formData.show_in_pages}
-                    onChange={handleChange}
-                    className="rounded text-orange-500 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Show profile in public pages</span>
-                </label>
-              </div>
-              <div />
-            </div>
-          );
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
-        <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg w-full max-w-4xl min-h-[500px] h-[600px] animate-fadeIn flex">
-          {/* Stepper Sidebar */}
-          <div className="w-1/4 min-w-[200px] bg-gray-50 dark:bg-gray-900 rounded-l-2xl py-8 px-4 flex flex-col items-start h-full">
-            <h2 className="text-lg font-bold mb-6 text-black dark:text-white">Edit Profile</h2>
-            <ul className="space-y-4 w-full">
-              {steps.map((s, idx) => (
-                <li key={s.label} className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full border-2 ${step === idx ? 'bg-orange-500 border-orange-500' : step > idx ? 'bg-green-500 border-green-500' : 'bg-gray-300 border-gray-300'}`}></span>
-                  <span className={`text-sm ${step === idx ? 'font-bold text-orange-600' : 'text-gray-700 dark:text-gray-300'}`}>{s.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Main Content */}
-          <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-12 h-full">
-            {error && (
-              <div className="text-red-500 text-sm text-center mb-4">{error}</div>
-            )}
-            <div className="flex-1 flex flex-col justify-between">{renderStep()}</div>
-            <div className="flex justify-between pt-8">
-              <button
-                type="button"
-                onClick={handlePrev}
-                className={`px-6 py-2 rounded-lg transition-colors ${step === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                disabled={step === 0}
-              >
-                Previous
-              </button>
-              <div className="flex gap-2">
-                {step === steps.length - 1 && (
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                  >
-                    Skip for now
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
-                >
-                  {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save Profile') : 'Next'}
-                </button>
-              </div>
-            </div>
-          </form>
+        <div className="text-center">
+          <div className="font-bold text-xl text-gray-800">{user.first_name} {user.last_name}</div>
+          <div className="text-xs text-gray-500">{user.email}</div>
         </div>
       </div>
-    );
-  };
-
-  // Change Password Modal (simple example)
-  const ChangePasswordModal = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-      <div className="bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-lg relative">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl" onClick={() => setShowPasswordModal(false)}>&times;</button>
-        <h2 className="text-2xl font-bold text-white mb-4">Change Password</h2>
-        {/* You can add a form here for changing password */}
-        <div className="text-gray-300">Password change form goes here.</div>
+      <nav className="flex-1 w-full">
+        <ul className="space-y-6 text-left">
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('personal')}><FaBars /> Personal Details</li>
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('academic')}><FaBars /> Academic Profile</li>
+          {isOwnProfile && (
+            <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('privacy')}><FaBars /> Privacy Settings</li>
+          )}
+        </ul>
+      </nav>
+      <div className="mt-auto w-full pt-8">
+        <button className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"><FaBars /> Logout</button>
       </div>
     </div>
   );
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#181818]">
-      <Navbar />
-      {/* Back button above card */}
-      <div className="w-full max-w-5xl mx-auto mt-8 mb-2 flex items-center">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition"
-        >
-          <FaArrowLeft /> Back
-        </button>
+  // Header
+  const Header = () => (
+    <div className="flex items-center justify-between w-full px-8 py-4 bg-white rounded-2xl shadow mb-8">
+      <div className="flex items-center gap-4 w-1/2">
+        <input type="text" placeholder="Search" className="w-full px-4 py-2 rounded border border-gray-300 bg-gray-50 focus:outline-none" />
       </div>
-      <div className="flex flex-col items-center justify-center min-h-[80vh] py-4 px-2">
-        {/* Profile Card */}
-        <div className="w-full max-w-5xl bg-gradient-to-br from-[#232323] to-[#181818] rounded-2xl shadow-2xl p-8 flex flex-col md:flex-row gap-8 items-center mb-8 border border-orange-900/30 relative">
-          <div className="flex flex-col items-center md:items-start gap-4 md:w-1/3">
-            <ProfilePicture />
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleProfileImageChange}
-            />
-            {isOwnProfile && (
-              <button
-                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition mt-2"
-                onClick={handleProfileImageClick}
-                disabled={profileImageLoading}
-              >
-                {profileImageLoading ? 'Uploading...' : (<><FaCamera /> Change Picture</>)}
-              </button>
-            )}
-            {profileImageError && <div className="text-red-500 text-xs mt-1">{profileImageError}</div>}
+      <div className="flex items-center gap-6">
+        <FaBell className="text-orange-500 text-xl cursor-pointer" />
+        <FaEnvelope className="text-orange-500 text-xl cursor-pointer" />
+        {user.profile_image && user.profile_image.trim() !== '' ? (
+          <img src={user.profile_image} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-orange-500 bg-gray-100" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+            <FaUser className="text-white text-xl" />
           </div>
-          <div className="flex-1 flex flex-col items-center md:items-start gap-4">
-            <div className="flex flex-col items-center md:items-start">
-              <h2 className="text-4xl font-extrabold text-white mb-2 text-center md:text-left">{showValue(user.full_name, 'No name', capitalizeFirst)}</h2>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-white ${roleColor}`}>{roleLabel}</span>
-                {isVerified && <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-600 text-white"><FaCheckCircle /> Verified</span>}
+        )}
+      </div>
+    </div>
+  );
+
+  // Right Panel
+  const RightPanel = () => (
+    <div className="flex flex-col gap-6 min-h-[700px] max-w-[420px] w-full">
+      <div className="bg-white rounded-2xl shadow p-6 border border-gray-200 flex items-center gap-4 mb-2">
+        {user.profile_image && user.profile_image.trim() !== '' ? (
+          <img src={user.profile_image} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center">
+            <FaUser className="text-white text-3xl" />
+          </div>
+        )}
+        <div>
+          <div className="font-bold text-lg text-gray-800">{user.first_name} {user.last_name}</div>
+          <div className="text-sm text-gray-500">System Developer</div>
+        </div>
+      </div>
+      <ProfessionalBackgroundCard 
+        employments={employments} 
+        setEmployments={setEmployments} 
+        isEditingProfessional={isEditingProfessional} 
+        setIsEditingProfessional={setIsEditingProfessional} 
+        handleSaveProfessional={handleSaveProfessional} 
+        user={user} 
+      />
+    </div>
+  );
+
+  // Academic Profile Section
+  const AcademicProfile = () => (
+    <div className="flex flex-row gap-8">
+      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-orange-600">Education</h2>
+          {!isEditingAcademic && (
+            <button onClick={() => setIsEditingAcademic(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+          )}
+        </div>
+        {isEditingAcademic ? (
+          <div className="space-y-6">
+            {academicProfile.map((profile, index) => (
+              <div key={index} className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-gray-600 mb-1">Level</div>
+                  <input
+                    type="text"
+                    value={profile.level}
+                    onChange={e => {
+                      const newProfile = [...academicProfile];
+                      newProfile[index].level = e.target.value;
+                      setAcademicProfile(newProfile);
+                    }}
+                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  />
+                </div>
+                <div>
+                  <div className="text-gray-600 mb-1">Course</div>
+                  <input
+                    type="text"
+                    value={profile.course}
+                    onChange={e => {
+                      const newProfile = [...academicProfile];
+                      newProfile[index].course = e.target.value;
+                      setAcademicProfile(newProfile);
+                    }}
+                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <div className="text-gray-600 mb-1">Institution</div>
+                  <input
+                    type="text"
+                    value={profile.institution}
+                    onChange={e => {
+                      const newProfile = [...academicProfile];
+                      newProfile[index].institution = e.target.value;
+                      setAcademicProfile(newProfile);
+                    }}
+                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <div className="text-gray-600 mb-1">Address</div>
+                  <input
+                    type="text"
+                    value={profile.address}
+                    onChange={e => {
+                      const newProfile = [...academicProfile];
+                      newProfile[index].address = e.target.value;
+                      setAcademicProfile(newProfile);
+                    }}
+                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  />
+                </div>
+                <div>
+                  <div className="text-gray-600 mb-1">Graduation Date</div>
+                  <input
+                    type="date"
+                    value={profile.graduation_date}
+                    onChange={e => {
+                      const newProfile = [...academicProfile];
+                      newProfile[index].graduation_date = e.target.value;
+                      setAcademicProfile(newProfile);
+                    }}
+                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  />
+                </div>
               </div>
+            ))}
+            <button
+              onClick={() => setAcademicProfile([...academicProfile, {
+                level: '',
+                course: '',
+                institution: '',
+                address: '',
+                graduation_date: ''
+              }])}
+              className="bg-orange-500 text-white px-4 py-2 rounded"
+            >
+              Add Education
+            </button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={handleSaveAcademic} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+              <button onClick={() => { setIsEditingAcademic(false); setAcademicProfile(user?.academic_profile || []); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
             </div>
-            <div className="flex flex-wrap gap-3 mb-2 text-orange-200 text-base">
-              <span className="flex items-center gap-2"><FaEnvelope /> {showValue(user.email)}</span>
-              <span className="flex items-center gap-2"><FaMapMarkerAlt /> {showValue(user.location, 'Not specified', capitalizeFirst)}</span>
-              <span className="flex items-center gap-2"><FaPhone /> {showValue(user.contact_number)}</span>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {academicProfile.map((profile, index) => (
+              <div key={index}>
+                <span className="font-semibold">{profile.level}</span>
+                <span className="ml-2">: <span className="font-bold">{profile.course}</span></span><br />
+                <span className="ml-8">: {profile.institution}</span><br />
+                <span className="ml-8">: {profile.address}</span><br />
+                <span className="ml-8">: {new Date(profile.graduation_date).toLocaleDateString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Privacy Settings Section (only for profile owner)
+  const PrivacySettings = () => (
+    <div className="flex flex-col md:flex-row gap-8 w-full">
+      {/* Left column: Permissions + Connected Accounts stacked */}
+      <div className="flex flex-col gap-6 flex-1 mb-6">
+        {/* Permissions Card */}
+        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+          <h2 className="text-xl font-bold text-orange-600 mb-6">Permissions</h2>
+          <div className="flex flex-col gap-6 text-lg">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={user.show_in_search} readOnly className="accent-orange-500 w-5 h-5" />
+              <span className="font-medium text-black">Show in search results</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={user.show_in_messages} readOnly className="accent-orange-500 w-5 h-5" />
+              <span className="font-medium text-black">Allow messages from other users</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={user.show_in_pages} readOnly className="accent-orange-500 w-5 h-5" />
+              <span className="font-medium text-black">Show profile in public pages</span>
+            </label>
+          </div>
+        </div>
+        {/* Connected Accounts Card */}
+        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+          <h2 className="text-xl font-bold text-orange-600 mb-6">Connected Accounts</h2>
+          <div className="mb-2 font-semibold text-lg">Social Sign-in</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
+              <span className="font-medium">Google</span>
+              <span className="text-xl font-bold ml-auto">+</span>
             </div>
-            <div className="flex flex-wrap gap-3 mt-2">
-              {isOwnProfile && (
-                <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowEditModal(true)}><FaEdit /> Edit Profile</button>
-              )}
-              {isOwnProfile && (
-                <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowPasswordModal(true)}><FaKey /> Change Password</button>
-              )}
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaFacebook className="text-blue-700 w-5 h-5" />
+              <span className="font-medium">Facebook</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaMicrosoft className="text-blue-700 w-5 h-5" />
+              <span className="font-medium">Microsoft</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaTelegram className="text-blue-400 w-5 h-5" />
+              <span className="font-medium">Telegram</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaLinkedin className="text-blue-800 w-5 h-5" />
+              <span className="font-medium">LinkedIn</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaWhatsapp className="text-green-500 w-5 h-5" />
+              <span className="font-medium">Whatsapp</span>
+              <span className="text-xl font-bold ml-auto">+</span>
             </div>
           </div>
         </div>
-        {/* Info Grid */}
-        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Location */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaMapMarkerAlt /> Location</span>
-            <span className="text-gray-300">{showValue(user.location, 'Not specified', capitalizeFirst)}</span>
+      </div>
+      {/* Right column: Password Information */}
+      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6 flex flex-col">
+        <h2 className="text-xl font-bold text-orange-600 mb-6">Password Information</h2>
+        <div className="flex flex-col gap-4">
+          <label className="font-semibold">Current Password*
+            <input type="password" placeholder="Enter your current password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
+          </label>
+          <label className="font-semibold">New Password*
+            <input type="password" placeholder="Enter your new password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
+          </label>
+          <label className="font-semibold">Confirm New Password*
+            <input type="password" placeholder="Confirm new password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
+          </label>
+          <div className="text-xs text-gray-500 mt-2">
+            <div className="font-semibold text-gray-700">*Password Requirements:</div>
+            <ul className="list-disc ml-5">
+              <li>At least 8 characters and up to 20 characters</li>
+              <li>At least one lowercase character</li>
+              <li>At least one uppercase character</li>
+            </ul>
           </div>
-          {/* Industry */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaBriefcase /> Industry</span>
-            <span className="text-gray-300">{showValue(user.industry, 'Not specified', capitalizeFirst)}</span>
-          </div>
-          {/* About Me */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaInfoCircle /> About Me</span>
-            <span className="text-gray-300">{showValue(user.introduction, 'No introduction provided.')}</span>
-          </div>
-          {/* Accomplishments */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaTrophy /> Accomplishments</span>
-            <span className="text-gray-300">{showValue(user.accomplishments, 'No accomplishments listed.')}</span>
-          </div>
-          {/* Education */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaGraduationCap /> Education</span>
-            <span className="text-gray-300">{showValue(user.education, 'No education information provided.')}</span>
-          </div>
-          {/* Employment */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaBriefcase /> Employment</span>
-            <span className="text-gray-300">{showValue(user.employment, 'No employment history provided.')}</span>
-          </div>
-          {/* Personal Information */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaUser /> Personal Information</span>
-            <span className="text-gray-300"><span className="font-semibold">Gender:</span> {showValue(user.gender, 'Not specified', capitalizeFirst)}</span>
-            <span className="text-gray-300"><span className="font-semibold">Birthdate:</span> {formatBirthdate(user.birthdate)}</span>
-          </div>
-          {/* Contact Information */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaIdBadge /> Contact Information</span>
-            <span className="text-gray-300"><span className="font-semibold">Email:</span> {showValue(user.public_email)}</span>
-            <span className="text-gray-300"><span className="font-semibold">Phone:</span> {showValue(user.contact_number)}</span>
-          </div>
-          {/* Social Media */}
-          <div className="bg-[#232323] rounded-2xl p-5 shadow flex flex-col gap-2 border border-orange-900/20">
-            <span className="flex items-center gap-2 text-orange-400 font-semibold text-lg"><FaShareAlt /> Social Media</span>
-            <div className="flex gap-4 text-2xl mt-1">
-              {socialLinks.facebook_url && (
-                <a href={socialLinks.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition"><FaFacebook /></a>
-              )}
-              {socialLinks.twitter_url && (
-                <a href={socialLinks.twitter_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 transition"><FaTwitter /></a>
-              )}
-              {socialLinks.instagram_url && (
-                <a href={socialLinks.instagram_url} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:text-pink-700 transition"><FaInstagram /></a>
-              )}
-              {socialLinks.linkedin_url && (
-                <a href={socialLinks.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-900 transition"><FaLinkedin /></a>
-              )}
-              {!socialLinks.facebook_url && !socialLinks.twitter_url && !socialLinks.instagram_url && !socialLinks.linkedin_url && (
-                <span className="text-gray-400">No social media links provided.</span>
-              )}
-            </div>
-          </div>
+          <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold transition self-end mt-4">Save Changes</button>
         </div>
-        {showEditModal && <EditProfileModal />}
-        {showPasswordModal && <ChangePasswordModal />}
+      </div>
+    </div>
+  );
+
+  // Main Layout
+  return (
+    <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
+      <Navbar />
+      <div className="flex flex-row w-full gap-8 px-8 pt-24 pb-8">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          {activeSection === 'personal' && <>
+            <GeneralInfo generalInfo={generalInfo} setGeneralInfo={setGeneralInfo} isEditingGeneral={isEditingGeneral} setIsEditingGeneral={setIsEditingGeneral} handleSaveGeneral={handleSaveGeneral} user={user} />
+            <AboutCard about={about} setAbout={setAbout} isEditingAbout={isEditingAbout} setIsEditingAbout={setIsEditingAbout} handleSaveAbout={handleSaveAbout} user={user} />
+          </>}
+          {activeSection === 'academic' && <AcademicProfile />}
+          {activeSection === 'privacy' && isOwnProfile && <PrivacySettings />}
+        </div>
+        {activeSection === 'personal' && <RightPanel />}
       </div>
     </div>
   );
 }
+

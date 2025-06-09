@@ -32,12 +32,12 @@ const userProfileAPI = {
   },
 
   // Update user profile
-  async updateUserProfile(userId, { name, email, profileImage }) {
+  async updateUserProfile(userId, profileData) {
     try {
       const response = await fetch(`${API_URL}/user/${userId}`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ name, email, profileImage }),
+        body: JSON.stringify(profileData),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to update user profile');
@@ -69,6 +69,60 @@ const userProfileAPI = {
       return data;
     } catch (error) {
       console.error('Error updating profile image:', error);
+      throw error;
+    }
+  },
+
+  // Update social links
+  async updateSocialLinks(userId, socialLinks) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ social_links: socialLinks }),
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to update social links');
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Error updating social links:', error);
+      throw error;
+    }
+  },
+
+  // Update employment
+  async updateEmployment(userId, employment) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ employment }),
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to update employment');
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Error updating employment:', error);
+      throw error;
+    }
+  },
+
+  // Update academic profile
+  async updateAcademicProfile(userId, academicProfile) {
+    try {
+      const response = await fetch(`${API_URL}/user/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ academic_profile: academicProfile }),
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to update academic profile');
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Error updating academic profile:', error);
       throw error;
     }
   }

@@ -200,128 +200,207 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Protected Routes
+// GET user profile with new structure
 app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT id, full_name, email, role, is_verified, verification_status, 
+    const [userRows] = await pool.query(
+      `SELECT id, first_name, last_name, email, role, is_verified, verification_status, 
               profile_image, profile_picture_url, location, introduction, 
-              accomplishments, education, employment, gender, birthdate, 
-              contact_number, public_email, industry, show_in_search, 
-              show_in_messages, show_in_pages, created_at, updated_at
+              gender, birthdate, contact_number, public_email, industry, 
+              show_in_search, show_in_messages, show_in_pages, created_at, updated_at
        FROM users WHERE id = ?`,
       [req.params.id]
     );
-    
-    if (!rows[0]) {
+    if (!userRows[0]) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    // If profile_image is empty but profile_picture_url has data, copy it
-    if (!rows[0].profile_image && rows[0].profile_picture_url) {
-      await pool.query(
-        'UPDATE users SET profile_image = ? WHERE id = ?',
-        [rows[0].profile_picture_url, req.params.id]
-      );
-      rows[0].profile_image = rows[0].profile_picture_url;
-    }
-    // If profile_picture_url is empty but profile_image has data, copy it
-    else if (!rows[0].profile_picture_url && rows[0].profile_image) {
-      await pool.query(
-        'UPDATE users SET profile_picture_url = ? WHERE id = ?',
-        [rows[0].profile_image, req.params.id]
-      );
-      rows[0].profile_picture_url = rows[0].profile_image;
-    }
-
-    res.json(rows[0]);
+    // Get employment info (return all as array)
+    const [employmentRows] = await pool.query(
+      'SELECT company, title, industry, hire_date, employment_type FROM employment WHERE user_id = ?',
+      [req.params.id]
+    );
+    // Get academic profile
+    const [academicRows] = await pool.query(
+      'SELECT level, course, institution, address, graduation_date FROM academic_profile WHERE user_id = ?',
+      [req.params.id]
+    );
+    // Get social links
+    const [socialRows] = await pool.query(
+      'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?',
+      [req.params.id]
+    );
+    // Combine all data
+    const userData = {
+      ...userRows[0],
+      employment: employmentRows || [],
+      academic_profile: academicRows || [],
+      social_links: socialRows[0] || {}
+    };
+    res.json(userData);
   } catch (error) {
     console.error('Error getting user profile:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
+// PUT user profile with new structure
 app.put('/api/user/:id', authenticateToken, async (req, res) => {
   try {
-    const { full_name, email } = req.body;
-    const [result] = await pool.query(
-      'UPDATE users SET full_name = ?, email = ? WHERE id = ?',
-      [full_name, email, req.params.id]
-    );
-    res.json({ success: result.affectedRows > 0 });
+    const {
+      first_name,
+      last_name,
+      email,
+      profile_image,
+      birthdate,
+      gender,
+      contact_number,
+      location,
+      introduction,
+      industry,
+      employment,
+      academic_profile,
+      social_links,
+      show_in_search,
+      show_in_messages,
+      show_in_pages
+    } = req.body;
+    await pool.query('START TRANSACTION');
+    try {
+      // Update user basic info
+      await pool.query(
+        `UPDATE users SET 
+          first_name = ?, last_name = ?, email = ?, profile_image = ?,
+          birthdate = ?, gender = ?, contact_number = ?, location = ?,
+          introduction = ?, industry = ?, show_in_search = ?,
+          show_in_messages = ?, show_in_pages = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [
+          first_name, last_name, email, profile_image,
+          birthdate, gender, contact_number, location,
+          introduction, industry, show_in_search,
+          show_in_messages, show_in_pages, req.params.id
+        ]
+      );
+      // Update employment (support array)
+      if (employment && Array.isArray(employment)) {
+        await pool.query('DELETE FROM employment WHERE user_id = ?', [req.params.id]);
+        for (const emp of employment) {
+          await pool.query(
+            `INSERT INTO employment (user_id, company, title, industry, hire_date, employment_type)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              req.params.id,
+              emp.company,
+              emp.title,
+              emp.industry,
+              emp.hire_date,
+              emp.employment_type
+            ]
+          );
+        }
+      } else if (employment) {
+        // Fallback for single object
+        await pool.query(
+          `INSERT INTO employment (user_id, company, title, industry, hire_date, employment_type)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+           company = VALUES(company),
+           title = VALUES(title),
+           industry = VALUES(industry),
+           hire_date = VALUES(hire_date),
+           employment_type = VALUES(employment_type)`,
+          [
+            req.params.id,
+            employment.company,
+            employment.title,
+            employment.industry,
+            employment.hire_date,
+            employment.employment_type
+          ]
+        );
+      }
+      // Update academic profile
+      if (academic_profile && academic_profile.length > 0) {
+        await pool.query('DELETE FROM academic_profile WHERE user_id = ?', [req.params.id]);
+        for (const profile of academic_profile) {
+          await pool.query(
+            `INSERT INTO academic_profile 
+             (user_id, level, course, institution, address, graduation_date)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              req.params.id,
+              profile.level,
+              profile.course,
+              profile.institution,
+              profile.address,
+              profile.graduation_date
+            ]
+          );
+        }
+      }
+      // Update social links
+      if (social_links) {
+        await pool.query(
+          `INSERT INTO user_social_links 
+           (user_id, facebook_url, twitter_url, instagram_url, linkedin_url, 
+            microsoft_url, whatsapp_url, telegram_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+           facebook_url = VALUES(facebook_url),
+           twitter_url = VALUES(twitter_url),
+           instagram_url = VALUES(instagram_url),
+           linkedin_url = VALUES(linkedin_url),
+           microsoft_url = VALUES(microsoft_url),
+           whatsapp_url = VALUES(whatsapp_url),
+           telegram_url = VALUES(telegram_url)`,
+          [
+            req.params.id,
+            social_links.facebook_url,
+            social_links.twitter_url,
+            social_links.instagram_url,
+            social_links.linkedin_url,
+            social_links.microsoft_url,
+            social_links.whatsapp_url,
+            social_links.telegram_url
+          ]
+        );
+      }
+      await pool.query('COMMIT');
+      // Fetch and return the latest profile
+      const [userRows] = await pool.query(
+        `SELECT id, first_name, last_name, email, role, is_verified, verification_status, 
+                profile_image, profile_picture_url, location, introduction, 
+                gender, birthdate, contact_number, public_email, industry, 
+                show_in_search, show_in_messages, show_in_pages, created_at, updated_at
+         FROM users WHERE id = ?`,
+        [req.params.id]
+      );
+      const [employmentRows] = await pool.query(
+        'SELECT company, title, industry, hire_date, employment_type FROM employment WHERE user_id = ?',
+        [req.params.id]
+      );
+      const [academicRows] = await pool.query(
+        'SELECT level, course, institution, address, graduation_date FROM academic_profile WHERE user_id = ?',
+        [req.params.id]
+      );
+      const [socialRows] = await pool.query(
+        'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?',
+        [req.params.id]
+      );
+      const userData = {
+        ...userRows[0],
+        employment: employmentRows[0] || null,
+        academic_profile: academicRows || [],
+        social_links: socialRows[0] || {}
+      };
+      res.json(userData);
+    } catch (error) {
+      await pool.query('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
     console.error('Error updating user profile:', error);
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// User profile update endpoint
-app.put('/api/users/:userId/profile', authenticateToken, async (req, res) => {
-  const userId = req.params.userId;
-  const {
-    location,
-    introduction,
-    accomplishments,
-    education,
-    employment,
-    gender,
-    birthdate,
-    contact_number,
-    public_email,
-    industry,
-    show_in_search,
-    show_in_messages,
-    show_in_pages
-  } = req.body;
-
-  try {
-    const query = `
-      UPDATE users 
-      SET 
-        location = ?,
-        introduction = ?,
-        accomplishments = ?,
-        education = ?,
-        employment = ?,
-        gender = ?,
-        birthdate = ?,
-        contact_number = ?,
-        public_email = ?,
-        industry = ?,
-        show_in_search = ?,
-        show_in_messages = ?,
-        show_in_pages = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `;
-
-    await pool.query(query, [
-      location,
-      introduction,
-      accomplishments,
-      education,
-      employment,
-      gender,
-      birthdate,
-      contact_number,
-      public_email,
-      industry,
-      show_in_search,
-      show_in_messages,
-      show_in_pages,
-      userId
-    ]);
-
-    // Get updated user data
-    const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
-    
-    res.json({
-      message: 'Profile updated successfully',
-      user: user[0]
-    });
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    res.status(500).json({ message: 'Failed to update profile' });
   }
 });
 
