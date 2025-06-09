@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import api from '../services/api';
 import {
@@ -54,6 +54,7 @@ function formatBirthdate(dateString) {
 }
 
 export default function UserProfile() {
+  const { id } = useParams();
   const [user, setUser] = useState(null);
   const [socialLinks, setSocialLinks] = useState({});
   const [error, setError] = useState('');
@@ -65,33 +66,32 @@ export default function UserProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      try {
-        const userObj = JSON.parse(stored);
-        setUser(userObj);
-        fetchProfile(userObj.id);
-        // Make social links fetch optional
-        fetchSocialLinks(userObj.id).catch(err => {
-          console.warn('Failed to fetch social links:', err);
-          setSocialLinks({});
-        });
-      } catch (e) {
-        console.warn('Error accessing localStorage:', e);
-        setUser(null);
+    if (id) {
+      fetchProfile(id);
+      fetchSocialLinks(id);
+    } else {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const userObj = JSON.parse(stored);
+          setUser(userObj);
+          fetchProfile(userObj.id);
+          fetchSocialLinks(userObj.id);
+        } catch (e) {
+          setUser(null);
+        }
       }
     }
-  }, []);
+  }, [id]);
 
   const fetchProfile = async (userId) => {
     try {
       const profile = await api.getUserProfile(userId);
       setUser(profile);
-      // Update localStorage with new profile data
-      try {
+      // Only update localStorage if viewing own profile
+      const loggedInUser = JSON.parse(localStorage.getItem('user'));
+      if (loggedInUser && String(loggedInUser.id) === String(userId)) {
         localStorage.setItem('user', JSON.stringify(profile));
-      } catch (e) {
-        console.warn('Error updating localStorage:', e);
       }
     } catch (err) {
       setError('Failed to load profile');
@@ -173,6 +173,10 @@ export default function UserProfile() {
 
   // Verified badge
   const isVerified = user.is_verified === 1 || user.is_verified === true;
+
+  // Determine if viewing own profile
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+  const isOwnProfile = loggedInUser && user && String(loggedInUser.id) === String(user.id);
 
   // Edit Profile Modal (real form)
   const EditProfileModal = () => {
@@ -576,13 +580,15 @@ export default function UserProfile() {
               className="hidden"
               onChange={handleProfileImageChange}
             />
-            <button
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition mt-2"
-              onClick={handleProfileImageClick}
-              disabled={profileImageLoading}
-            >
-              {profileImageLoading ? 'Uploading...' : (<><FaCamera /> Change Picture</>)}
-            </button>
+            {isOwnProfile && (
+              <button
+                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition mt-2"
+                onClick={handleProfileImageClick}
+                disabled={profileImageLoading}
+              >
+                {profileImageLoading ? 'Uploading...' : (<><FaCamera /> Change Picture</>)}
+              </button>
+            )}
             {profileImageError && <div className="text-red-500 text-xs mt-1">{profileImageError}</div>}
           </div>
           <div className="flex-1 flex flex-col items-center md:items-start gap-4">
@@ -599,8 +605,12 @@ export default function UserProfile() {
               <span className="flex items-center gap-2"><FaPhone /> {showValue(user.contact_number)}</span>
             </div>
             <div className="flex flex-wrap gap-3 mt-2">
-              <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowEditModal(true)}><FaEdit /> Edit Profile</button>
-              <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowPasswordModal(true)}><FaKey /> Change Password</button>
+              {isOwnProfile && (
+                <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowEditModal(true)}><FaEdit /> Edit Profile</button>
+              )}
+              {isOwnProfile && (
+                <button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition" onClick={() => setShowPasswordModal(true)}><FaKey /> Change Password</button>
+              )}
             </div>
           </div>
         </div>

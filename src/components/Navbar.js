@@ -307,12 +307,21 @@ function Navbar() {
       const res = await axios.get('http://localhost:5000/api/messages/preview', {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+      console.log('Fetched preview:', res.data); // DEBUG LOG
       setMsgPreview(res.data);
     } catch (e) {
+      console.error('Preview fetch error:', e); // DEBUG LOG
       setMsgPreview([]);
     }
     setLoadingPreview(false);
   };
+
+  // Automatically fetch message previews when user logs in or Navbar mounts
+  useEffect(() => {
+    if (user) {
+      fetchMsgPreview();
+    }
+  }, [user]);
 
   // Open dropdown: fetch messages
   const handleMsgDropdownOpen = () => {
@@ -617,6 +626,7 @@ function Navbar() {
                     >
                       <div className="p-4 border-b border-gray-200 dark:border-white/10 font-semibold">Messages</div>
                       <div className="max-h-96 overflow-y-auto">
+                        {console.log('msgPreview to render:', msgPreview)}
                         {loadingPreview ? (
                           <div className="p-4 text-center text-gray-500">Loading...</div>
                         ) : msgPreview.length === 0 ? (
@@ -624,6 +634,7 @@ function Navbar() {
                         ) : (
                           msgPreview.map(msg => {
                             const isSent = msg.sender_id === user.id;
+                            const otherUserId = isSent ? msg.receiver_id : msg.sender_id;
                             const otherName = isSent ? msg.receiver_name : msg.sender_name;
                             const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
                             return (
@@ -632,7 +643,7 @@ function Navbar() {
                                 className="flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
                                 onClick={() => {
                                   setMsgDropdownOpen(false);
-                                  navigate(`/messages?chat_with=${isSent ? msg.receiver_id : msg.sender_id}`);
+                                  navigate(`/messages?chat_with=${otherUserId}`);
                                 }}
                               >
                                 {otherAvatar ? (

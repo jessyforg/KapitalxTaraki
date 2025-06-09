@@ -54,6 +54,7 @@ function App() {
         <Route path="/ecosystem" element={<Ecosystem />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/messages" element={<Messages />} />
       </Routes>
     </BrowserRouter>

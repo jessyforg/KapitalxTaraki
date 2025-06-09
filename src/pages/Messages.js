@@ -86,7 +86,7 @@ function Messages() {
   // Fetch conversations
   const fetchConversations = async () => {
     try {
-      const response = await api.get(`/messages/conversations?archived=${showArchived}`);
+      const response = await api.get(`/messages/conversations?archived=${showArchived ? '1' : '0'}`);
       console.log('Fetched conversations:', response.data); // DEBUG
       setConversations(response.data);
     } catch (err) {
@@ -210,23 +210,49 @@ function Messages() {
     }
   };
 
-  // Toggle mute/archive
+  // Helper to get conversation state
+  const getConversationState = (userId) => {
+    return conversations.find(c => c.id === userId || c.other_user_id === userId) || {};
+  };
+
+  // Toggle mute/archive/block with toggling logic
   const handleToggleMute = async (userId) => {
+    const conv = getConversationState(userId);
+    const newMute = !conv.muted;
     try {
-      await api.post(`/messages/${userId}/mute`);
+      await api.post(`/messages/${userId}/mute`, { mute: newMute });
       fetchConversations();
     } catch (err) {
       setError('Failed to toggle mute');
       console.error(err);
     }
   };
-
   const handleToggleArchive = async (userId) => {
+    const conv = getConversationState(userId);
+    let newArchive;
+    if (selectedCategory === 'archived') {
+      newArchive = 0; // Always unarchive in archived view
+    } else {
+      newArchive = !conv.archived ? 1 : 0;
+    }
     try {
-      await api.post(`/messages/${userId}/archive`);
+      await api.post(`/messages/${userId}/archive`, { archive: newArchive });
       fetchConversations();
+      setSelectedChat(null);
+      setSelectedChatUser(null);
     } catch (err) {
       setError('Failed to toggle archive');
+      console.error(err);
+    }
+  };
+  const handleToggleBlock = async (userId) => {
+    const conv = getConversationState(userId);
+    const newBlock = !conv.blocked;
+    try {
+      await api.post(`/messages/${userId}/block`, { block: newBlock });
+      fetchConversations();
+    } catch (err) {
+      setError('Failed to toggle block');
       console.error(err);
     }
   };
@@ -311,6 +337,7 @@ function Messages() {
       return;
     }
 
+    console.log('Fetching conversations, showArchived:', showArchived);
     fetchConversations();
     fetchRequests();
   }, [showArchived, user, token]);
@@ -332,6 +359,21 @@ function Messages() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const chatWith = searchParams.get('chat_with');
+    if (chatWith && !selectedChat) {
+      setSelectedChat(Number(chatWith));
+      // Optionally: setSelectedChatUser if you want to fetch user info here
+    }
+  }, [searchParams, selectedChat]);
+
+  useEffect(() => {
+    if (selectedCategory === 'archived') {
+      setSelectedChat(null);
+      setSelectedChatUser(null);
+    }
+  }, [selectedCategory]);
 
   // Refactor chatUser logic to always find the correct user
   const chatUser = selectedChat
@@ -367,13 +409,19 @@ function Messages() {
     ? conversations
     : conversations.filter(c => c.category_id === selectedCategory);
 
+  // Helper to get robust boolean state
+  const getBool = val => val === true || val === 1 || val === '1';
+
   let chatsToShow = filteredConversations;
   if (selectedCategory === 'requests') {
     chatsToShow = requests;
   } else if (selectedCategory === 'archived') {
-    chatsToShow = conversations.filter(c => c.archived);
+    chatsToShow = conversations; // Already filtered by backend for archived
   } else if (selectedCategory !== 'all') {
     chatsToShow = conversations.filter(c => c.category_id === selectedCategory);
+  } else {
+    // For 'all', use all conversations returned by the backend (already filtered for non-archived)
+    chatsToShow = conversations;
   }
   console.log('chatsToShow:', chatsToShow); // DEBUG
 
@@ -413,21 +461,21 @@ function Messages() {
           {/* Built-in folders */}
           <button
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
-            onClick={() => setSelectedCategory('all')}
+            onClick={() => { setSelectedCategory('all'); setShowArchived(false); }}
             title="All Chats"
           >
             <FaInbox size={24} />
           </button>
           <button
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'requests' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
-            onClick={() => setSelectedCategory('requests')}
+            onClick={() => { setSelectedCategory('requests'); setShowArchived(false); }}
             title="Message Requests"
           >
             <FaFlag size={24} />
           </button>
           <button
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'archived' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
-            onClick={() => setSelectedCategory('archived')}
+            onClick={() => { setSelectedCategory('archived'); setShowArchived(true); }}
             title="Archived"
           >
             <FaArchive size={24} />
@@ -437,7 +485,7 @@ function Messages() {
             <button
               key={cat.id}
               className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === cat.id ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400 hover:bg-orange-100 hover:text-orange-600'}`}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => { setSelectedCategory(cat.id); setShowArchived(false); }}
               title={cat.name}
             >
               {cat.icon ? <img src={cat.icon} alt={cat.name} className="w-8 h-8" /> : cat.name.charAt(0).toUpperCase()}
@@ -662,8 +710,8 @@ function Messages() {
                           className={classNames(
                             "max-w-[70%] px-5 py-3 rounded-2xl text-sm shadow-sm",
                             msg.sender_id === user.id
-                              ? "bg-orange-500 text-white self-end rounded-br-md"
-                              : "bg-white dark:bg-[#232323] text-trkblack dark:text-white self-start rounded-bl-md"
+                              ? "bg-[#2d2d2d] text-white self-end rounded-br-md"
+                              : "bg-[#1a1a1a] text-white self-start rounded-bl-md"
                           )}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -734,7 +782,36 @@ function Messages() {
                 )}
               </div>
               <div className="font-semibold text-trkblack dark:text-white text-lg">{chatUser.full_name || chatUser.name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{chatUser.role}</div>
+              {chatUser.username && (
+                <div className="text-xs text-gray-400 mb-2">@{chatUser.username}</div>
+              )}
+              {/* Action Buttons */}
+              <div className="flex gap-4 mt-3 mb-2">
+                <button title="View Profile" className="flex flex-col items-center text-gray-300 hover:text-orange-500" onClick={() => navigate(`/profile/${chatUser.id}`)}>
+                  <FaUser size={20} />
+                  <span className="text-xs mt-1">Profile</span>
+                </button>
+                <button title={getBool(getConversationState(chatUser.id).muted) ? "Unmute" : "Mute"} className="flex flex-col items-center text-gray-300 hover:text-orange-500" onClick={async () => { await handleToggleMute(chatUser.id); }}>
+                  {getBool(getConversationState(chatUser.id).muted) ? <FaBell size={20} /> : <FaBellSlash size={20} />}
+                  <span className="text-xs mt-1">{getBool(getConversationState(chatUser.id).muted) ? "Unmute" : "Mute"}</span>
+                </button>
+                <button
+                  title={selectedCategory === 'archived' || getBool(getConversationState(chatUser.id).archived) ? "Unarchive" : "Archive"}
+                  className="flex flex-col items-center text-gray-300 hover:text-orange-500"
+                  onClick={async () => { await handleToggleArchive(chatUser.id); }}
+                >
+                  {selectedCategory === 'archived' || getBool(getConversationState(chatUser.id).archived) ? <FaInbox size={20} /> : <FaArchive size={20} />}
+                  <span className="text-xs mt-1">{selectedCategory === 'archived' || getBool(getConversationState(chatUser.id).archived) ? "Unarchive" : "Archive"}</span>
+                </button>
+                <button title={getBool(getConversationState(chatUser.id).blocked) ? "Unblock" : "Block"} className="flex flex-col items-center text-gray-300 hover:text-orange-500" onClick={async () => { await handleToggleBlock(chatUser.id); }}>
+                  {getBool(getConversationState(chatUser.id).blocked) ? <FaFlag size={20} /> : <FaFlag size={20} />}
+                  <span className="text-xs mt-1">{getBool(getConversationState(chatUser.id).blocked) ? "Unblock" : "Block"}</span>
+                </button>
+                <button title="Report" className="flex flex-col items-center text-gray-300 hover:text-orange-500" onClick={() => setShowReportModal(true)}>
+                  <FaInfoCircle size={20} />
+                  <span className="text-xs mt-1">Report</span>
+                </button>
+              </div>
             </div>
             {/* Shared Files */}
             <div className="mb-6">
