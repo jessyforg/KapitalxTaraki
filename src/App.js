@@ -20,6 +20,8 @@ import Ecosystem from "./pages/Ecosystem";
 import AdminDashboard from "./components/AdminDashboard.js";
 import UserProfile from "./components/UserProfile";
 import Messages from './pages/Messages';
+import EntrepreneurDashboard from "./pages/EntrepreneurDashboard";
+import CreateStartup from './pages/CreateStartup';
 
 function MainPage() {
   return (
@@ -56,6 +58,8 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/entrepreneur-dashboard" element={<EntrepreneurDashboard />} />
+        <Route path="/create-startup" element={<CreateStartup />} />
       </Routes>
     </BrowserRouter>
   );
