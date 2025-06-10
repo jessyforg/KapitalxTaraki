@@ -115,6 +115,34 @@
   }
 }
 
+/* Calendar slide animations */
+@keyframes slideLeft {
+  0% {
+    transform: translateX(100%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slideRight {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slide-left {
+  animation: slideLeft 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.animate-slide-right {
+  animation: slideRight 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
 body, html {
   transition: background 0.3s, color 0.3s;
 }
@@ -178,4 +206,219 @@ body, html {
 /* Optional: for smoother button hover */
 .auth-toggle-btn {
   transition: color 0.2s;
+}
+
+/* Custom dark mode toggle switch */
+.toggle-switch {
+  width: 48px;
+  height: 28px;
+  background: #353b48;
+  border-radius: 9999px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+}
+.toggle-switch.light {
+  background: #e5e7eb;
+}
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  background: #ff8800;
+  border-radius: 50%;
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  transition: left 0.3s cubic-bezier(.4,2,.6,1), background 0.3s;
+  box-shadow: 0 2px 8px 0 #ff880033;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.toggle-switch.dark .toggle-thumb {
+  left: 23px;
+}
+.toggle-thumb .moon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Animate thumb scale on click */
+.toggle-thumb:active {
+  transform: scale(0.92);
+}
+
+/* Fade-out for logout transition */
+.transition-opacity {
+  transition-property: opacity;
+}
+.duration-400 {
+  transition-duration: 400ms;
+}
+.opacity-0 {
+  opacity: 0;
+}
+.opacity-100 {
+  opacity: 1;
+}
+.navbar {
+  background: #18191b;
+  border-radius: 1.5rem;
+  margin: 1.5rem auto 0 auto;
+  max-width: 1100px;
+  padding: 0.5rem 2rem;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 16px 0 #00000030;
+}
+.navbar-logo img {
+  height: 32px;
+}
+.navbar-links {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+}
+.navbar-link {
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: color 0.2s;
+  position: relative;
+}
+.navbar-link:hover {
+  color: #ff7a1a;
+}
+.navbar-dropdown {
+  position: relative;
+}
+.navbar-dropdown-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.navbar-dropdown-content {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 2.2rem;
+  background: #232325;
+  border-radius: 0.5rem;
+  min-width: 180px;
+  box-shadow: 0 2px 8px #00000040;
+  z-index: 10;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+.navbar-dropdown:hover .navbar-dropdown-content {
+  display: flex;
+}
+.navbar-dropdown-link {
+  color: #fff;
+  padding: 0.7rem 1.2rem;
+  text-decoration: none;
+  font-size: 0.97rem;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 0.3rem;
+}
+.navbar-dropdown-link:hover {
+  background: #232325cc;
+  color: #ff7a1a;
+}
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.navbar-login-btn {
+  background: #ff7a1a;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.4rem 1.2rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.navbar-login-btn:hover {
+  background: #e96a00;
+}
+.navbar-toggle {
+  margin-left: 0.7rem;
+  width: 32px;
+  height: 18px;
+  background: #232325;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  cursor: pointer;
+  position: relative;
+}
+.navbar-toggle-circle {
+  width: 14px;
+  height: 14px;
+  background: #ff7a1a;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.navbar-toggle.dark .navbar-toggle-circle {
+  transform: translateX(14px);
+  background: #ff7a1a;
+}
+
+/* Style native date/time input icons for dark/light mode and increase their size/position */
+input[type="date"],
+input[type="time"] {
+  background-color: inherit;
+  color: inherit;
+  padding-right: 2.5em;
+  position: relative;
+}
+
+/* Chrome, Edge, Safari: style the calendar/time icon using filter */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0%);
+  width: 2em;
+  height: 2em;
+  right: 0.5em;
+  position: absolute;
+  opacity: 1;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Firefox: style the icon using filter (limited support) */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(0%);
+  width: 2em;
+  height: 2em;
+  margin-left: 0.5em;
+}
+.dark input[type="date"]::-moz-calendar-picker-indicator,
+.dark input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus {
+  outline: 2px solid #ff9800;
+  outline-offset: 2px;
 }

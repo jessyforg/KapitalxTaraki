@@ -42,9 +42,10 @@ import React, { useState } from 'react';
     const [tabs] = useState(initialTabs); // Remove setTabs since it's unused
     const [activeTab, setActiveTab] = useState('dashboard');
     const [darkMode, setDarkMode] = useState(() => {
-      const stored = localStorage.getItem('admin-dashboard-dark-mode');
-      return stored === null ? true : stored === 'true';
-    });
+  // Always default to dark mode, but allow toggling
+  const stored = localStorage.getItem('admin-dashboard-dark-mode');
+  return stored === null ? true : stored === 'true';
+});
     const [eventModal, setEventModal] = useState({ open: false, event: null, date: null });
     const [calendarDate, setCalendarDate] = useState(new Date());
     const [calendarAnim, setCalendarAnim] = useState(''); // For animation
@@ -110,6 +111,48 @@ import React, { useState } from 'react';
     const [ticketTypeFilter, setTicketTypeFilter] = useState('All Types');
     const [ticketSearch, setTicketSearch] = useState('');
     const [chatAnim, setChatAnim] = useState(false);
+    const [selectedStartup, setSelectedStartup] = React.useState(null);
+    const [startups, setStartups] = React.useState([
+      {
+        id: 1,
+        name: 'AgriBoost',
+        industry: 'AgriTech',
+        entrepreneur: 'Maria Santos',
+        location: 'Baguio City',
+        stage: 'Seed',
+        funding: 'Pre-Seed',
+        website: 'https://agriboost.com',
+        documents: 'agriboost-pitch.pdf',
+        description: 'Empowering farmers with smart analytics and supply chain tools.',
+        status: 'Pending',
+      },
+      {
+        id: 2,
+        name: 'Finwise',
+        industry: 'Fintech',
+        entrepreneur: 'Juan Dela Cruz',
+        location: 'La Trinidad',
+        stage: 'Series A',
+        funding: 'Series A',
+        website: 'https://finwise.com',
+        documents: 'finwise-business-plan.pdf',
+        description: 'Revolutionizing microloans for small businesses.',
+        status: 'Accepted',
+      },
+      {
+        id: 3,
+        name: 'Marketly',
+        industry: 'Digital Marketing',
+        entrepreneur: 'Ana Lopez',
+        location: 'Ifugao',
+        stage: 'Ideation Stage',
+        funding: 'None',
+        website: 'https://marketly.com',
+        documents: '',
+        description: 'Connecting local businesses to digital audiences.',
+        status: 'Declined',
+      },
+    ]);
 
     // Update body class and localStorage on darkMode change
     React.useEffect(() => {
@@ -268,6 +311,20 @@ import React, { useState } from 'react';
       setLocationSuggestions([]);
       fetchCoords(suggestion.display_name);
     };
+
+    // Accept/Decline handlers at the top level of AdminDashboard
+    function handleAcceptStartup(id) {
+      setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'Accepted' } : s));
+      if (selectedStartup && selectedStartup.id === id) {
+        setSelectedStartup({ ...selectedStartup, status: 'Accepted' });
+      }
+    }
+    function handleDeclineStartup(id) {
+      setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'Declined' } : s));
+      if (selectedStartup && selectedStartup.id === id) {
+        setSelectedStartup({ ...selectedStartup, status: 'Declined' });
+      }
+    }
 
     // Main content for each tab
     const renderContent = () => {
@@ -693,7 +750,14 @@ import React, { useState } from 'react';
                                 name="location"
                                 autoComplete="off"
                                 value={locationQuery}
-                                onChange={handleLocationInput}
+                                onFocus={() => {
+                                  setShowSuggestions(true); // Always show suggestions on focus
+                                  if (locationQuery.trim().length > 0) handleLocationInput({ target: { value: locationQuery } }); // Trigger fetch if not empty
+                                }}
+                                onChange={e => {
+                                  handleLocationInput(e);
+                                  setShowSuggestions(true); // Always show suggestions on input
+                                }}
                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 placeholder="Enter Location (e.g. Baguio City, Tarlac, etc.)"
                                 className={`rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 transition w-full ${darkMode ? 'bg-[#181818] border border-orange-600 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`}
@@ -1046,13 +1110,12 @@ import React, { useState } from 'react';
                   {/* Single Admin Notification Bell */}
                   <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
                     <FiBell size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
-                    {(pendingRequests.length > 0 || (tickets && tickets.some(t => t.status === 'Open')) || (typeof notificationFilteredUsers !== 'undefined' && notificationFilteredUsers.length > 0)) && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
+                    {(pendingRequests.length > 0) && (
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 ${darkMode ? 'border-[#232323]' : 'border-white'}`} style={{display:'inline-block'}}></span>
                     )}
                   </button>
                   <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
                     <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
                   </button>
                 </div>
                 {/* Messages Modal */}
@@ -1105,7 +1168,7 @@ import React, { useState } from 'react';
                       <div className="flex flex-col gap-2 mt-2">
                         {[
                           { region: 'Abra', value: 20 },
-                          { region: 'Apayao', value: 40 },
+                          { region: 'Apayao', value:   40 },
                           { region: 'Benguet', value: 60 },
                           { region: 'Ifugao', value: 50 },
                           { region: 'Kalinga', value: 70 },
@@ -1197,12 +1260,12 @@ import React, { useState } from 'react';
               </div>
               {/* Ticket Filters */}
               <div className={`flex gap-4 mb-4 ${darkMode ? 'bg-[#181818]' : 'bg-orange-50'} p-4 rounded-xl`}>
-                <select value={ticketStatusFilter} onChange={e => setTicketStatusFilter(e.target.value)} className={`rounded px-2 py-1 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
+                <select value={ticketStatusFilter} onChange={e => setTicketStatusFilter(e.target.value)} className={`rounded px-4 py-2 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
                   <option>All Status</option>
                   <option>Open</option>
                   <option>Closed</option>
                 </select>
-                <select value={ticketTypeFilter} onChange={e => setTicketTypeFilter(e.target.value)} className={`rounded px-2 py-1 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
+                <select value={ticketTypeFilter} onChange={e => setTicketTypeFilter(e.target.value)} className={`rounded px-4 py-2 ${darkMode ? 'bg-[#232323] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'}`}>
                   <option>All Types</option>
                   <option>Consult</option>
                   <option>Issue</option>
@@ -1274,8 +1337,214 @@ import React, { useState } from 'react';
                         value={adminReply}
                         onChange={e => setAdminReply(e.target.value)}
                       />
-                      <button type="submit" className={`px-4 py-2 rounded font-semibold transition ${darkMode ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-orange-500 text-white hover:bg-orange-600'}`}>Send</button>
+                      <button type="submit" className={`px-4 py-2 rounded font-semibold transition flex items-center gap-2 shadow ${darkMode ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-orange-500 text-white hover:bg-orange-600'}`}> 
+                        <FiPlus size={18} className="text-white" />
+                        Send
+                      </button>
                     </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        case 'startup':
+          // Remove duplicate declaration:
+          // const [selectedStartup, setSelectedStartup] = React.useState(null);
+          const stageOrder = [
+            'Ideation Stage',
+            'Seed',
+            'Series A',
+            'Series B',
+            'Series C',
+            'Growth',
+            'Mature',
+          ];
+          const sortedStartups = [...startups].sort((a, b) => {
+            // 1. Status: Pending first, then Accepted, then Declined
+            const statusOrder = { 'Pending': 0, 'Accepted': 1, 'Declined': 2 };
+            const aStatus = statusOrder[a.status] ?? 99;
+            const bStatus = statusOrder[b.status] ?? 99;
+            if (aStatus !== bStatus) return aStatus - bStatus;
+            // 2. Industry (A-Z)
+            if (a.industry < b.industry) return -1;
+            if (a.industry > b.industry) return 1;
+            // 3. Location (A-Z)
+            if (a.location < b.location) return -1;
+            if (a.location > b.location) return 1;
+            // 4. Startup stage (by order above)
+            const aStage = stageOrder.indexOf(a.stage);
+            const bStage = stageOrder.indexOf(b.stage);
+            if (aStage !== -1 && bStage !== -1) return aStage - bStage;
+            if (aStage !== -1) return -1;
+            if (bStage !== -1) return 1;
+            return 0;
+          });
+          const startupFilters = [
+            { label: 'Industry', options: ['Select an industry', 'Digital Marketing', 'Fintech', 'AgriTech'] },
+            { label: 'Location', options: ['Select a location', 'Baguio City', 'La Trinidad', 'Ifugao'] },
+            { label: 'Startup Stage', options: ['All Stages', 'Ideation Stage', 'Seed', 'Series A', 'Series B'] },
+            { label: 'Status', options: ['Pending', 'Accepted', 'Declined'] },
+          ];
+          return (
+            <div className={`flex flex-col gap-6 w-full ${darkMode ? 'bg-[#181818] border-orange-700' : 'bg-white border-orange-200'} rounded-2xl shadow-lg p-6 border-2`}> 
+              {/* Topbar */}
+              <div className="flex items-center justify-between mb-6">
+                <input type="text" placeholder="Search" className={`rounded-lg px-4 py-2 w-1/3 focus:outline-none ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`} />
+                <div className="flex items-center gap-6">
+                  <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
+                    <FiBell size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                    {(pendingRequests.length > 0) && (
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 ${darkMode ? 'border-[#232323]' : 'border-white'}`} style={{display:'inline-block'}}></span>
+                    )}
+                  </button>
+                  <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
+                    <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
+                  </button>
+                  <button className="relative group focus:outline-none" title="Profile" onClick={() => setShowSettings(true)}>
+                    <span className="bg-orange-600 rounded-full w-8 h-8 flex items-center justify-center text-white text-lg font-bold"><FiUsers /></span>
+                  </button>
+                </div>
+              </div>
+              {/* Filters */}
+              <div className={`flex flex-wrap gap-4 ${darkMode ? 'bg-[#232323]' : 'bg-orange-50'} p-4 rounded-xl mb-6`}>
+                {startupFilters.map((filter, idx) => (
+                  <select key={filter.label} className={`rounded px-4 py-2 ${darkMode ? 'bg-[#181818] text-white border border-gray-700' : 'bg-white text-black border border-orange-200'} text-sm`}>
+                    {filter.options.map(opt => <option key={opt}>{opt}</option>)}
+                  </select>
+                ))}
+              </div>
+              {/* Main Content: Card grid or details */}
+              {!selectedStartup ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {sortedStartups.map((startup) => (
+                      <div
+                        key={startup.id}
+                        className={`rounded-xl shadow min-h-[260px] flex flex-col justify-end relative overflow-hidden p-0 border ${darkMode ? 'bg-[#232323] border-none' : 'bg-white border border-orange-100'} transition-colors`}
+                        style={{ boxShadow: darkMode ? '0 2px 16px 0 #00000040' : '0 2px 16px 0 #ff98001a' }}
+                      >
+                        {/* Image container on top */}
+                        <div className={`w-full h-32 flex items-center justify-center ${darkMode ? 'bg-[#181818]' : 'bg-[#181818]'}`}> {/* Always dark for contrast */}
+                          {startup.logoUrl ? (
+                            <img src={startup.logoUrl} alt="Logo" className="object-contain h-full w-full" />
+                          ) : null}
+                        </div>
+                        {/* Info Section with icon and name */}
+                        <div className={`flex-1 flex flex-col gap-2 px-6 py-5 text-left ${darkMode ? 'bg-[#282828]' : 'bg-[#232323]/[0.04]'}`}> 
+                          <div className="flex items-center gap-3 mb-1">
+                            <span className={`text-orange-500 ${darkMode ? 'bg-[#232323]' : 'bg-orange-100'} rounded-full w-8 h-8 flex items-center justify-center text-2xl`}>
+                              <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor" opacity="0.7"/><path d="M4 20c0-3.314 3.134-6 7-6s7 2.686 7 6" fill="currentColor" opacity="0.3"/></svg>
+                            </span>
+                            <span className={`text-lg font-semibold ${darkMode ? 'text-orange-500' : 'text-orange-600'}`}>{startup.name}</span>
+                          </div>
+                          <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Industry: <span className="font-normal">{startup.industry}</span></span>
+                          <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Entrepreneur: <span className="font-normal">{startup.entrepreneur}</span></span>
+                        </div>
+                        {/* View Details Button */}
+                        <div className="flex justify-end px-6 pb-5">
+                          <button
+                            className={`mt-2 px-6 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white text-base font-semibold transition shadow`}
+                            onClick={() => setSelectedStartup(startup)}
+                          >
+                            View Details
+                          </button>
+                        </div>
+                        {/* Status badge (optional, if needed) */}
+                        {startup.status === 'Accepted' && <span className="absolute top-3 right-3 bg-green-600 text-white text-xs px-3 py-1 rounded-full font-semibold">Accepted</span>}
+                        {startup.status === 'Declined' && <span className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded-full font-semibold">Declined</span>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  <div className="flex gap-6 items-start">
+                    <div className={`w-32 h-32 rounded-xl flex-shrink-0 flex items-center justify-center ${darkMode ? 'bg-[#232323]' : 'bg-orange-100'}`}>
+                      {/* Placeholder for logo/avatar */}
+                      <span className={`w-24 h-24 rounded-full bg-orange-700 border-4 ${darkMode ? 'border-[#232323]' : 'border-orange-100'} block`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <span className={`block text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>{selectedStartup.name}</span>
+                        {selectedStartup.status === 'Accepted' && (
+                          <span className="inline-block bg-green-600 text-white text-xs px-3 py-1 rounded-full font-semibold ml-3">Accepted</span>
+                        )}
+                        {selectedStartup.status === 'Declined' && (
+                          <span className="inline-block bg-red-600 text-white text-xs px-3 py-1 rounded-full font-semibold ml-3">Declined</span>
+                        )}
+                      </div>
+                      <span className={darkMode ? 'block text-gray-300 mb-4' : 'block text-gray-700 mb-4'}>{selectedStartup.description || 'No description provided.'}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left column */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center mb-1">
+                            <span className={`text-sm font-semibold w-32 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Industry:</span>
+                            <span className={darkMode ? 'text-white text-sm flex-1' : 'text-black text-sm flex-1'}>{selectedStartup.industry}</span>
+                          </div>
+                          <div className="flex items-center mb-1">
+                            <span className={`text-sm font-semibold w-32 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Entrepreneur:</span>
+                            <span className={darkMode ? 'text-white text-sm flex-1' : 'text-black text-sm flex-1'}>{selectedStartup.entrepreneur}</span>
+                          </div>
+                          <div className="flex items-center mb-1">
+                            <span className={`text-sm font-semibold w-32 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Location:</span>
+                            <span className={darkMode ? 'text-white text-sm flex-1' : 'text-black text-sm flex-1'}>{selectedStartup.location}</span>
+                          </div>
+                          <div className="flex items-center mb-1">
+                            <span className={`text-sm font-semibold w-32 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Startup Stage:</span>
+                            <span className={darkMode ? 'text-white text-sm flex-1' : 'text-black text-sm flex-1'}>{selectedStartup.stage}</span>
+                          </div>
+                          <div className="flex items-center mb-1">
+                            <span className={`text-sm font-semibold w-32 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Funding Stage:</span>
+                            <span className={darkMode ? 'text-white text-sm flex-1' : 'text-black text-sm flex-1'}>{selectedStartup.funding}</span>
+                          </div>
+                        </div>
+                        {/* Right column */}
+                        <div className="flex flex-col gap-2">
+                          <div className="mb-2">
+                            <span className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Website:</span>
+                            <input className={`rounded px-2 py-1 text-sm w-full mt-1 ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-200 text-black'}`} value={selectedStartup.website} readOnly />
+                          </div>
+                          <div className="mb-2">
+                            <span className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Documents:</span>
+                            <div className={`rounded px-2 py-1 text-sm w-full mt-1 flex items-center gap-2 ${darkMode ? 'bg-[#232323] border border-gray-700 text-gray-400' : 'bg-orange-50 border border-orange-200 text-gray-500'}`}>
+                              <span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span>
+                              No documents provided
+                            </div>
+                          </div>
+                          <div className="mb-2">
+                            <span className={`text-sm font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>Matched Investors:</span>
+                            <div className={`rounded px-2 py-1 text-sm w-full mt-1 flex items-center gap-2 ${darkMode ? 'bg-[#232323] border border-gray-700 text-gray-400' : 'bg-orange-50 border border-orange-200 text-gray-500'}`}>
+                              <span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span>
+                              No investors have matched yet
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Accept/Decline buttons for Pending status */}
+                      {selectedStartup.status === 'Pending' && (
+                        <div className="flex gap-4 mt-6">
+                          <button
+                            className={`px-6 py-2 rounded text-white text-sm font-semibold transition ${darkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
+                            onClick={() => {
+                              setStartups(prev => prev.map(s => s.id === selectedStartup.id ? { ...s, status: 'Accepted' } : s));
+                              setSelectedStartup(prev => ({ ...prev, status: 'Accepted' }));
+                            }}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className={`px-6 py-2 rounded text-white text-sm font-semibold transition ${darkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}`}
+                            onClick={() => {
+                              setStartups(prev => prev.map(s => s.id === selectedStartup.id ? { ...s, status: 'Declined' } : s));
+                              setSelectedStartup(prev => ({ ...prev, status: 'Declined' }));
+                            }}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                      <button className={`mt-6 text-xs underline ${darkMode ? 'text-orange-400' : 'text-orange-700'}`} onClick={() => setSelectedStartup(null)}>Back to list</button>
+                    </div>
                   </div>
                 </div>
               )}
