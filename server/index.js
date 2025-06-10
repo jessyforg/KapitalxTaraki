@@ -3,6 +3,9 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 // Middleware
@@ -10,10 +13,36 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
+
+// Add JSON parsing middleware
+app.use(express.json());
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // JWT Secret
 const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
+
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 // Database configuration
 const dbConfig = {
@@ -30,30 +59,57 @@ const pool = mysql.createPool(dbConfig);
 const messagesRouter = require('./routes/messages')(pool);
 app.use('/api/messages', messagesRouter);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: err.message 
-  });
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '_'));
+  }
 });
+const upload = multer({ storage });
+
+// Logo upload endpoint
+app.post('/api/upload-logo', authenticateToken, upload.single('logo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  // Return the file URL (assuming server runs at localhost:5000)
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: fileUrl });
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadsDir));
 
 // Authentication Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { full_name, email, password } = req.body;
+    const { first_name, last_name, email, password, role } = req.body;
+    const allowedRoles = ['entrepreneur', 'investor', 'admin'];
 
     // Validate input
-    if (!full_name || !email || !password) {
+    if (!first_name || !last_name || !email || !password || !role) {
       return res.status(400).json({ 
         error: 'All fields are required',
         details: {
-          full_name: !full_name ? 'Full name is required' : null,
+          first_name: !first_name ? 'First name is required' : null,
+          last_name: !last_name ? 'Last name is required' : null,
           email: !email ? 'Email is required' : null,
-          password: !password ? 'Password is required' : null
+          password: !password ? 'Password is required' : null,
+          role: !role ? 'Role is required' : null
         }
       });
+    }
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
     // Validate email format
@@ -85,13 +141,13 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Insert new user
     const [result] = await pool.query(
-      'INSERT INTO users (full_name, email, password, verification_token, role, is_verified) VALUES (?, ?, ?, ?, ?, ?)',
-      [full_name, email, hashedPassword, verificationToken, 'user', false]
+      'INSERT INTO users (first_name, last_name, email, password, verification_token, role, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [first_name, last_name, email, hashedPassword, verificationToken, role, false]
     );
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: result.insertId, email, role: 'user' },
+      { id: result.insertId, email, role },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -101,9 +157,10 @@ app.post('/api/auth/register', async (req, res) => {
       token,
       user: {
         id: result.insertId,
-        full_name,
+        first_name,
+        last_name,
         email,
-        role: 'user',
+        role,
         is_verified: false
       }
     });
@@ -181,24 +238,6 @@ app.post('/api/auth/verify-email', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
-    }
-    req.user = user;
-    next();
-  });
-};
 
 // GET user profile with new structure
 app.get('/api/user/:id', authenticateToken, async (req, res) => {
@@ -404,6 +443,77 @@ app.put('/api/user/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Password update endpoint
+app.put('/api/user/:id/password', authenticateToken, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    const userId = req.params.id;
+
+    // Validate input
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    // Get user's current password
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Verify current password
+    const validPassword = await bcrypt.compare(current_password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Validate new password
+    if (new_password.length < 8 || new_password.length > 20) {
+      return res.status(400).json({ error: 'Password must be between 8 and 20 characters' });
+    }
+
+    if (!/[a-z]/.test(new_password)) {
+      return res.status(400).json({ error: 'Password must contain at least one lowercase character' });
+    }
+
+    if (!/[A-Z]/.test(new_password)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase character' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Update password
+    const [result] = await pool.query(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({ error: 'Failed to update password' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Password updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name
+      }
+    });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Add profile image endpoint
 app.put('/api/user/:id/profile-image', authenticateToken, async (req, res) => {
   try {
@@ -453,6 +563,114 @@ app.get('/api/user/:id/social-links', authenticateToken, async (req, res) => {
     res.json(rows[0] || {});
   } catch (error) {
     console.error('Error getting social links:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Temporary endpoint to hash password
+app.post('/api/hash-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    res.json({ 
+      original: password,
+      hashed: hashedPassword
+    });
+  } catch (error) {
+    console.error('Error hashing password:', error);
+    res.status(500).json({ error: 'Failed to hash password' });
+  }
+});
+
+// Create Startup endpoint
+app.post('/api/startups', authenticateToken, async (req, res) => {
+  try {
+    const {
+      name,
+      industry,
+      description,
+      location,
+      funding_needed,
+      pitch_deck_url,
+      business_plan_url,
+      logo_url,
+      video_url,
+      funding_stage,
+      website,
+      startup_stage
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !industry) {
+      return res.status(400).json({ error: 'Name and industry are required' });
+    }
+
+    // Insert into startups table
+    const [result] = await pool.query(
+      `INSERT INTO startups 
+        (entrepreneur_id, name, industry, description, location, funding_needed, pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage, website, startup_stage, approval_status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())`,
+      [
+        req.user.id, name, industry, description, location, funding_needed, pitch_deck_url,
+        business_plan_url, logo_url, video_url, funding_stage, website, startup_stage
+      ]
+    );
+
+    res.status(201).json({ 
+      message: 'Startup created successfully', 
+      startup_id: result.insertId 
+    });
+  } catch (error) {
+    console.error('Error creating startup:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all startups
+app.get('/api/startups', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM startups');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching startups:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all co-founders (exclude logged-in user)
+app.get('/api/cofounders', authenticateToken, async (req, res) => {
+  try {
+    // Use 'introduction' as bio, and select from users where role = 'entrepreneur' and not the logged-in user
+    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND id != ?', ['entrepreneur', req.user.id]);
+    const cofounders = rows.map(u => ({
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`,
+      email: u.email,
+      bio: u.introduction || '',
+      profile_image: u.profile_image || null
+    }));
+    res.json(cofounders);
+  } catch (error) {
+    console.error('Error fetching co-founders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all investors
+app.get('/api/investors', authenticateToken, async (req, res) => {
+  try {
+    // Fetch from users table where role = 'investor'
+    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ?', ['investor']);
+    const investors = rows.map(u => ({
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`,
+      email: u.email,
+      bio: u.introduction || '',
+      profile_image: u.profile_image || null
+    }));
+    res.json(investors);
+  } catch (error) {
+    console.error('Error fetching investors:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

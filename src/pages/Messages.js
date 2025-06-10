@@ -4,19 +4,6 @@ import { FaUser, FaSearch, FaInbox, FaArchive, FaChevronDown, FaChevronUp, FaPap
 import classNames from 'classnames';
 import axios from 'axios';
 
-// Placeholder data for now
-const mockConversations = [
-  { id: 2, name: 'Jester Perez', role: 'user', avatar: '', lastMessage: 'Hey there!', archived: false },
-  { id: 3, name: 'Rod', role: 'user', avatar: '', lastMessage: 'Let me know!', archived: false },
-];
-const mockRequests = [
-  { id: 4, name: 'Jane Doe', role: 'user', avatar: '', intro: 'Hi, can we connect?' },
-];
-const mockMessages = [
-  { id: 1, sender: 'me', content: 'Hello!', files: [] },
-  { id: 2, sender: 'them', content: 'Hi there!', files: [] },
-];
-
 function Messages() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,7 +74,7 @@ function Messages() {
   const fetchConversations = async () => {
     try {
       const response = await api.get(`/messages/conversations?archived=${showArchived ? '1' : '0'}`);
-      console.log('Fetched conversations:', response.data); // DEBUG
+      console.log('Fetched conversations:', response.data);
       setConversations(response.data);
     } catch (err) {
       setError('Failed to fetch conversations');
@@ -99,6 +86,7 @@ function Messages() {
   const fetchRequests = async () => {
     try {
       const response = await api.get('/messages/requests');
+      console.log('Fetched requests:', response.data);
       setRequests(response.data);
     } catch (err) {
       setError('Failed to fetch requests');
@@ -110,8 +98,8 @@ function Messages() {
   const fetchMessages = async (userId) => {
     try {
       const response = await api.get(`/messages/${userId}`);
-      setMessages(response.data);
       console.log('Fetched messages:', response.data);
+      setMessages(response.data);
       scrollToBottom();
     } catch (err) {
       setError('Failed to fetch messages');
@@ -320,6 +308,49 @@ function Messages() {
     setUser({ ...user, status: newStatus });
   };
 
+  // Update the user selection handler to fetch user info if not present
+  const handleSelectChat = async (userId) => {
+    if (!userId) {
+      console.error('No user ID provided to handleSelectChat');
+      return;
+    }
+    
+    setSelectedChat(userId);
+    
+    // If we're in requests view, find the request first
+    if (selectedCategory === 'requests') {
+      const request = requests.find(r => r.request_id === userId || r.sender_id === userId);
+      if (request) {
+        setSelectedRequest(request);
+        // Use the sender's ID for fetching user info
+        const otherUserId = request.sender_id === user.id ? request.receiver_id : request.sender_id;
+        try {
+          const response = await api.get(`/messages/users/${otherUserId}`);
+          setSelectedChatUser(response.data);
+        } catch (err) {
+          console.error('Failed to fetch user info:', err);
+          setError('Failed to fetch user info');
+          return;
+        }
+      }
+      return;
+    }
+    
+    // For regular chats, proceed as before
+    let userObj = conversations.find(c => c.id === userId) || searchResults.find(u => u.id === userId);
+    if (!userObj) {
+      try {
+        const response = await api.get(`/messages/users/${userId}`);
+        userObj = response.data;
+      } catch (err) {
+        console.error('Failed to fetch user info:', err);
+        setError('Failed to fetch user info');
+        return;
+      }
+    }
+    setSelectedChatUser(userObj);
+  };
+
   // Effects
   useEffect(() => {
     // Check localStorage access first
@@ -350,11 +381,14 @@ function Messages() {
           const otherUserId = req.sender_id === user.id ? req.receiver_id : req.sender_id;
           fetchMessages(otherUserId);
         }
+      } else if (selectedCategory === 'archived') {
+        // For archived messages, we need to fetch messages for the selected chat
+        fetchMessages(selectedChat);
       } else {
         fetchMessages(selectedChat);
       }
     }
-  }, [selectedChat]);
+  }, [selectedChat, selectedCategory]);
 
   useEffect(() => {
     fetchCategories();
@@ -414,13 +448,21 @@ function Messages() {
 
   let chatsToShow = filteredConversations;
   if (selectedCategory === 'requests') {
-    chatsToShow = requests;
+    chatsToShow = requests.map(req => ({
+      ...req,
+      id: req.sender_id, // Use sender_id as the ID for requests
+      first_name: req.first_name,
+      last_name: req.last_name,
+      profile_picture_url: req.profile_picture_url,
+      last_message: req.intro_message || req.content,
+      last_message_time: req.sent_at,
+      last_request_status: 'pending'
+    }));
   } else if (selectedCategory === 'archived') {
-    chatsToShow = conversations; // Already filtered by backend for archived
+    chatsToShow = conversations.filter(c => getBool(c.archived));
   } else if (selectedCategory !== 'all') {
     chatsToShow = conversations.filter(c => c.category_id === selectedCategory);
   } else {
-    // For 'all', use all conversations returned by the backend (already filtered for non-archived)
     chatsToShow = conversations;
   }
   console.log('chatsToShow:', chatsToShow); // DEBUG
@@ -460,6 +502,7 @@ function Messages() {
         <aside className="w-20 min-w-[64px] bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-6 gap-2 h-full rounded-2xl shadow-xl">
           {/* Built-in folders */}
           <button
+            key="all"
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
             onClick={() => { setSelectedCategory('all'); setShowArchived(false); }}
             title="All Chats"
@@ -467,6 +510,7 @@ function Messages() {
             <FaInbox size={24} />
           </button>
           <button
+            key="requests"
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'requests' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
             onClick={() => { setSelectedCategory('requests'); setShowArchived(false); }}
             title="Message Requests"
@@ -474,6 +518,7 @@ function Messages() {
             <FaFlag size={24} />
           </button>
           <button
+            key="archived"
             className={`w-12 h-12 flex items-center justify-center rounded-xl mb-2 ${selectedCategory === 'archived' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
             onClick={() => { setSelectedCategory('archived'); setShowArchived(true); }}
             title="Archived"
@@ -502,12 +547,12 @@ function Messages() {
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 mb-2 overflow-hidden">
               {user?.profile_image ? (
-                <img src={user.profile_image} alt={user.full_name} className="w-16 h-16 rounded-full object-cover" />
+                <img src={user.profile_image} alt={`${user.first_name} ${user.last_name}`} className="w-16 h-16 rounded-full object-cover" />
               ) : (
                 <FaUser size={40} />
               )}
             </div>
-            <div className="font-semibold text-trkblack dark:text-white text-lg">{user?.full_name}</div>
+            <div className="font-semibold text-trkblack dark:text-white text-lg">{user?.first_name} {user?.last_name}</div>
             <div className="relative mt-2">
               <button
                 className={`px-4 py-1 rounded-full font-semibold text-sm focus:outline-none flex items-center gap-2 ${statusOptions.find(opt => opt.value === status)?.color || 'bg-green-200 text-green-800'}`}
@@ -571,24 +616,15 @@ function Messages() {
                 ) : (
                   searchResults.map(user => (
                     <button
-                      key={user.id}
+                      key={`search-${user.id}`}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 transition text-left hover:bg-orange-100 dark:hover:bg-orange-900"
-                      onClick={() => {
-                        if (user.id !== undefined && user.id !== null) {
-                          setSelectedChat(user.id);
-                          setSelectedChatUser(user);
-                          setSearch("");
-                          setSearchResults([]);
-                        } else {
-                          console.warn('User has no id:', user);
-                        }
-                      }}
+                      onClick={() => user.id && handleSelectChat(user.id)}
                     >
                       <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
-                        {user.profile_picture_url ? <img src={user.profile_picture_url} alt={user.full_name} className="w-10 h-10 rounded-full object-cover" /> : <FaUser />}
+                        {user.profile_picture_url ? <img src={user.profile_picture_url} alt={`${user.first_name} ${user.last_name}`} className="w-10 h-10 rounded-full object-cover" /> : <FaUser />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-trkblack dark:text-white truncate">{user.full_name}</div>
+                        <div className="font-semibold text-trkblack dark:text-white truncate">{user.first_name} {user.last_name}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
                       </div>
                       <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{user.role}</div>
@@ -598,48 +634,52 @@ function Messages() {
               </>
             ) : (
               <>
-                <div className="text-xs text-gray-500 dark:text-gray-400 px-2 pt-2 pb-1 font-semibold uppercase tracking-wide">Last chats</div>
-                {chatsToShow.map(conv => {
-                  const isActive = selectedChat === conv.id;
-                  const lastMsgPrefix = conv.last_sender_id === user.id ? 'You: ' : '';
-                  return (
-                    <div
-                      key={conv.id}
-                      className={classNames(
-                        'relative group',
-                        isActive ? 'bg-orange-100 dark:bg-orange-900 border-l-4 border-orange-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800',
-                        'rounded-2xl' // Increased border radius
-                      )}
-                      onClick={() => {
-                        setSelectedChat(conv.id);
-                        setSelectedRequest(null);
-                        setSelectedChatUser(null);
-                      }}
-                    >
-                      <div className="w-full flex items-center gap-3 px-3 py-2 rounded-2xl mb-1 transition text-left">
-                        <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
-                          {conv.profile_picture_url ? (
-                            <img src={conv.profile_picture_url} alt={conv.full_name} className="w-10 h-10 rounded-full object-cover" />
-                          ) : (
-                            <FaUser />
+                <div className="text-xs text-gray-500 dark:text-gray-400 px-2 pt-2 pb-1 font-semibold uppercase tracking-wide">
+                  {selectedCategory === 'requests' ? 'Message Requests' : 'Last chats'}
+                </div>
+                {chatsToShow.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-400 dark:text-gray-500">
+                    {selectedCategory === 'requests' ? 'No message requests' : 'No conversations yet'}
+                  </div>
+                ) : (
+                  chatsToShow.map(conv => {
+                    const isActive = selectedChat === conv.id;
+                    const lastMsgPrefix = conv.last_sender_id === user.id ? 'You: ' : '';
+                    return (
+                      <div
+                        key={`chat-${conv.id}`}
+                        className={classNames(
+                          'relative group',
+                          isActive ? 'bg-orange-100 dark:bg-orange-900 border-l-4 border-orange-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+                          'rounded-2xl'
+                        )}
+                        onClick={() => conv.id && handleSelectChat(conv.id)}
+                      >
+                        <div className="w-full flex items-center gap-3 px-3 py-2 rounded-2xl mb-1 transition text-left">
+                          <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
+                            {conv.profile_picture_url ? (
+                              <img src={conv.profile_picture_url} alt={`${conv.first_name} ${conv.last_name}`} className="w-10 h-10 rounded-full object-cover" />
+                            ) : (
+                              <FaUser />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-trkblack dark:text-white truncate">{conv.first_name} {conv.last_name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {lastMsgPrefix}{conv.last_message}
+                            </div>
+                          </div>
+                          {conv.last_request_status === 'pending' && (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold">Pending</span>
                           )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-trkblack dark:text-white truncate">{conv.full_name}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {lastMsgPrefix}{conv.last_message}
+                          <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                            {formatLastMessageTime(conv.last_message_time)}
                           </div>
                         </div>
-                        {conv.last_request_status === 'pending' && (
-                          <span className="ml-2 px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold">Pending</span>
-                        )}
-                        <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                          {formatLastMessageTime(conv.last_message_time)}
-                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </>
             )}
           </div>
@@ -652,13 +692,13 @@ function Messages() {
               <div className="flex items-center gap-3 px-8 py-5 border-b border-trkblack/10 dark:border-white/10 bg-[#232323] dark:bg-[#232323] rounded-t-2xl">
                 <div className="w-12 h-12 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
                   {chatUser.profile_picture_url || chatUser.profile_image ? (
-                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={chatUser.full_name || chatUser.name} className="w-12 h-12 rounded-full object-cover border-2 border-orange-500" />
+                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-12 h-12 rounded-full object-cover border-2 border-orange-500" />
                   ) : (
                     <FaUser size={28} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-trkblack dark:text-white text-lg truncate">{chatUser.full_name || chatUser.name}</div>
+                  <div className="font-semibold text-trkblack dark:text-white text-lg truncate">{chatUser.first_name} {chatUser.last_name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {chatUser.status === 'invisible' ? 'Offline' : (chatUser.status ? (chatUser.status.charAt(0).toUpperCase() + chatUser.status.slice(1)) : 'Online')}
                   </div>
@@ -689,7 +729,7 @@ function Messages() {
                 <div className="flex-1 flex flex-col items-center justify-center px-8 py-6">
                   <div className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-xl p-6 mb-4 w-full max-w-lg text-center">
                     <div className="font-semibold text-lg mb-2">Message Request</div>
-                    <div className="mb-2">{selectedRequest.full_name} wants to chat with you:</div>
+                    <div className="mb-2">{`${selectedRequest.first_name} ${selectedRequest.last_name}`} wants to chat with you:</div>
                     <div className="italic text-gray-700 dark:text-gray-300 mb-2">"{selectedRequest.intro_message || selectedRequest.content}"</div>
                     <div className="text-xs text-gray-500">Sent at: {selectedRequest.sent_at ? new Date(selectedRequest.sent_at).toLocaleString() : ''}</div>
                   </div>
@@ -716,7 +756,7 @@ function Messages() {
                         >
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-xs">
-                              {msg.sender_id === user.id ? 'You' : chatUser?.name || chatUser?.full_name}
+                              {msg.sender_id === user.id ? 'You' : `${chatUser?.first_name} ${chatUser?.last_name}`}
                             </span>
                             <span className="text-[10px] text-gray-400 ml-2">{msg.time || ''}</span>
                           </div>
@@ -774,14 +814,12 @@ function Messages() {
           <aside className="w-80 bg-[#232323] dark:bg-[#232323] rounded-2xl shadow-xl flex flex-col py-6 px-4 relative z-10">
             {/* Chat Info */}
             <div className="flex flex-col items-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 mb-2 overflow-hidden">
-                {chatUser.profile_picture_url || chatUser.profile_image ? (
-                  <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={chatUser.full_name || chatUser.name} className="w-16 h-16 rounded-full object-cover" />
-                ) : (
-                  <FaUser size={40} />
-                )}
-              </div>
-              <div className="font-semibold text-trkblack dark:text-white text-lg">{chatUser.full_name || chatUser.name}</div>
+              {chatUser.profile_picture_url || chatUser.profile_image ? (
+                <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-16 h-16 rounded-full object-cover" />
+              ) : (
+                <FaUser size={40} />
+              )}
+              <div className="font-semibold text-trkblack dark:text-white text-lg">{chatUser.first_name} {chatUser.last_name}</div>
               {chatUser.username && (
                 <div className="text-xs text-gray-400 mb-2">@{chatUser.username}</div>
               )}

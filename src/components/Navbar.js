@@ -134,7 +134,7 @@ function Navbar() {
     }
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(user ? user.full_name : "");
+  const [editName, setEditName] = useState(user ? `${user.first_name} ${user.last_name}` : "");
   const [editEmail, setEditEmail] = useState(user ? user.email : "");
   const [profileImage, setProfileImage] = useState(user?.profileImage || null);
 
@@ -168,22 +168,28 @@ function Navbar() {
   // Save profile edits
   const handleProfileSave = async () => {
     try {
-      const success = await userProfileAPI.updateUserProfile(user.id, {
-        full_name: editName,
-        email: editEmail,
-        profileImage: profileImage
-      });
+      const [firstName, ...lastNameParts] = editName.split(' ');
+      const lastName = lastNameParts.join(' ');
       
-      if (success) {
-        const updatedUser = { ...user, full_name: editName, email: editEmail };
-        setUser(updatedUser);
-        try {
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        } catch (e) {
-          console.warn('Error accessing localStorage:', e);
-        }
-        setIsEditing(false);
+      const response = await axios.put('/api/users/profile', {
+        first_name: firstName,
+        last_name: lastName,
+        email: editEmail,
+      });
+
+      const updatedUser = { 
+        ...user, 
+        first_name: firstName,
+        last_name: lastName,
+        email: editEmail 
+      };
+      setUser(updatedUser);
+      try {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (e) {
+        console.warn('Error accessing localStorage:', e);
       }
+      setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
     }
@@ -585,7 +591,13 @@ function Navbar() {
               {user && (
                 <li>
                   <NavLink
-                    to={user.role === 'admin' ? '/admin' : '/dashboard'}
+                    to={
+                      user.role === 'admin'
+                        ? '/admin'
+                        : user.role === 'entrepreneur'
+                          ? '/entrepreneur-dashboard'
+                          : '/dashboard'
+                    }
                     className={({ isActive }) =>
                       `inline-flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${isActive ? 'text-orange-600 font-bold' : (darkMode ? 'text-white' : 'text-trkblack')} hover:text-orange-600`
                     }
@@ -618,7 +630,10 @@ function Navbar() {
                     }}
                   >
                     <FaEnvelope size={22} className="text-orange-500" />
-                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">{msgPreview.length > 0 ? msgPreview.length : ''}</span>
+                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
+                      {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ? 
+                        msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
+                    </span>
                   </button>
                   {msgDropdownOpen && (
                     <div
@@ -637,10 +652,11 @@ function Navbar() {
                             const otherUserId = isSent ? msg.receiver_id : msg.sender_id;
                             const otherName = isSent ? msg.receiver_name : msg.sender_name;
                             const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
+                            const unreadCount = msg.unread_count || 0;
                             return (
                               <button
                                 key={msg.message_id}
-                                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
+                                className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${unreadCount > 0 ? 'bg-orange-50/50 dark:bg-orange-900/20' : ''}`}
                                 onClick={() => {
                                   setMsgDropdownOpen(false);
                                   navigate(`/messages?chat_with=${otherUserId}`);
@@ -658,7 +674,14 @@ function Navbar() {
                                     {msg.content.slice(0, 50)}{msg.content.length > 50 ? '…' : ''}
                                   </div>
                                 </div>
-                                <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <div className="text-xs text-gray-400 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                  {unreadCount > 0 && (
+                                    <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
+                                      {unreadCount}
+                                    </span>
+                                  )}
+                                </div>
                               </button>
                             );
                           })
@@ -702,29 +725,16 @@ function Navbar() {
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                      {user.full_name ? user.full_name.charAt(0).toUpperCase() : ''}
+                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
                     </div>
                   )}
                 </button>
                 {isProfileOpen && (
                   <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
                     <div className="p-4 border-b border-gray-200 dark:border-white/10">
-                      <div className="flex items-center space-x-3">
-                        {user.profile_image ? (
-                          <img
-                            src={user.profile_image}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-orange-500"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl">
-                            {user.full_name ? user.full_name.charAt(0).toUpperCase() : ''}
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-semibold text-lg">{user.full_name || ''}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || ''}</div>
-                        </div>
+                      <div>
+                        <div className="font-semibold text-lg">{user.first_name} {user.last_name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || ''}</div>
                       </div>
                     </div>
                     <Link
@@ -773,7 +783,7 @@ function Navbar() {
         </div>
       </nav>
       {/* Auth Modal - Only show if isModalOpen is true */}
-      {isModalOpen && window.location.pathname === "/" && (
+      {isModalOpen && (
         <div
           ref={modalRef}
           className="main-modal fixed w-full h-100 inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster"

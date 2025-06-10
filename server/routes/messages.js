@@ -29,9 +29,12 @@ module.exports = (pool) => {
       // Get the latest message for each conversation (between user and each other user)
       const query = `
         SELECT m.message_id, m.sender_id, m.receiver_id, m.content, m.sent_at, m.status,
-               u1.full_name AS sender_name, u1.profile_picture_url AS sender_avatar,
-               u2.full_name AS receiver_name, u2.profile_picture_url AS receiver_avatar,
-               CASE WHEN m.sender_id = ? THEN 'sent' ELSE 'received' END AS direction
+               CONCAT(u1.first_name, ' ', u1.last_name) AS sender_name, u1.profile_picture_url AS sender_avatar,
+               CONCAT(u2.first_name, ' ', u2.last_name) AS receiver_name, u2.profile_picture_url AS receiver_avatar,
+               CASE WHEN m.sender_id = ? THEN 'sent' ELSE 'received' END AS direction,
+               (SELECT COUNT(*) FROM messages 
+                WHERE ((sender_id = u1.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u1.id))
+                AND status = 'unread' AND receiver_id = ?) as unread_count
         FROM messages m
         JOIN users u1 ON m.sender_id = u1.id
         JOIN users u2 ON m.receiver_id = u2.id
@@ -50,7 +53,7 @@ module.exports = (pool) => {
         ORDER BY m.sent_at DESC
         LIMIT 5`;
       const [messages] = await pool.query(query, [
-        userId, userId, userId, userId, userId, userId, userId, userId
+        userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId
       ]);
       console.log('Preview messages:', messages); // DEBUG LOG
       res.json(messages);
@@ -69,9 +72,10 @@ module.exports = (pool) => {
       let query, params;
       if (showArchived) {
         query = `
-          SELECT
+          SELECT DISTINCT
             u.id,
-            u.full_name,
+            u.first_name,
+            u.last_name,
             u.role,
             u.profile_picture_url,
             m2.content AS last_message,
@@ -80,31 +84,25 @@ module.exports = (pool) => {
             m2.request_status AS last_request_status,
             m2.sent_at AS last_message_time,
             COALESCE(uc.archived, 0) AS archived
-          FROM (
-            SELECT
-              CASE
-                WHEN m.sender_id = ? THEN m.receiver_id
-                ELSE m.sender_id
-              END AS other_user_id,
-              MAX(m.sent_at) AS last_message_time
-            FROM messages m
-            WHERE m.sender_id = ? OR m.receiver_id = ?
-            GROUP BY other_user_id
-          ) lm
-          JOIN users u ON u.id = lm.other_user_id
-          JOIN messages m2 ON (
+          FROM user_conversations uc
+          JOIN users u ON u.id = uc.other_user_id
+          LEFT JOIN messages m2 ON (
             ((m2.sender_id = ? AND m2.receiver_id = u.id) OR (m2.sender_id = u.id AND m2.receiver_id = ?))
-            AND m2.sent_at = lm.last_message_time
+            AND m2.sent_at = (
+              SELECT MAX(sent_at)
+              FROM messages
+              WHERE (sender_id = ? AND receiver_id = u.id) OR (sender_id = u.id AND receiver_id = ?)
+            )
           )
-          LEFT JOIN user_conversations uc ON uc.user_id = ? AND uc.other_user_id = u.id
-          WHERE uc.archived = 1
-          ORDER BY lm.last_message_time DESC`;
-        params = [userId, userId, userId, userId, userId, userId];
+          WHERE uc.user_id = ? AND uc.archived = 1
+          ORDER BY m2.sent_at DESC`;
+        params = [userId, userId, userId, userId, userId];
       } else {
         query = `
-          SELECT
+          SELECT DISTINCT
             u.id,
-            u.full_name,
+            u.first_name,
+            u.last_name,
             u.role,
             u.profile_picture_url,
             m2.content AS last_message,
@@ -134,12 +132,15 @@ module.exports = (pool) => {
           ORDER BY lm.last_message_time DESC`;
         params = [userId, userId, userId, userId, userId, userId];
       }
+      console.log('Executing query:', query);
+      console.log('With params:', params);
       const [conversations] = await pool.query(query, params);
       console.log('Fetched conversations:', conversations);
       res.json(conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error details:', error.message);
+      res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   });
 
@@ -148,7 +149,7 @@ module.exports = (pool) => {
     try {
       const userId = req.user.id;
       const query = `
-        SELECT cr.*, u.full_name, u.role, u.profile_picture_url,
+        SELECT cr.*, u.first_name, u.last_name, u.role, u.profile_picture_url,
                m.content as intro_message, m.sent_at
         FROM conversation_requests cr
         JOIN users u ON cr.sender_id = u.id
@@ -386,10 +387,11 @@ module.exports = (pool) => {
       }
 
       const query = `
-        SELECT id, full_name, email, role, profile_picture_url
+        SELECT id, first_name, last_name, email, role, profile_picture_url
         FROM users
-        WHERE (full_name LIKE ? OR email LIKE ?)
+        WHERE (CONCAT(first_name, ' ', last_name) LIKE ? OR email LIKE ?)
         AND id != ?
+        AND show_in_messages = 1
         AND id NOT IN (
           SELECT other_user_id 
           FROM user_conversations 
@@ -482,6 +484,18 @@ module.exports = (pool) => {
     }
     await pool.query('UPDATE users SET status = ? WHERE id = ?', [status, userId]);
     res.json({ success: true, status });
+  });
+
+  // Get user info by ID (for new conversations)
+  router.get('/users/:id', auth, async (req, res) => {
+    const { id } = req.params;
+    try {
+      const [users] = await pool.query('SELECT id, first_name, last_name, profile_picture_url, role FROM users WHERE id = ?', [id]);
+      if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+      res.json(users[0]);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   return router;

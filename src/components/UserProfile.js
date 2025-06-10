@@ -30,12 +30,27 @@ const formatDate = (dateString) => {
   }
 };
 
+// Format gender to capitalize each word and replace underscores with spaces
+const formatGender = (gender) => {
+  if (!gender) return '';
+  return gender
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 // Move these components outside the main function so they are not re-created on every render
 function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user }) {
   // Handle date change
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setGeneralInfo({ ...generalInfo, birthdate: newDate });
+  };
+
+  // Handle gender change
+  const handleGenderChange = (e) => {
+    const newGender = e.target.value.toLowerCase();
+    setGeneralInfo({ ...generalInfo, gender: newGender });
   };
 
   return (
@@ -74,7 +89,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
               id="general-gender"
               name="general-gender"
               value={generalInfo.gender}
-              onChange={e => setGeneralInfo({ ...generalInfo, gender: e.target.value })}
+              onChange={handleGenderChange}
               className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select gender</option>
@@ -83,7 +98,14 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
               <option value="prefer_not_to_say">Prefer not to say</option>
             </select>
           ) : (
-            <input id="general-gender" name="general-gender" type="text" value={generalInfo.gender} disabled className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+            <input 
+              id="general-gender" 
+              name="general-gender" 
+              type="text" 
+              value={formatGender(generalInfo.gender)} 
+              disabled 
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" 
+            />
           )}
         </div>
         <div>
@@ -284,6 +306,363 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcademicProfile, isEditingAcademic, setIsEditingAcademic, handleSaveAcademic, user }) {
+  // Use local state for editing
+  const [localAcademicProfile, setLocalAcademicProfile] = useState(initialAcademicProfile || []);
+
+  // Update local state when initialAcademicProfile changes and not editing
+  useEffect(() => {
+    if (!isEditingAcademic) {
+      setLocalAcademicProfile(initialAcademicProfile || []);
+    }
+  }, [initialAcademicProfile, isEditingAcademic]);
+
+  // Handle academic profile field change
+  const handleProfileChange = (idx, field, value) => {
+    setLocalAcademicProfile(prev => {
+      const newProfile = [...prev];
+      newProfile[idx] = { ...newProfile[idx], [field]: value };
+      return newProfile;
+    });
+  };
+
+  // Handle add new education
+  const handleAddEducation = () => {
+    setLocalAcademicProfile([
+      ...localAcademicProfile,
+      {
+        level: '',
+        course: '',
+        institution: '',
+        address: '',
+        graduation_date: ''
+      }
+    ]);
+  };
+
+  // Handle remove education
+  const handleRemoveEducation = (idx) => {
+    setLocalAcademicProfile(localAcademicProfile.filter((_, i) => i !== idx));
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    await handleSaveAcademic(localAcademicProfile);
+    setIsEditingAcademic(false);
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setLocalAcademicProfile(initialAcademicProfile || []);
+    setIsEditingAcademic(false);
+  };
+
+  return (
+    <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-orange-600">Education</h2>
+        {!isEditingAcademic && (
+          <button onClick={() => setIsEditingAcademic(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+      {isEditingAcademic ? (
+        <div className="space-y-6">
+          {localAcademicProfile.map((profile, index) => (
+            <div key={`edit-${index}`} className="grid grid-cols-2 gap-4 border-b pb-4 last:border-b-0 last:pb-0">
+              <div>
+                <div className="text-gray-600 mb-1">Level</div>
+                <input
+                  type="text"
+                  value={profile.level || ''}
+                  onChange={e => handleProfileChange(index, 'level', e.target.value)}
+                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Education Level"
+                />
+              </div>
+              <div>
+                <div className="text-gray-600 mb-1">Course</div>
+                <input
+                  type="text"
+                  value={profile.course || ''}
+                  onChange={e => handleProfileChange(index, 'course', e.target.value)}
+                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Course Name"
+                />
+              </div>
+              <div className="col-span-2">
+                <div className="text-gray-600 mb-1">Institution</div>
+                <input
+                  type="text"
+                  value={profile.institution || ''}
+                  onChange={e => handleProfileChange(index, 'institution', e.target.value)}
+                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Institution Name"
+                />
+              </div>
+              <div className="col-span-2">
+                <div className="text-gray-600 mb-1">Address</div>
+                <input
+                  type="text"
+                  value={profile.address || ''}
+                  onChange={e => handleProfileChange(index, 'address', e.target.value)}
+                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  placeholder="Institution Address"
+                />
+              </div>
+              <div>
+                <div className="text-gray-600 mb-1">Graduation Date</div>
+                <input
+                  type="date"
+                  value={profile.graduation_date || ''}
+                  onChange={e => handleProfileChange(index, 'graduation_date', e.target.value)}
+                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                />
+              </div>
+              <div className="flex items-end">
+                <button onClick={() => handleRemoveEducation(index)} className="text-red-500">Remove</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={handleAddEducation} className="bg-orange-500 text-white px-4 py-2 rounded">Add Education</button>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+            <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {localAcademicProfile.length === 0 && <div className="text-gray-500">No education history added.</div>}
+          {localAcademicProfile.map((profile, index) => (
+            <div key={`view-${index}`} className="border-b last:border-b-0 py-3">
+              <div className="font-semibold">{profile.level}</div>
+              <div className="text-gray-600">{profile.course}</div>
+              <div className="text-gray-500">{profile.institution}</div>
+              <div className="text-gray-500">{profile.address}</div>
+              <div className="text-gray-500">{profile.graduation_date ? new Date(profile.graduation_date).toLocaleDateString() : ''}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrivacySettingsCard({ user, setUser, fetchProfile }) {
+  const [permissions, setPermissions] = useState({
+    show_in_search: user?.show_in_search || false,
+    show_in_messages: user?.show_in_messages || false,
+    show_in_pages: user?.show_in_pages || false
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+
+  // Handle permission changes
+  const handlePermissionChange = async (field) => {
+    const newPermissions = {
+      ...permissions,
+      [field]: !permissions[field]
+    };
+    
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        ...user,
+        [field]: newPermissions[field]
+      });
+      setPermissions(newPermissions);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update permissions.');
+    }
+  };
+
+  // Handle password change
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validate passwords
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.new_password.length < 8 || passwordData.new_password.length > 20) {
+      setPasswordError('Password must be between 8 and 20 characters');
+      return;
+    }
+
+    if (!/[a-z]/.test(passwordData.new_password)) {
+      setPasswordError('Password must contain at least one lowercase character');
+      return;
+    }
+
+    if (!/[A-Z]/.test(passwordData.new_password)) {
+      setPasswordError('Password must contain at least one uppercase character');
+      return;
+    }
+
+    try {
+      const result = await userProfileAPI.updatePassword(user.id, {
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      });
+      
+      if (result) {
+        setPasswordSuccess('Password updated successfully');
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          confirm_password: ''
+        });
+      }
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to update password');
+    }
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row gap-8 w-full">
+      {/* Left column: Permissions + Connected Accounts stacked */}
+      <div className="flex flex-col gap-6 flex-1 mb-6">
+        {/* Permissions Card */}
+        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+          <h2 className="text-xl font-bold text-orange-600 mb-6">Permissions</h2>
+          <div className="flex flex-col gap-6 text-lg">
+            <label className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                checked={permissions.show_in_search} 
+                onChange={() => handlePermissionChange('show_in_search')}
+                className="accent-orange-500 w-5 h-5" 
+              />
+              <span className="font-medium text-black">Show in search results</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                checked={permissions.show_in_messages} 
+                onChange={() => handlePermissionChange('show_in_messages')}
+                className="accent-orange-500 w-5 h-5" 
+              />
+              <span className="font-medium text-black">Allow messages from other users</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                checked={permissions.show_in_pages} 
+                onChange={() => handlePermissionChange('show_in_pages')}
+                className="accent-orange-500 w-5 h-5" 
+              />
+              <span className="font-medium text-black">Show profile in public pages</span>
+            </label>
+          </div>
+        </div>
+        {/* Connected Accounts Card */}
+        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+          <h2 className="text-xl font-bold text-orange-600 mb-6">Connected Accounts</h2>
+          <div className="mb-2 font-semibold text-lg">Social Sign-in</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
+              <span className="font-medium">Google</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaFacebook className="text-blue-700 w-5 h-5" />
+              <span className="font-medium">Facebook</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaMicrosoft className="text-blue-700 w-5 h-5" />
+              <span className="font-medium">Microsoft</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaTelegram className="text-blue-400 w-5 h-5" />
+              <span className="font-medium">Telegram</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaLinkedin className="text-blue-800 w-5 h-5" />
+              <span className="font-medium">LinkedIn</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
+              <FaWhatsapp className="text-green-500 w-5 h-5" />
+              <span className="font-medium">Whatsapp</span>
+              <span className="text-xl font-bold ml-auto">+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Right column: Password Information */}
+      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6 flex flex-col">
+        <h2 className="text-xl font-bold text-orange-600 mb-6">Password Information</h2>
+        <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
+          <label className="font-semibold">Current Password*
+            <input 
+              type="password" 
+              value={passwordData.current_password}
+              onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
+              placeholder="Enter your current password" 
+              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              required
+            />
+          </label>
+          <label className="font-semibold">New Password*
+            <input 
+              type="password" 
+              value={passwordData.new_password}
+              onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
+              placeholder="Enter your new password" 
+              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              required
+            />
+          </label>
+          <label className="font-semibold">Confirm New Password*
+            <input 
+              type="password" 
+              value={passwordData.confirm_password}
+              onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+              placeholder="Confirm new password" 
+              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              required
+            />
+          </label>
+          {passwordError && (
+            <div className="text-red-500 text-sm">{passwordError}</div>
+          )}
+          {passwordSuccess && (
+            <div className="text-green-500 text-sm">{passwordSuccess}</div>
+          )}
+          <div className="text-xs text-gray-500 mt-2">
+            <div className="font-semibold text-gray-700">*Password Requirements:</div>
+            <ul className="list-disc ml-5">
+              <li>At least 8 characters and up to 20 characters</li>
+              <li>At least one lowercase character</li>
+              <li>At least one uppercase character</li>
+            </ul>
+          </div>
+          <button 
+            type="submit"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold transition self-end mt-4"
+          >
+            Save Changes
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -533,7 +912,7 @@ export default function UserProfile() {
     }
   };
 
-  const handleSaveAcademic = async () => {
+  const handleSaveAcademic = async (updatedAcademicProfile) => {
     console.log('handleSaveAcademic called', {
       first_name: generalInfo.firstName,
       last_name: generalInfo.lastName,
@@ -548,7 +927,7 @@ export default function UserProfile() {
       show_in_search: user.show_in_search,
       show_in_messages: user.show_in_messages,
       show_in_pages: user.show_in_pages,
-      academic_profile: academicProfile
+      academic_profile: updatedAcademicProfile
     });
     try {
       await userProfileAPI.updateUserProfile(user.id, {
@@ -565,8 +944,9 @@ export default function UserProfile() {
         show_in_search: user.show_in_search,
         show_in_messages: user.show_in_messages,
         show_in_pages: user.show_in_pages,
-        academic_profile: academicProfile
+        academic_profile: updatedAcademicProfile
       });
+      setAcademicProfile(updatedAcademicProfile);
       setIsEditingAcademic(false);
       fetchProfile(user.id);
     } catch (err) {
@@ -640,17 +1020,40 @@ export default function UserProfile() {
               onChange={async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                  const reader = new window.FileReader();
-                  reader.onloadend = async () => {
-                    try {
-                      const base64Image = reader.result;
-                      await userProfileAPI.updateProfileImage(user.id, base64Image);
-                      fetchProfile(user.id);
-                    } catch (error) {
-                      alert('Failed to update profile image.');
-                    }
-                  };
-                  reader.readAsDataURL(file);
+                  // Validate file type
+                  if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file');
+                    return;
+                  }
+
+                  // Validate file size (5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size must be less than 5MB');
+                    return;
+                  }
+
+                  try {
+                    const reader = new window.FileReader();
+                    reader.onloadend = async () => {
+                      try {
+                        const base64Image = reader.result;
+                        await userProfileAPI.updateProfileImage(user.id, base64Image);
+                        await fetchProfile(user.id);
+                        // Show success message
+                        alert('Profile image updated successfully');
+                      } catch (error) {
+                        console.error('Error updating profile image:', error);
+                        alert(error.message || 'Failed to update profile image. Please try again.');
+                      }
+                    };
+                    reader.onerror = () => {
+                      alert('Error reading the image file. Please try again.');
+                    };
+                    reader.readAsDataURL(file);
+                  } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert('Error processing the image. Please try again.');
+                  }
                 }
               }}
             />
@@ -727,204 +1130,20 @@ export default function UserProfile() {
   // Academic Profile Section
   const AcademicProfile = () => (
     <div className="flex flex-row gap-8">
-      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-orange-600">Education</h2>
-          {!isEditingAcademic && (
-            <button onClick={() => setIsEditingAcademic(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
-          )}
-        </div>
-        {isEditingAcademic ? (
-          <div className="space-y-6">
-            {academicProfile.map((profile, index) => (
-              <div key={index} className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-gray-600 mb-1">Level</div>
-                  <input
-                    type="text"
-                    value={profile.level}
-                    onChange={e => {
-                      const newProfile = [...academicProfile];
-                      newProfile[index].level = e.target.value;
-                      setAcademicProfile(newProfile);
-                    }}
-                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
-                  />
-                </div>
-                <div>
-                  <div className="text-gray-600 mb-1">Course</div>
-                  <input
-                    type="text"
-                    value={profile.course}
-                    onChange={e => {
-                      const newProfile = [...academicProfile];
-                      newProfile[index].course = e.target.value;
-                      setAcademicProfile(newProfile);
-                    }}
-                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <div className="text-gray-600 mb-1">Institution</div>
-                  <input
-                    type="text"
-                    value={profile.institution}
-                    onChange={e => {
-                      const newProfile = [...academicProfile];
-                      newProfile[index].institution = e.target.value;
-                      setAcademicProfile(newProfile);
-                    }}
-                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <div className="text-gray-600 mb-1">Address</div>
-                  <input
-                    type="text"
-                    value={profile.address}
-                    onChange={e => {
-                      const newProfile = [...academicProfile];
-                      newProfile[index].address = e.target.value;
-                      setAcademicProfile(newProfile);
-                    }}
-                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
-                  />
-                </div>
-                <div>
-                  <div className="text-gray-600 mb-1">Graduation Date</div>
-                  <input
-                    type="date"
-                    value={profile.graduation_date}
-                    onChange={e => {
-                      const newProfile = [...academicProfile];
-                      newProfile[index].graduation_date = e.target.value;
-                      setAcademicProfile(newProfile);
-                    }}
-                    className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
-                  />
-                </div>
-              </div>
-            ))}
-            <button
-              onClick={() => setAcademicProfile([...academicProfile, {
-                level: '',
-                course: '',
-                institution: '',
-                address: '',
-                graduation_date: ''
-              }])}
-              className="bg-orange-500 text-white px-4 py-2 rounded"
-            >
-              Add Education
-            </button>
-            <div className="flex gap-2 mt-4">
-              <button onClick={handleSaveAcademic} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
-              <button onClick={() => { setIsEditingAcademic(false); setAcademicProfile(user?.academic_profile || []); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {academicProfile.map((profile, index) => (
-              <div key={index}>
-                <span className="font-semibold">{profile.level}</span>
-                <span className="ml-2">: <span className="font-bold">{profile.course}</span></span><br />
-                <span className="ml-8">: {profile.institution}</span><br />
-                <span className="ml-8">: {profile.address}</span><br />
-                <span className="ml-8">: {new Date(profile.graduation_date).toLocaleDateString()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <AcademicProfileCard
+        academicProfile={academicProfile}
+        setAcademicProfile={setAcademicProfile}
+        isEditingAcademic={isEditingAcademic}
+        setIsEditingAcademic={setIsEditingAcademic}
+        handleSaveAcademic={handleSaveAcademic}
+        user={user}
+      />
     </div>
   );
 
   // Privacy Settings Section (only for profile owner)
   const PrivacySettings = () => (
-    <div className="flex flex-col md:flex-row gap-8 w-full">
-      {/* Left column: Permissions + Connected Accounts stacked */}
-      <div className="flex flex-col gap-6 flex-1 mb-6">
-        {/* Permissions Card */}
-        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
-          <h2 className="text-xl font-bold text-orange-600 mb-6">Permissions</h2>
-          <div className="flex flex-col gap-6 text-lg">
-            <label className="flex items-center gap-3">
-              <input type="checkbox" checked={user.show_in_search} readOnly className="accent-orange-500 w-5 h-5" />
-              <span className="font-medium text-black">Show in search results</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input type="checkbox" checked={user.show_in_messages} readOnly className="accent-orange-500 w-5 h-5" />
-              <span className="font-medium text-black">Allow messages from other users</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input type="checkbox" checked={user.show_in_pages} readOnly className="accent-orange-500 w-5 h-5" />
-              <span className="font-medium text-black">Show profile in public pages</span>
-            </label>
-          </div>
-        </div>
-        {/* Connected Accounts Card */}
-        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
-          <h2 className="text-xl font-bold text-orange-600 mb-6">Connected Accounts</h2>
-          <div className="mb-2 font-semibold text-lg">Social Sign-in</div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
-              <span className="font-medium">Google</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <FaFacebook className="text-blue-700 w-5 h-5" />
-              <span className="font-medium">Facebook</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <FaMicrosoft className="text-blue-700 w-5 h-5" />
-              <span className="font-medium">Microsoft</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <FaTelegram className="text-blue-400 w-5 h-5" />
-              <span className="font-medium">Telegram</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <FaLinkedin className="text-blue-800 w-5 h-5" />
-              <span className="font-medium">LinkedIn</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <FaWhatsapp className="text-green-500 w-5 h-5" />
-              <span className="font-medium">Whatsapp</span>
-              <span className="text-xl font-bold ml-auto">+</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Right column: Password Information */}
-      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6 flex flex-col">
-        <h2 className="text-xl font-bold text-orange-600 mb-6">Password Information</h2>
-        <div className="flex flex-col gap-4">
-          <label className="font-semibold">Current Password*
-            <input type="password" placeholder="Enter your current password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
-          </label>
-          <label className="font-semibold">New Password*
-            <input type="password" placeholder="Enter your new password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
-          </label>
-          <label className="font-semibold">Confirm New Password*
-            <input type="password" placeholder="Confirm new password" className="w-full bg-gray-100 rounded px-3 py-2 mt-1" />
-          </label>
-          <div className="text-xs text-gray-500 mt-2">
-            <div className="font-semibold text-gray-700">*Password Requirements:</div>
-            <ul className="list-disc ml-5">
-              <li>At least 8 characters and up to 20 characters</li>
-              <li>At least one lowercase character</li>
-              <li>At least one uppercase character</li>
-            </ul>
-          </div>
-          <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold transition self-end mt-4">Save Changes</button>
-        </div>
-      </div>
-    </div>
+    <PrivacySettingsCard user={user} setUser={setUser} fetchProfile={fetchProfile} />
   );
 
   // Main Layout
