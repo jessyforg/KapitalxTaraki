@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { scroller } from "react-scroll";
 import { Link, useNavigate } from "react-router-dom";
 import tarakiLogoBlack from "../components/imgs/taraki-black.svg";
@@ -18,17 +18,31 @@ import Benjie from "./imgs/investors/Benjie.webp";
 
 function TBI() {
   const navigate = useNavigate();
-  // Track dark mode
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
-  const [fadeIn, setFadeIn] = useState(false);
+  // Update dark mode state management
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem("taraki-dark-mode") === "true";
+    } catch (e) {
+      console.warn('Error accessing localStorage:', e);
+      return false;
+    }
+  });
 
-  React.useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setDarkMode(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+  // Add useEffect to sync with document class
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    try {
+      localStorage.setItem("taraki-dark-mode", darkMode);
+    } catch (e) {
+      console.warn('Error accessing localStorage:', e);
+    }
+  }, [darkMode]);
+
+  const [fadeIn, setFadeIn] = useState(false);
 
   React.useEffect(() => {
     setFadeIn(true);
