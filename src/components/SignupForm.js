@@ -7,9 +7,12 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
   const [showTerms, setShowTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
+  const [retypePassword, setRetypePassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -43,14 +46,24 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
       setPasswordError(passwordValidationError);
       return;
     }
+    if (password !== retypePassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+    if (!role) {
+      setError("Please select a role");
+      return;
+    }
 
     setLoading(true);
 
     try {
       const response = await api.register({
-        full_name: name,
+        first_name: firstName,
+        last_name: lastName,
         email,
-        password
+        password,
+        role
       });
 
       // Store token and user data
@@ -127,14 +140,24 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
           <div className="text-red-500 text-sm text-center mb-4">{error}</div>
         )}
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <input
-            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
-            type="text"
-            placeholder="Full Name"
-            required
-            value={name}
-            onChange={e => setName(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <input
+              className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+              type="text"
+              placeholder="First Name"
+              required
+              value={firstName}
+              onChange={e => setFirstName(e.target.value)}
+            />
+            <input
+              className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+              type="text"
+              placeholder="Last Name"
+              required
+              value={lastName}
+              onChange={e => setLastName(e.target.value)}
+            />
+          </div>
           <input
             className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
             type="email"
@@ -171,9 +194,28 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
               )}
             </span>
           </div>
+          <input
+            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+            type="password"
+            placeholder="Retype Password"
+            required
+            value={retypePassword}
+            onChange={e => setRetypePassword(e.target.value)}
+          />
           {passwordError && (
             <div className="text-red-500 text-xs text-center animate-pulse mt-1">{passwordError}</div>
           )}
+          <select
+            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+            required
+            value={role}
+            onChange={e => setRole(e.target.value)}
+          >
+            <option value="">Select Role</option>
+            <option value="entrepreneur">Entrepreneur</option>
+            <option value="investor">Investor</option>
+            <option value="admin">Admin</option>
+          </select>
           <div className="flex items-start mt-2">
             <input type="checkbox" required className="mt-1 mr-2" id="terms" />
             <label htmlFor="terms" className="text-xs text-black select-none">
