@@ -145,6 +145,19 @@ app.post('/api/auth/register', async (req, res) => {
       [first_name, last_name, email, hashedPassword, verificationToken, role, false]
     );
 
+    // Insert into role-specific table
+    if (role === 'entrepreneur') {
+      await pool.query(
+        'INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)',
+        [result.insertId]
+      );
+    } else if (role === 'investor') {
+      await pool.query(
+        'INSERT INTO investors (investor_id, investment_range_min, investment_range_max) VALUES (?, 0, 0)',
+        [result.insertId]
+      );
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { id: result.insertId, email, role },
@@ -671,6 +684,190 @@ app.get('/api/investors', authenticateToken, async (req, res) => {
     res.json(investors);
   } catch (error) {
     console.error('Error fetching investors:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create a match between investor and startup
+app.post('/api/match', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const { startup_id, match_score } = req.body;
+    if (!startup_id) {
+      return res.status(400).json({ error: 'startup_id is required' });
+    }
+    // Insert match
+    const [result] = await pool.query(
+      'INSERT INTO matches (startup_id, investor_id, match_score) VALUES (?, ?, ?)',
+      [startup_id, investor_id, match_score || 0]
+    );
+    res.status(201).json({ message: 'Match created', match_id: result.insertId });
+  } catch (error) {
+    console.error('Error creating match:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all matches for the logged-in investor
+app.get('/api/matches', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const [rows] = await pool.query(
+      'SELECT * FROM matches WHERE investor_id = ?',
+      [investor_id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all matched startups for the logged-in investor (with startup details)
+app.get('/api/investor/matches', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const [rows] = await pool.query(
+      `SELECT s.*, m.match_score, m.created_at as matched_at, m.match_id
+       FROM matches m
+       JOIN startups s ON m.startup_id = s.startup_id
+       WHERE m.investor_id = ? /*AND s.approval_status = 'approved'*/
+       ORDER BY m.created_at DESC`,
+      [investor_id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching matched startups:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get startups available for matching (not already matched, only approved, with filters)
+app.get('/api/investor/available-startups', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const { industry, location, funding_stage } = req.query;
+    // let filter = "WHERE s.approval_status = 'approved' AND s.startup_id NOT IN (SELECT startup_id FROM matches WHERE investor_id = ?)";
+    let filter = "WHERE s.startup_id NOT IN (SELECT startup_id FROM matches WHERE investor_id = ?)";
+    let params = [investor_id];
+    if (industry) {
+      filter += " AND s.industry LIKE ?";
+      params.push(`%${industry}%`);
+    }
+    if (location) {
+      filter += " AND s.location LIKE ?";
+      params.push(`%${location}%`);
+    }
+    if (funding_stage) {
+      filter += " AND s.funding_stage = ?";
+      params.push(funding_stage);
+    }
+    const [rows] = await pool.query(
+      `SELECT s.* FROM startups s ${filter} ORDER BY s.created_at DESC`,
+      params
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching available startups:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Match a startup (investor matches with a startup)
+app.post('/api/investor/match', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const { startup_id, match_score } = req.body;
+    // Prevent duplicate matches
+    const [existing] = await pool.query(
+      'SELECT * FROM matches WHERE investor_id = ? AND startup_id = ?',
+      [investor_id, startup_id]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Already matched' });
+    }
+    // Insert match
+    const [result] = await pool.query(
+      'INSERT INTO matches (startup_id, investor_id, match_score) VALUES (?, ?, ?)',
+      [startup_id, investor_id, match_score || 0]
+    );
+    res.status(201).json({ message: 'Match created', match_id: result.insertId });
+  } catch (error) {
+    console.error('Error creating match:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Unmatch a startup
+app.delete('/api/investor/unmatch/:startup_id', authenticateToken, async (req, res) => {
+  try {
+    const investor_id = req.user.id;
+    const { startup_id } = req.params;
+    await pool.query(
+      'DELETE FROM matches WHERE investor_id = ? AND startup_id = ?',
+      [investor_id, startup_id]
+    );
+    res.json({ message: 'Unmatched successfully' });
+  } catch (error) {
+    console.error('Error unmatching:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all entrepreneurs (exclude logged-in user)
+app.get('/api/entrepreneurs', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ?',
+      ['entrepreneur', req.user.id]
+    );
+    const entrepreneurs = rows.map(u => ({
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`,
+      email: u.email,
+      bio: u.introduction || '',
+      profile_image: u.profile_image || null,
+      industry: u.industry || ''
+    }));
+    res.json(entrepreneurs);
+  } catch (error) {
+    console.error('Error fetching entrepreneurs:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get single startup details
+app.get('/api/startups/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM startups WHERE startup_id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Startup not found' });
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update startup (only creator)
+app.put('/api/startups/:id', authenticateToken, upload.single('logo'), async (req, res) => {
+  try {
+    const { name, industry, description, location, website, pitch_deck_url, business_plan_url, funding_stage, startup_stage } = req.body;
+    // Check ownership
+    const [rows] = await pool.query('SELECT * FROM startups WHERE startup_id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Startup not found' });
+    if (rows[0].entrepreneur_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    let logo_url = rows[0].logo_url;
+    if (req.file) {
+      logo_url = `/uploads/${req.file.filename}`;
+      // Optionally: delete old logo file here
+    }
+
+    await pool.query(
+      `UPDATE startups SET name=?, industry=?, description=?, location=?, website=?, pitch_deck_url=?, business_plan_url=?, logo_url=?, funding_stage=?, startup_stage=? WHERE startup_id=?`,
+      [name, industry, description, location, website, pitch_deck_url, business_plan_url, logo_url, funding_stage, startup_stage, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });

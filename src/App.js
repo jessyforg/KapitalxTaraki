@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.js";
 import Home from "./components/Home.js";
 import About from "./components/About.js";
@@ -22,6 +22,9 @@ import UserProfile from "./components/UserProfile";
 import Messages from './pages/Messages';
 import EntrepreneurDashboard from "./pages/EntrepreneurDashboard";
 import CreateStartup from './pages/CreateStartup';
+import InvestorDashboard from './pages/InvestorDashboard';
+import EditStartup from './pages/EditStartup';
+import StartupDetails from './pages/StartupDetails';
 
 function MainPage() {
   return (
@@ -60,6 +63,10 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/entrepreneur-dashboard" element={<EntrepreneurDashboard />} />
         <Route path="/create-startup" element={<CreateStartup />} />
+        <Route path="/investor-dashboard" element={<InvestorDashboard />} />
+        <Route path="/dashboard" element={<Navigate to="/entrepreneur-dashboard" />} />
+        <Route path="/startup/:id" element={<StartupDetails />} />
+        <Route path="/edit-startup/:id" element={<EditStartup />} />
       </Routes>
     </BrowserRouter>
   );

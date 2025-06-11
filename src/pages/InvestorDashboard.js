@@ -5,7 +5,8 @@ import Navbar from '../components/Navbar';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
-  { key: 'cofounders', label: 'Co-Founders', icon: 'fa-users' },
+  { key: 'matches', label: 'Matches', icon: 'fa-star' },
+  { key: 'entrepreneurs', label: 'Entrepreneurs', icon: 'fa-users' },
   { key: 'investors', label: 'Investors', icon: 'fa-hand-holding-usd' },
 ];
 
@@ -48,9 +49,10 @@ const locations = {
   ]
 };
 
-const EntrepreneurDashboard = () => {
-  const [startups, setStartups] = useState([]);
-  const [coFounders, setCoFounders] = useState([]);
+const InvestorDashboard = () => {
+  const [availableStartups, setAvailableStartups] = useState([]);
+  const [matchedStartups, setMatchedStartups] = useState([]);
+  const [entrepreneurs, setEntrepreneurs] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [activeSection, setActiveSection] = useState('startups');
   const [user, setUser] = useState(() => {
@@ -71,47 +73,48 @@ const EntrepreneurDashboard = () => {
     { value: 'growth', label: 'Growth Stage' },
     { value: 'maturity', label: 'Maturity Stage' },
   ]);
-  const filteredStartups = startups.filter(s =>
-    (!filters.industry || s.industry === filters.industry) &&
-    (!filters.location || s.location === filters.location) &&
-    (!filters.startup_stage || s.startup_stage === filters.startup_stage)
-  );
-  const [coFounderFilters, setCoFounderFilters] = useState({ industry: '', location: '' });
+  const [entrepreneurFilters, setEntrepreneurFilters] = useState({ industry: '', location: '' });
   const [investorFilters, setInvestorFilters] = useState({ industry: '', location: '' });
 
   useEffect(() => {
-    // Redirect based on role
-    if (user && user.role === 'investor') {
-      navigate('/investor-dashboard');
-      return;
-    }
-    // Fetch startups
-    const fetchStartups = async () => {
+    const fetchAvailableStartups = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/startups', {
-          headers: { Authorization: `Bearer ${token}` }
+        const params = {};
+        if (filters.industry) params.industry = filters.industry;
+        if (filters.location) params.location = filters.location;
+        if (filters.startup_stage) params.startup_stage = filters.startup_stage;
+        const response = await axios.get('/api/investor/available-startups', {
+          headers: { Authorization: `Bearer ${token}` },
+          params
         });
-        setStartups(response.data);
+        setAvailableStartups(response.data);
       } catch (error) {
-        console.error('Error fetching startups:', error);
+        console.error('Error fetching available startups:', error);
       }
     };
-
-    // Fetch co-founders
-    const fetchCoFounders = async () => {
+    const fetchMatchedStartups = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/cofounders', {
+        const response = await axios.get('/api/investor/matches', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setCoFounders(response.data);
+        setMatchedStartups(response.data);
       } catch (error) {
-        console.error('Error fetching co-founders:', error);
+        console.error('Error fetching matched startups:', error);
       }
     };
-
-    // Fetch investors
+    const fetchEntrepreneurs = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/entrepreneurs', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setEntrepreneurs(response.data);
+      } catch (error) {
+        console.error('Error fetching entrepreneurs:', error);
+      }
+    };
     const fetchInvestors = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -123,30 +126,58 @@ const EntrepreneurDashboard = () => {
         console.error('Error fetching investors:', error);
       }
     };
-
-    fetchStartups();
-    fetchCoFounders();
+    fetchAvailableStartups();
+    fetchMatchedStartups();
+    fetchEntrepreneurs();
     fetchInvestors();
-  }, []);
-
-  const handleCreateStartup = () => {
-    navigate('/create-startup');
-  };
-
-  const handleEditStartup = (startupId) => {
-    if (startupId) navigate(`/edit-startup/${startupId}`);
-  };
+  }, [filters]);
 
   const handleViewStartup = (startupId) => {
     if (startupId) navigate(`/startup/${startupId}`);
   };
 
-  const handleViewProfile = (userId) => {
-    navigate(`/profile/${userId}`);
+  const handleMessage = (entrepreneurId) => {
+    navigate(`/messages/${entrepreneurId}`);
   };
 
-  const handleMessage = (userId) => {
-    navigate(`/messages/${userId}`);
+  const handleMatchStartup = async (startupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('/api/investor/match', { startup_id: startupId, match_score: 1.0 }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh both lists
+      const [availableRes, matchedRes] = await Promise.all([
+        axios.get('/api/investor/available-startups', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/investor/matches', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setAvailableStartups(availableRes.data);
+      setMatchedStartups(matchedRes.data);
+    } catch (error) {
+      alert('Failed to match: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleUnmatchStartup = async (startupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/investor/unmatch/${startupId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh both lists
+      const [availableRes, matchedRes] = await Promise.all([
+        axios.get('/api/investor/available-startups', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/investor/matches', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setAvailableStartups(availableRes.data);
+      setMatchedStartups(matchedRes.data);
+    } catch (error) {
+      alert('Failed to unmatch: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleEditStartup = (startupId) => {
+    if (startupId) navigate(`/edit-startup/${startupId}`);
   };
 
   return (
@@ -167,7 +198,7 @@ const EntrepreneurDashboard = () => {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : 'Demo Testing'}</div>
+            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}</div>
           </div>
           <nav className="flex flex-col gap-2 w-full px-6">
             {sidebarLinks.map(link => (
@@ -192,60 +223,51 @@ const EntrepreneurDashboard = () => {
           {activeSection === 'startups' && (
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-6">Startups</h1>
-              {/* Filters and Create Startup button in a single row */}
-              <div className="flex items-center justify-between gap-4 mb-6">
-                <div className="flex flex-wrap gap-4 flex-grow">
-                  <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
-                    value={filters.industry}
-                    onChange={e => setFilters(f => ({ ...f, industry: e.target.value }))}
-                  >
-                    <option value="">All Industries</option>
-                    {Object.entries(industries).map(([category, subs]) => (
-                      <optgroup key={category} label={category}>
-                        {subs.map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
-                    value={filters.location}
-                    onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
-                  >
-                    <option value="">All Locations</option>
-                    {Object.entries(locations).map(([region, cities]) => (
-                      <optgroup key={region} label={region}>
-                        {cities.map(city => (
-                          <option key={city} value={city}>{city}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
-                    value={filters.startup_stage}
-                    onChange={e => setFilters(f => ({ ...f, startup_stage: e.target.value }))}
-                  >
-                    {startupStageOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleCreateStartup}
-                  className="flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors"
+              {/* Filters */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  value={filters.industry}
+                  onChange={e => setFilters(f => ({ ...f, industry: e.target.value }))}
                 >
-                  <i className="fas fa-plus mr-2"></i>
-                  Create Startup
-                </button>
+                  <option value="">All Industries</option>
+                  {Object.entries(industries).map(([category, subs]) => (
+                    <optgroup key={category} label={category}>
+                      {subs.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  value={filters.location}
+                  onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
+                >
+                  <option value="">All Locations</option>
+                  {Object.entries(locations).map(([region, cities]) => (
+                    <optgroup key={region} label={region}>
+                      {cities.map(city => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  value={filters.startup_stage}
+                  onChange={e => setFilters(f => ({ ...f, startup_stage: e.target.value }))}
+                >
+                  {startupStageOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredStartups.map((startup, idx) => (
+                  {availableStartups.map((startup, idx) => (
                     <div
-                      key={startup.id || idx}
+                      key={startup.startup_id || startup.id || idx}
                       className="rounded-xl border border-gray-300 bg-gray-100 flex flex-col overflow-hidden"
                       style={{ minHeight: '340px', maxWidth: '260px' }}
                     >
@@ -288,6 +310,12 @@ const EntrepreneurDashboard = () => {
                           >
                             View Details
                           </button>
+                          <button
+                            onClick={() => handleMatchStartup(startup.startup_id ?? startup.id)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                          >
+                            Match with Startup
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -296,15 +324,41 @@ const EntrepreneurDashboard = () => {
               </div>
             </div>
           )}
-          {activeSection === 'cofounders' && (
+          {activeSection === 'matches' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Co-Founders</h1>
-              {/* Filters for Co-Founders */}
+              <h1 className="text-3xl font-bold text-gray-800 mb-6">My Matches</h1>
+              <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                {matchedStartups.length === 0 ? (
+                  <div className="text-gray-500">No matches yet.</div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {matchedStartups.map((match, idx) => (
+                      <div key={match.match_id || idx} className="rounded-xl border border-gray-300 bg-gray-100 flex flex-col overflow-hidden min-h-[120px] p-4">
+                        <div className="font-bold text-base text-black mb-2">{match.name}</div>
+                        <div className="text-sm text-black font-semibold">Match Score: {match.match_score}</div>
+                        <div className="text-xs text-gray-500">Matched at: {new Date(match.matched_at).toLocaleString()}</div>
+                        <button
+                          onClick={() => handleUnmatchStartup(match.startup_id)}
+                          className="mt-3 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                        >
+                          Unmatch
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {activeSection === 'entrepreneurs' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-6">Entrepreneurs</h1>
+              {/* Filters for Entrepreneurs */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <select
                   className="border border-gray-300 rounded-lg px-3 py-2"
-                  value={coFounderFilters.industry}
-                  onChange={e => setCoFounderFilters(f => ({ ...f, industry: e.target.value }))}
+                  value={entrepreneurFilters.industry}
+                  onChange={e => setEntrepreneurFilters(f => ({ ...f, industry: e.target.value }))}
                 >
                   <option value="">All Industries</option>
                   {Object.entries(industries).map(([category, subs]) => (
@@ -317,8 +371,8 @@ const EntrepreneurDashboard = () => {
                 </select>
                 <select
                   className="border border-gray-300 rounded-lg px-3 py-2"
-                  value={coFounderFilters.location}
-                  onChange={e => setCoFounderFilters(f => ({ ...f, location: e.target.value }))}
+                  value={entrepreneurFilters.location}
+                  onChange={e => setEntrepreneurFilters(f => ({ ...f, location: e.target.value }))}
                 >
                   <option value="">All Locations</option>
                   {Object.entries(locations).map(([region, cities]) => (
@@ -332,18 +386,19 @@ const EntrepreneurDashboard = () => {
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {coFounders
-                    .filter(c => (!coFounderFilters.industry || c.industry === coFounderFilters.industry) && (!coFounderFilters.location || c.location === coFounderFilters.location))
-                    .map((coFounder, idx) => (
+                  {entrepreneurs.filter(e => (!entrepreneurFilters.industry || e.industry === entrepreneurFilters.industry) && (!entrepreneurFilters.location || e.location === entrepreneurFilters.location) && e.id !== user?.id).length === 0 ? (
+                    <div className="text-gray-500">No entrepreneurs found.</div>
+                  ) : (
+                    entrepreneurs.filter(e => (!entrepreneurFilters.industry || e.industry === entrepreneurFilters.industry) && (!entrepreneurFilters.location || e.location === entrepreneurFilters.location) && e.id !== user?.id).map((entrepreneur, idx) => (
                       <div
-                        key={coFounder.id || idx}
+                        key={entrepreneur.id || idx}
                         className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
                         style={{ minWidth: '260px' }}
                       >
                         {/* Profile image */}
                         <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
-                          {coFounder.profile_image ? (
-                            <img src={coFounder.profile_image} alt={coFounder.name} className="object-cover w-full h-full" />
+                          {entrepreneur.profile_image ? (
+                            <img src={entrepreneur.profile_image} alt={entrepreneur.name} className="object-cover w-full h-full" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-orange-500">
                               <i className="fas fa-user text-white text-6xl"></i>
@@ -352,26 +407,22 @@ const EntrepreneurDashboard = () => {
                         </div>
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start">
-                          <div className="font-bold text-lg mb-1 text-gray-900">{coFounder.name}</div>
+                          <div className="font-bold text-lg mb-1 text-gray-900">{entrepreneur.name}</div>
                           <div className="text-sm text-gray-500 mb-4">
-                            <span className="font-semibold">Industry:</span> {coFounder.industry ? coFounder.industry : 'Not provided'}
+                            <span className="font-semibold">Industry:</span> {entrepreneur.industry ? entrepreneur.industry : 'Not provided'}
                           </div>
                           <div className="flex w-full gap-2 mt-auto">
                             <button
-                              onClick={() => handleMessage(coFounder.id)}
+                              onClick={() => handleMessage(entrepreneur.id)}
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
                             >
                               Message
                             </button>
-                            <button
-                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
-                            >
-                              Remove
-                            </button>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -412,9 +463,10 @@ const EntrepreneurDashboard = () => {
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {investors
-                    .filter(i => (!investorFilters.industry || i.industry === investorFilters.industry) && (!investorFilters.location || i.location === investorFilters.location))
-                    .map((investor, idx) => (
+                  {investors.filter(i => (!investorFilters.industry || i.industry === investorFilters.industry) && (!investorFilters.location || i.location === investorFilters.location) && i.id !== user?.id).length === 0 ? (
+                    <div className="text-gray-500">No investors found.</div>
+                  ) : (
+                    investors.filter(i => (!investorFilters.industry || i.industry === investorFilters.industry) && (!investorFilters.location || i.location === investorFilters.location) && i.id !== user?.id).map((investor, idx) => (
                       <div
                         key={investor.id || idx}
                         className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
@@ -443,15 +495,11 @@ const EntrepreneurDashboard = () => {
                             >
                               Message
                             </button>
-                            <button
-                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
-                            >
-                              Remove
-                            </button>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -462,4 +510,4 @@ const EntrepreneurDashboard = () => {
   );
 };
 
-export default EntrepreneurDashboard; 
+export default InvestorDashboard; 

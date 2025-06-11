@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 04, 2025 at 03:27 AM
+-- Generation Time: Jun 11, 2025 at 03:36 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,6 +24,22 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `academic_profile`
+--
+
+CREATE TABLE `academic_profile` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `level` varchar(50) DEFAULT NULL,
+  `course` varchar(100) DEFAULT NULL,
+  `institution` varchar(100) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `graduation_date` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `analytics`
 --
 
@@ -39,6 +55,34 @@ CREATE TABLE `analytics` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `chat_categories`
+--
+
+CREATE TABLE `chat_categories` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `icon` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_category_assignments`
+--
+
+CREATE TABLE `chat_category_assignments` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `other_user_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `conversation_requests`
 --
 
@@ -47,6 +91,34 @@ CREATE TABLE `conversation_requests` (
   `sender_id` int(11) NOT NULL,
   `receiver_id` int(11) NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `employment`
+--
+
+CREATE TABLE `employment` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `company` varchar(100) DEFAULT NULL,
+  `title` varchar(100) DEFAULT NULL,
+  `industry` varchar(100) DEFAULT NULL,
+  `hire_date` date DEFAULT NULL,
+  `employment_type` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `entrepreneurs`
+--
+
+CREATE TABLE `entrepreneurs` (
+  `entrepreneur_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -69,14 +141,6 @@ CREATE TABLE `events` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `events`
---
-
-INSERT INTO `events` (`id`, `title`, `description`, `event_date`, `location`, `organizer_id`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'Welcome Event', 'Welcome to Taraki Platform', '2025-06-02 14:42:40', 'Online', 1, 'upcoming', '2025-06-02 06:42:40', '2025-06-02 06:42:40'),
-(2, 'Workshop Session', 'Learn about new technologies', '2025-06-09 14:42:40', 'Main Hall', 1, 'upcoming', '2025-06-02 06:42:40', '2025-06-02 06:42:40');
-
 -- --------------------------------------------------------
 
 --
@@ -93,6 +157,20 @@ CREATE TABLE `investors` (
   `bio` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `matches`
+--
+
+CREATE TABLE `matches` (
+  `match_id` int(11) NOT NULL,
+  `startup_id` int(11) NOT NULL,
+  `investor_id` int(11) NOT NULL,
+  `match_score` decimal(5,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -115,6 +193,20 @@ CREATE TABLE `messages` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `message_files`
+--
+
+CREATE TABLE `message_files` (
+  `id` int(11) NOT NULL,
+  `message_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `notifications`
 --
 
@@ -130,6 +222,25 @@ CREATE TABLE `notifications` (
   `match_id` int(11) DEFAULT NULL,
   `url` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `social_connections`
+--
+
+CREATE TABLE `social_connections` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `provider` varchar(50) NOT NULL,
+  `provider_user_id` varchar(255) NOT NULL,
+  `access_token` text DEFAULT NULL,
+  `refresh_token` text DEFAULT NULL,
+  `token_expires_at` datetime DEFAULT NULL,
+  `profile_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`profile_data`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -168,6 +279,47 @@ CREATE TABLE `startups` (
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `status` enum('online','invisible','offline') DEFAULT 'online',
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `profile_image` longtext DEFAULT NULL,
+  `profile_picture_url` longtext DEFAULT NULL,
+  `facebook_url` varchar(255) DEFAULT NULL,
+  `twitter_url` varchar(255) DEFAULT NULL,
+  `instagram_url` varchar(255) DEFAULT NULL,
+  `linkedin_url` varchar(255) DEFAULT NULL,
+  `role` enum('entrepreneur','investor','admin') NOT NULL,
+  `is_verified` tinyint(1) DEFAULT 0,
+  `verification_token` varchar(255) DEFAULT NULL,
+  `verification_status` varchar(50) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `introduction` text DEFAULT NULL,
+  `accomplishments` text DEFAULT NULL,
+  `education` text DEFAULT NULL,
+  `employment` text DEFAULT NULL,
+  `gender` varchar(50) DEFAULT NULL,
+  `birthdate` date DEFAULT NULL,
+  `contact_number` varchar(50) DEFAULT NULL,
+  `public_email` varchar(255) DEFAULT NULL,
+  `industry` varchar(255) DEFAULT NULL,
+  `show_in_search` tinyint(1) DEFAULT 1,
+  `show_in_messages` tinyint(1) DEFAULT 1,
+  `show_in_pages` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users_backup`
+--
+
+CREATE TABLE `users_backup` (
+  `id` int(11) NOT NULL DEFAULT 0,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `full_name` varchar(255) NOT NULL,
@@ -193,14 +345,34 @@ CREATE TABLE `users` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `users`
+-- Table structure for table `user_conversations`
 --
 
-INSERT INTO `users` (`id`, `email`, `password`, `full_name`, `role`, `verification_status`, `profile_picture_url`, `location`, `introduction`, `accomplishments`, `education`, `employment`, `gender`, `birthdate`, `contact_number`, `public_email`, `industry`, `show_in_search`, `show_in_messages`, `show_in_pages`, `is_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
-(1, 'admin@taraki.com', '$2b$10$YourHashedPasswordHere', 'Admin User', 'admin', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, '2025-06-02 06:42:40', '2025-06-02 06:42:40'),
-(2, 'jessyforg@gmail.com', '$2a$10$NIct4R/Wnn46RBfbBLcXZOTTIpYlbs76iegL7XVxX6qPU6qNRn1yq', 'Jester Perez', 'user', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, 0, 'dymp4ilzmb9', '2025-06-04 00:56:57', '2025-06-04 00:56:57'),
-(3, 'rod@gmail.com', '$2a$10$XpoV9tUhu3sDJcrGjGdbEetnJo/UBBiSrn7sBP/KIClxbxv6855Ue', 'Rod', 'user', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, 0, 'bhbo0089skd', '2025-06-04 00:59:01', '2025-06-04 00:59:01');
+CREATE TABLE `user_conversations` (
+  `user_id` int(11) NOT NULL,
+  `other_user_id` int(11) NOT NULL,
+  `muted` tinyint(1) DEFAULT 0,
+  `archived` tinyint(1) DEFAULT 0,
+  `blocked` tinyint(1) DEFAULT 0,
+  `category_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_privacy_settings`
+--
+
+CREATE TABLE `user_privacy_settings` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `show_in_search` tinyint(1) DEFAULT 1,
+  `show_in_messages` tinyint(1) DEFAULT 1,
+  `show_in_pages` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -215,12 +387,22 @@ CREATE TABLE `user_social_links` (
   `instagram_url` varchar(255) DEFAULT NULL,
   `linkedin_url` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `microsoft_url` varchar(255) DEFAULT NULL,
+  `whatsapp_url` varchar(255) DEFAULT NULL,
+  `telegram_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `academic_profile`
+--
+ALTER TABLE `academic_profile`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `analytics`
@@ -231,12 +413,41 @@ ALTER TABLE `analytics`
   ADD KEY `event_id` (`event_id`);
 
 --
+-- Indexes for table `chat_categories`
+--
+ALTER TABLE `chat_categories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `chat_category_assignments`
+--
+ALTER TABLE `chat_category_assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_assignment` (`user_id`,`other_user_id`,`category_id`),
+  ADD KEY `other_user_id` (`other_user_id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
 -- Indexes for table `conversation_requests`
 --
 ALTER TABLE `conversation_requests`
   ADD PRIMARY KEY (`request_id`),
   ADD KEY `sender_id` (`sender_id`),
   ADD KEY `receiver_id` (`receiver_id`);
+
+--
+-- Indexes for table `employment`
+--
+ALTER TABLE `employment`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `entrepreneurs`
+--
+ALTER TABLE `entrepreneurs`
+  ADD PRIMARY KEY (`entrepreneur_id`);
 
 --
 -- Indexes for table `events`
@@ -252,6 +463,14 @@ ALTER TABLE `investors`
   ADD PRIMARY KEY (`investor_id`);
 
 --
+-- Indexes for table `matches`
+--
+ALTER TABLE `matches`
+  ADD PRIMARY KEY (`match_id`),
+  ADD KEY `fk_startup` (`startup_id`),
+  ADD KEY `fk_investor` (`investor_id`);
+
+--
 -- Indexes for table `messages`
 --
 ALTER TABLE `messages`
@@ -260,12 +479,27 @@ ALTER TABLE `messages`
   ADD KEY `receiver_id` (`receiver_id`);
 
 --
+-- Indexes for table `message_files`
+--
+ALTER TABLE `message_files`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `message_id` (`message_id`);
+
+--
 -- Indexes for table `notifications`
 --
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`notification_id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `sender_id` (`sender_id`);
+
+--
+-- Indexes for table `social_connections`
+--
+ALTER TABLE `social_connections`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_provider_user` (`provider`,`provider_user_id`),
+  ADD UNIQUE KEY `unique_user_provider` (`user_id`,`provider`);
 
 --
 -- Indexes for table `startups`
@@ -282,6 +516,20 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `user_conversations`
+--
+ALTER TABLE `user_conversations`
+  ADD PRIMARY KEY (`user_id`,`other_user_id`),
+  ADD KEY `other_user_id` (`other_user_id`);
+
+--
+-- Indexes for table `user_privacy_settings`
+--
+ALTER TABLE `user_privacy_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `user_social_links`
 --
 ALTER TABLE `user_social_links`
@@ -292,10 +540,28 @@ ALTER TABLE `user_social_links`
 --
 
 --
+-- AUTO_INCREMENT for table `academic_profile`
+--
+ALTER TABLE `academic_profile`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `analytics`
 --
 ALTER TABLE `analytics`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `chat_categories`
+--
+ALTER TABLE `chat_categories`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `chat_category_assignments`
+--
+ALTER TABLE `chat_category_assignments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `conversation_requests`
@@ -304,10 +570,22 @@ ALTER TABLE `conversation_requests`
   MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `employment`
+--
+ALTER TABLE `employment`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `entrepreneurs`
+--
+ALTER TABLE `entrepreneurs`
+  MODIFY `entrepreneur_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `investors`
@@ -316,16 +594,34 @@ ALTER TABLE `investors`
   MODIFY `investor_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `matches`
+--
+ALTER TABLE `matches`
+  MODIFY `match_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
   MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `message_files`
+--
+ALTER TABLE `message_files`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
   MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `social_connections`
+--
+ALTER TABLE `social_connections`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `startups`
@@ -337,11 +633,23 @@ ALTER TABLE `startups`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_privacy_settings`
+--
+ALTER TABLE `user_privacy_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `academic_profile`
+--
+ALTER TABLE `academic_profile`
+  ADD CONSTRAINT `academic_profile_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `analytics`
@@ -351,11 +659,31 @@ ALTER TABLE `analytics`
   ADD CONSTRAINT `analytics_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`);
 
 --
+-- Constraints for table `chat_categories`
+--
+ALTER TABLE `chat_categories`
+  ADD CONSTRAINT `chat_categories_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `chat_category_assignments`
+--
+ALTER TABLE `chat_category_assignments`
+  ADD CONSTRAINT `chat_category_assignments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_category_assignments_ibfk_2` FOREIGN KEY (`other_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_category_assignments_ibfk_3` FOREIGN KEY (`category_id`) REFERENCES `chat_categories` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `conversation_requests`
 --
 ALTER TABLE `conversation_requests`
   ADD CONSTRAINT `conversation_requests_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `conversation_requests_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `employment`
+--
+ALTER TABLE `employment`
+  ADD CONSTRAINT `employment_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `events`
@@ -370,11 +698,24 @@ ALTER TABLE `investors`
   ADD CONSTRAINT `investors_ibfk_1` FOREIGN KEY (`investor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `matches`
+--
+ALTER TABLE `matches`
+  ADD CONSTRAINT `fk_investor` FOREIGN KEY (`investor_id`) REFERENCES `investors` (`investor_id`),
+  ADD CONSTRAINT `fk_startup` FOREIGN KEY (`startup_id`) REFERENCES `startups` (`startup_id`);
+
+--
 -- Constraints for table `messages`
 --
 ALTER TABLE `messages`
   ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `message_files`
+--
+ALTER TABLE `message_files`
+  ADD CONSTRAINT `message_files_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `messages` (`message_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `notifications`
@@ -384,10 +725,29 @@ ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `social_connections`
+--
+ALTER TABLE `social_connections`
+  ADD CONSTRAINT `social_connections_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `startups`
 --
 ALTER TABLE `startups`
   ADD CONSTRAINT `startups_ibfk_1` FOREIGN KEY (`entrepreneur_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_conversations`
+--
+ALTER TABLE `user_conversations`
+  ADD CONSTRAINT `user_conversations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_conversations_ibfk_2` FOREIGN KEY (`other_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_privacy_settings`
+--
+ALTER TABLE `user_privacy_settings`
+  ADD CONSTRAINT `user_privacy_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_social_links`

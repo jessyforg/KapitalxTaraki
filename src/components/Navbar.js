@@ -163,6 +163,22 @@ function Navbar() {
       setUser(null);
     }
     setIsModalOpen(false);
+    // Redirect to role-specific dashboard
+    try {
+      const stored = localStorage.getItem('user');
+      const userObj = stored ? JSON.parse(stored) : null;
+      if (userObj && userObj.role) {
+        if (userObj.role === 'entrepreneur') {
+          navigate('/entrepreneur-dashboard');
+        } else if (userObj.role === 'investor') {
+          navigate('/investor-dashboard');
+        } else if (userObj.role === 'admin') {
+          navigate('/admin');
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   };
 
   // Save profile edits
