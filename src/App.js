@@ -35,7 +35,6 @@ function MainPage() {
       <Objective />
       <Team />
       <Program />
-      <Framework />
       <Events />
       <FAQ />
       <Contact />

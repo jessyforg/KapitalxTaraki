@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import TBI from "../components/TBI";
 import InTTOTBI from "../components/InTTOTBI";
 import Framework from "../components/Framework";
+import Footer from "../components/Footer";
 
 function Ecosystem() {
   return (
@@ -19,6 +20,7 @@ function Ecosystem() {
       {/* Framework Section */}
       <section id="framework">
         <Framework />
+        <Footer /> {/* Footer is now only after Framework, inside the section */}
       </section>
     </div>
   );
