@@ -9,12 +9,12 @@ import UP from "./imgs/SILBI_TBI.svg";
 import SLU from "./imgs/SLU.svg";
 import BSU from "./imgs/BSU.svg";
 import IFSU from "./imgs/IFSU-TBI.svg";
-import Henry from "./imgs/investors/Henry.webp";
-import Jaydee from "./imgs/investors/Jaydee.webp";
-import Wilson from "./imgs/investors/Wilson.webp";
-import Elmer from "./imgs/investors/Elmer.webp";
-import Angelo from "./imgs/investors/Angelo.webp";
-import Benjie from "./imgs/investors/Benjie.webp";
+import Henry from "./imgs/investors/Henry-removebg-preview.webp";
+import Jaydee from "./imgs/investors/Jaydee-removebg-preview.webp";
+import Wilson from "./imgs/investors/Wilson-removebg-preview.webp";
+import Elmer from "./imgs/investors/Elmer-removebg-preview.webp";
+import Angelo from "./imgs/investors/Angelo-removebg-preview.webp";
+import Benjie from "./imgs/investors/Benjie-removebg-preview.webp";
 
 function TBI() {
   const navigate = useNavigate();
@@ -215,79 +215,57 @@ function TBI() {
         </section>
 
         <section className="my-10">
-          <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
+          <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center mb-6">
             Mentors
           </h1>
-          <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2 tablet-m:grid-cols-3 px-10 tablet-m:px-8">
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Henry} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Henry James Banayat
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.8rem] desktop-m:text-[1rem] desktop-s:px-10">
-                  Director of Business Development at Bitshares Labs, Inc.
-                </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 tablet-m:grid-cols-3 gap-8 px-6 tablet-m:px-8 justify-center items-center place-items-center">
+            {/* Henry */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Henry} alt="Henry James Banayat" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Henry James Banayat</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Director, Bitshares Labs, Inc. Blockchain and startup growth expert.</p>
             </div>
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Jaydee} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Jaydee Rebadulla
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.8rem] desktop-m:text-[1rem] desktop-s:px-10">
-                  Director at Lycaon Creatives; Chairman & CEO at Errand Doers
-                  PH; Owner and Founder at El Lote PH
-                </p>
+            {/* Jaydee */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Jaydee} alt="Jaydee Rebadulla" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Jaydee Rebadulla</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">CEO, Errand Doers PH; Director, Lycaon Creatives; Founder, El Lote PH.</p>
             </div>
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Wilson} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Wilson Capuyan
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.8rem] desktop-m:text-[1rem] desktop-s:px-10">
-                  Founder & General Manager at Pixels & Metrics Head of Growth
-                  at the Neutral and Space for the startups in the region
-                </p>
+            {/* Wilson */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Wilson} alt="Wilson Capuyan" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Wilson Capuyan</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Founder & GM, Pixels & Metrics. Startup growth strategist.</p>
             </div>
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Elmer} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Elmer Macalingay
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.8rem] desktop-m:text-[1rem] desktop-s:px-10">
-                  Founder of Health 100 Restoreant
-                </p>
+            {/* Elmer */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Elmer} alt="Elmer Macalingay" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Elmer Macalingay</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Founder, Health 100 Restoreant. Food entrepreneur and innovator.</p>
             </div>
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Benjie} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Hon. Benjamin Magalong
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.8rem] desktop-m:text-[1rem] desktop-s:px-10">
-                  City Mayor of Baguio
-                </p>
+            {/* Benjie */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Benjie} alt="Hon. Benjamin Magalong" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Hon. Benjamin Magalong</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">City Mayor of Baguio. Innovation and governance advocate.</p>
             </div>
-            <div className="flex flex-col justify-center items-center text-center rounded-lg mt-5">
-              <img src={Angelo} alt="" className="w-36 rounded-full" />
-              <div className="">
-                <h1 className="font-bold tablet:text-[0.7rem] laptop-s:text-[0.9rem] desktop-s:text-[1rem] desktop-m:text-xl">
-                  Angelo Valdez
-                </h1>
-                <p className="px-10 tablet-m:px-12 text-[0.5rem] laptop-s:text-[0.6rem] desktop-s:text-[0.6rem] desktop-m:text-[0.8rem] desktop-s:px-14 ">
-                  CEO of Harper and Hill, Global & International Network
-                  Connector, ASEAN HR Business leader & Former Director for
-                  South East Asia at Morgan Philips Group
-                </p>
+            {/* Angelo */}
+            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
+              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
+                <img src={Angelo} alt="Angelo Valdez" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
               </div>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Angelo Valdez</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">CEO, Harper and Hill. ASEAN HR leader and connector.</p>
             </div>
           </div>
         </section>
