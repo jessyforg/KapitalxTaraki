@@ -24,4 +24,4 @@ function Ecosystem() {
   );
 }
 
-export default Ecosystem; 
+export default Ecosystem;
