@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
 const CAR_LOCATIONS = [
@@ -29,43 +29,169 @@ const INDUSTRIES = [
   'Other',
 ];
 
+const POSITIONS = [
+  'Developer',
+  'Designer',
+  'Product Manager',
+  'Marketing',
+  'Sales',
+  'Business Development',
+  'Operations',
+  'Finance',
+  'Legal',
+  'Other'
+];
+
+const STARTUP_STAGES = [
+  'Idea',
+  'MVP',
+  'Scaling',
+  'Established'
+];
+
+const SKILLS = [
+  'JavaScript',
+  'Python',
+  'Java',
+  'React',
+  'Node.js',
+  'UI/UX Design',
+  'Product Management',
+  'Marketing',
+  'Sales',
+  'Business Development',
+  'Operations',
+  'Finance',
+  'Legal',
+  'Other'
+];
+
 const steps = [
-  { label: 'Personal Details' },
-  { label: 'Contact Information' },
-  { label: 'Professional Information' },
-  { label: 'About' },
-  { label: 'Social Links' },
+  { label: 'Basic Information' },
+  { label: 'Professional Background' },
+  { label: 'Bio & Social Links' },
+  { label: 'Matchmaking Preferences' },
   { label: 'Privacy Settings' },
 ];
 
+// Tag-based MultiSelect component
+function TagMultiSelect({ id, name, options, selected, onChange, placeholder }) {
+  const [input, setInput] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const filtered = options.filter(
+    (opt) =>
+      opt.toLowerCase().includes(input.toLowerCase()) && !selected.includes(opt)
+  );
+
+  const handleAdd = (opt) => {
+    onChange([...selected, opt]);
+    setInput('');
+    setShowDropdown(false);
+  };
+  const handleRemove = (opt) => {
+    onChange(selected.filter((s) => s !== opt));
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex flex-wrap gap-2 mb-2">
+        {selected.map((tag) => (
+          <span key={tag} className="flex items-center bg-[#FF7A1A] text-white rounded-full px-3 py-1 text-sm font-medium shadow">
+            {tag}
+            <button type="button" className="ml-2 text-white hover:text-[#FFB26B] focus:outline-none" onClick={() => handleRemove(tag)}>
+              &times;
+            </button>
+          </span>
+        ))}
+      </div>
+      <input
+        id={id}
+        name={name}
+        type="text"
+        className="w-full p-2 rounded-full border border-slate-200 bg-[#e7e7e7] text-black focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+        placeholder={placeholder}
+        value={input}
+        onChange={e => { setInput(e.target.value); setShowDropdown(true); }}
+        onFocus={() => setShowDropdown(true)}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+      />
+      {showDropdown && filtered.length > 0 && (
+        <ul className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-auto">
+          {filtered.map((opt) => (
+            <li
+              key={opt}
+              className="px-4 py-2 cursor-pointer hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all rounded-xl"
+              onMouseDown={() => handleAdd(opt)}
+            >
+              {opt}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const UserDetailsModal = ({ user, onClose, onComplete }) => {
   const [formData, setFormData] = useState({
-    location: '',
-    introduction: '',
-    accomplishments: '',
-    education: '',
-    employment: '',
     gender: '',
     birthdate: '',
+    location: '',
     contact_number: '',
     public_email: '',
     industry: '',
+    education: '',
+    employment: '',
+    accomplishments: '',
+    introduction: '',
+    facebook_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    skills: [],
+    position_desired: '',
+    preferred_industries: [],
+    preferred_startup_stage: '',
+    preferred_location: '',
     show_in_search: true,
     show_in_messages: true,
     show_in_pages: true,
-    facebook_url: '',
-    instagram_url: '',
-    linkedin_url: ''
   });
+
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch user data on mount
+  useEffect(() => {
+    if (user && user.id) {
+      api.getUserProfile(user.id).then(data => {
+        setFormData(prev => ({
+          ...prev,
+          ...Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [
+              k,
+              v === null || v === undefined
+                ? (Array.isArray(prev[k]) ? [] : typeof prev[k] === 'boolean' ? false : '')
+                : v
+            ])
+          )
+        }));
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleMultiSelect = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
     }));
   };
 
@@ -103,15 +229,17 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       case 0:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Personal Information</h3>
+            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+                <label htmlFor="user-gender" className="block text-sm font-medium text-black mb-1">Gender</label>
                 <select
+                  id="user-gender"
                   name="gender"
-                  value={formData.gender}
+                  value={formData.gender ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="sex"
                 >
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -121,31 +249,26 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Birthdate</label>
+                <label htmlFor="user-birthdate" className="block text-sm font-medium text-black mb-1">Birthdate</label>
                 <input
                   type="date"
+                  id="user-birthdate"
                   name="birthdate"
-                  value={formData.birthdate}
+                  value={formData.birthdate ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="bday"
                 />
               </div>
-            </div>
-            <div />
-          </div>
-        );
-      case 1:
-        return (
-          <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch content-stretch">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                <label htmlFor="user-location" className="block text-sm font-medium text-black mb-1">Location</label>
                 <select
+                  id="user-location"
                   name="location"
-                  value={formData.location}
+                  value={formData.location ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="address-level1"
                 >
                   {CAR_LOCATIONS.map((loc) => (
                     <option key={loc} value={loc}>{loc ? loc : 'Select location'}</option>
@@ -153,43 +276,48 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number</label>
+                <label htmlFor="user-contact_number" className="block text-sm font-medium text-black mb-1">Contact Number</label>
                 <input
                   type="tel"
+                  id="user-contact_number"
                   name="contact_number"
-                  value={formData.contact_number}
+                  value={formData.contact_number ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
                   placeholder="Your contact number"
+                  autoComplete="tel"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Public Email</label>
+                <label htmlFor="user-public_email" className="block text-sm font-medium text-black mb-1">Public Email</label>
                 <input
                   type="email"
+                  id="user-public_email"
                   name="public_email"
-                  value={formData.public_email}
+                  value={formData.public_email ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
                   placeholder="Public email address"
+                  autoComplete="email"
                 />
               </div>
             </div>
-            <div />
           </div>
         );
-      case 2:
+      case 1:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Professional Information</h3>
+            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Professional Background</h3>
             <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+                <label htmlFor="user-industry" className="block text-sm font-medium text-black mb-1">Industry</label>
                 <select
+                  id="user-industry"
                   name="industry"
-                  value={formData.industry}
+                  value={formData.industry ?? ''}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="off"
                 >
                   {INDUSTRIES.map((ind) => (
                     <option key={ind} value={ind}>{ind ? ind : 'Select industry'}</option>
@@ -197,141 +325,224 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Education</label>
+                <label htmlFor="user-education" className="block text-sm font-medium text-black mb-1">Education</label>
                 <textarea
+                  id="user-education"
                   name="education"
-                  value={formData.education}
+                  value={formData.education ?? ''}
                   onChange={handleChange}
                   rows="2"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
                   placeholder="Your educational background"
+                  autoComplete="off"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employment</label>
+                <label htmlFor="user-employment" className="block text-sm font-medium text-black mb-1">Employment</label>
                 <textarea
+                  id="user-employment"
                   name="employment"
-                  value={formData.employment}
+                  value={formData.employment ?? ''}
                   onChange={handleChange}
                   rows="2"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
                   placeholder="Your work experience"
+                  autoComplete="off"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accomplishments</label>
+                <label htmlFor="user-accomplishments" className="block text-sm font-medium text-black mb-1">Accomplishments</label>
                 <textarea
+                  id="user-accomplishments"
                   name="accomplishments"
-                  value={formData.accomplishments}
+                  value={formData.accomplishments ?? ''}
                   onChange={handleChange}
                   rows="2"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
                   placeholder="Your notable achievements"
+                  autoComplete="off"
                 />
               </div>
             </div>
-            <div />
+          </div>
+        );
+      case 2:
+        return (
+          <div className="flex flex-col flex-1 justify-between h-full">
+            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Bio & Social Links</h3>
+            <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+              <div>
+                <label htmlFor="user-introduction" className="block text-sm font-medium text-black mb-1">Introduction</label>
+                <textarea
+                  id="user-introduction"
+                  name="introduction"
+                  value={formData.introduction ?? ''}
+                  onChange={handleChange}
+                  rows="3"
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  placeholder="Tell us about yourself"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="user-facebook_url" className="block text-sm font-medium text-black mb-1">Facebook URL</label>
+                <input
+                  type="url"
+                  id="user-facebook_url"
+                  name="facebook_url"
+                  value={formData.facebook_url ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder:text-black font-medium"
+                  placeholder="https://facebook.com/yourprofile"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="user-instagram_url" className="block text-sm font-medium text-black mb-1">Instagram URL</label>
+                <input
+                  type="url"
+                  id="user-instagram_url"
+                  name="instagram_url"
+                  value={formData.instagram_url ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder:text-black font-medium"
+                  placeholder="https://instagram.com/yourprofile"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="user-linkedin_url" className="block text-sm font-medium text-black mb-1">LinkedIn URL</label>
+                <input
+                  type="url"
+                  id="user-linkedin_url"
+                  name="linkedin_url"
+                  value={formData.linkedin_url ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder:text-black font-medium"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
           </div>
         );
       case 3:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">About</h3>
+            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Matchmaking Preferences</h3>
             <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Introduction</label>
-                <textarea
-                  name="introduction"
-                  value={formData.introduction}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  placeholder="Tell us about yourself"
+                <label htmlFor="user-skills" className="block text-sm font-medium text-black mb-1">Skills & Experience</label>
+                <TagMultiSelect
+                  id="user-skills"
+                  name="skills"
+                  options={SKILLS}
+                  selected={formData.skills ?? []}
+                  onChange={val => handleMultiSelect('skills', val)}
+                  placeholder="Type or select skills..."
                 />
               </div>
+              <div>
+                <label htmlFor="user-position_desired" className="block text-sm font-medium text-black mb-1">Position Desired</label>
+                <select
+                  id="user-position_desired"
+                  name="position_desired"
+                  value={formData.position_desired ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="off"
+                >
+                  <option value="">Select position</option>
+                  {POSITIONS.map((pos) => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="user-preferred_industries" className="block text-sm font-medium text-black mb-1">Preferred Industries</label>
+                <TagMultiSelect
+                  id="user-preferred_industries"
+                  name="preferred_industries"
+                  options={INDUSTRIES.filter(ind => ind)}
+                  selected={formData.preferred_industries ?? []}
+                  onChange={val => handleMultiSelect('preferred_industries', val)}
+                  placeholder="Type or select industries..."
+                />
+              </div>
+              <div>
+                <label htmlFor="user-preferred_startup_stage" className="block text-sm font-medium text-black mb-1">Preferred Startup Stage</label>
+                <select
+                  id="user-preferred_startup_stage"
+                  name="preferred_startup_stage"
+                  value={formData.preferred_startup_stage ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="off"
+                >
+                  <option value="">Select stage</option>
+                  {STARTUP_STAGES.map((stage) => (
+                    <option key={stage} value={stage.toLowerCase()}>{stage}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="user-preferred_location" className="block text-sm font-medium text-black mb-1">Preferred Location</label>
+                <select
+                  id="user-preferred_location"
+                  name="preferred_location"
+                  value={formData.preferred_location ?? ''}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                  autoComplete="off"
+                >
+                  <option value="">Select location</option>
+                  {CAR_LOCATIONS.filter(loc => loc).map((loc) => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div />
           </div>
         );
       case 4:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Social Links</h3>
+            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Privacy Settings</h3>
             <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facebook URL</label>
-                <input
-                  type="url"
-                  name="facebook_url"
-                  value={formData.facebook_url}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  placeholder="https://facebook.com/yourprofile"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instagram URL</label>
-                <input
-                  type="url"
-                  name="instagram_url"
-                  value={formData.instagram_url}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  placeholder="https://instagram.com/yourprofile"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">LinkedIn URL</label>
-                <input
-                  type="url"
-                  name="linkedin_url"
-                  value={formData.linkedin_url}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-                  placeholder="https://linkedin.com/in/yourprofile"
-                />
-              </div>
-            </div>
-            <div />
-          </div>
-        );
-      case 5:
-        return (
-          <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Privacy Settings</h3>
-            <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
-              <label className="flex items-center space-x-2">
+              <label htmlFor="user-show_in_search" className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  id="user-show_in_search"
                   name="show_in_search"
-                  checked={formData.show_in_search}
+                  checked={formData.show_in_search ?? false}
                   onChange={handleChange}
                   className="rounded text-orange-500 focus:ring-orange-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Show in search results</span>
+                <span className="text-sm text-black font-medium">Show in search results</span>
               </label>
-              <label className="flex items-center space-x-2">
+              <label htmlFor="user-show_in_messages" className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  id="user-show_in_messages"
                   name="show_in_messages"
-                  checked={formData.show_in_messages}
+                  checked={formData.show_in_messages ?? false}
                   onChange={handleChange}
                   className="rounded text-orange-500 focus:ring-orange-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Allow messages from other users</span>
+                <span className="text-sm text-black font-medium">Allow messages from other users</span>
               </label>
-              <label className="flex items-center space-x-2">
+              <label htmlFor="user-show_in_pages" className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  id="user-show_in_pages"
                   name="show_in_pages"
-                  checked={formData.show_in_pages}
+                  checked={formData.show_in_pages ?? false}
                   onChange={handleChange}
                   className="rounded text-orange-500 focus:ring-orange-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Show profile in public pages</span>
+                <span className="text-sm text-black font-medium">Show profile in public pages</span>
               </label>
             </div>
-            <div />
           </div>
         );
       default:
@@ -340,41 +551,47 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
-      <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg w-full max-w-4xl min-h-[500px] h-[600px] animate-fadeIn flex">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-slate-50 bg-opacity-95">
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-4xl min-h-[600px] h-[700px] animate-fadeIn flex border-2 border-slate-200">
         {/* Stepper Sidebar */}
-        <div className="w-1/4 min-w-[200px] bg-gray-50 dark:bg-gray-900 rounded-l-2xl py-8 px-4 flex flex-col items-start h-full">
-          <h2 className="text-lg font-bold mb-6 text-black dark:text-white">Let us know you better</h2>
-          <ul className="space-y-4 w-full">
+        <div className="w-1/4 min-w-[220px] bg-slate-100 rounded-l-3xl py-10 px-6 flex flex-col items-start h-full shadow-lg border-r border-slate-200">
+          <h2 className="text-2xl font-extrabold mb-10 text-[#F04F06] tracking-wide">Let us know you better</h2>
+          <ul className="space-y-6 w-full">
             {steps.map((s, idx) => (
-              <li key={s.label} className="flex items-center gap-2">
-                <span className={`w-3 h-3 rounded-full border-2 ${step === idx ? 'bg-orange-500 border-orange-500' : step > idx ? 'bg-green-500 border-green-500' : 'bg-gray-300 border-gray-300'}`}></span>
-                <span className={`text-sm ${step === idx ? 'font-bold text-orange-600' : 'text-gray-700 dark:text-gray-300'}`}>{s.label}</span>
+              <li key={s.label} className="flex items-center gap-3">
+                <span className={`flex items-center justify-center w-7 h-7 rounded-full border-2 text-base font-bold transition-all duration-200 
+                  ${step === idx ? 'bg-[#FF7A1A] border-[#FF7A1A] text-white shadow-lg' : step > idx ? 'bg-[#FFB26B] border-[#FFB26B] text-[#FF7A1A]' : 'bg-slate-200 border-slate-200 text-slate-400'}`}>{idx + 1}</span>
+                <span className={`text-base transition-all duration-200 ${step === idx ? 'font-bold text-[#FF7A1A]' : step > idx ? 'text-[#FF7A1A]' : 'text-slate-400'}`}>{s.label}</span>
               </li>
             ))}
           </ul>
         </div>
         {/* Main Content */}
-        <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-12 h-full">
+        <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-14 h-full bg-white rounded-r-3xl shadow-inner">
           {error && (
-            <div className="text-red-500 text-sm text-center mb-4">{error}</div>
+            <div className="text-[#FF7A1A] text-base text-center mb-4 font-semibold">{error}</div>
           )}
-          <div className="flex-1 flex flex-col justify-between">{renderStep()}</div>
-          <div className="flex justify-between pt-8">
+          <div className="flex-1 overflow-y-auto">
+            <div className="bg-slate-50 rounded-2xl shadow p-8 mb-6 border border-slate-200">
+              {renderStep()}
+            </div>
+          </div>
+          <div className="sticky bottom-0 left-0 right-0 bg-white pt-6 border-t border-slate-200 z-10 flex justify-between">
             <button
               type="button"
               onClick={handlePrev}
-              className={`px-6 py-2 rounded-lg transition-colors ${step === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-7 py-2.5 rounded-full font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] 
+                ${step === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-[#FF7A1A] border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A]'}`}
               disabled={step === 0}
             >
               Previous
             </button>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {step === steps.length - 1 && (
                 <button
                   type="button"
                   onClick={handleSkip}
-                  className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  className="px-7 py-2.5 rounded-full text-[#FF7A1A] bg-white border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A] font-semibold transition-all duration-200 shadow-md"
                 >
                   Skip for now
                 </button>
@@ -382,7 +599,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                className="px-7 py-2.5 bg-[#FF7A1A] text-white rounded-full font-bold shadow-lg hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] disabled:opacity-50"
               >
                 {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save Profile') : 'Next'}
               </button>
