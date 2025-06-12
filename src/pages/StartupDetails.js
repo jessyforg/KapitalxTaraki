@@ -32,43 +32,66 @@ export default function StartupDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-[95%] mx-auto pt-24 pb-12">
-        <button onClick={() => navigate(-1)} className="mb-6 text-orange-600 hover:underline flex items-center gap-2"><i className="fas fa-arrow-left"></i> Back</button>
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center overflow-hidden bg-white mb-4">
-            {startup.logo_url ? (
-              <img src={startup.logo_url} alt="Logo" className="object-contain w-full h-full" />
+      <div className="max-w-6xl mx-auto pt-24 pb-12">
+        {/* Main Card: Two-column layout with description */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col md:flex-row items-stretch gap-8 border border-gray-200 mb-8 relative">
+          {/* Logo */}
+          <div className="flex flex-1 justify-center items-center min-w-[260px] min-h-[320px]">
+            <div className="w-72 h-72 rounded-full border-4 border-orange-500 flex items-center justify-center overflow-hidden bg-white">
+              {startup.logo_url ? (
+                <img src={startup.logo_url} alt="Logo" className="object-contain w-full h-full" />
+              ) : (
+                <i className="fas fa-building text-7xl text-orange-500"></i>
+              )}
+            </div>
+          </div>
+          {/* Info and Description */}
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="flex flex-col md:flex-row md:items-start md:gap-8">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-orange-600 mb-2">{startup.name || 'Not Provided'}</h1>
+                <div className="text-gray-700 font-semibold mb-1">Industry: <span className="font-normal">{startup.industry || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-1">Location: <span className="font-normal">{startup.location || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-1">Funding Stage: <span className="font-normal">{startup.funding_stage || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-4">Startup Stage: <span className="font-normal">{startup.startup_stage || 'Not Provided'}</span></div>
+                {startup.website ? (
+                  <a href={startup.website} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors">Visit Website</a>
+                ) : (
+                  <span className="mt-2 inline-block bg-gray-200 text-gray-500 font-semibold px-5 py-2 rounded-lg shadow">Website Not Provided</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-gray-800 font-semibold mb-1">Description</div>
+              <div className="text-gray-700 whitespace-pre-line text-lg">{startup.description || 'Not Provided'}</div>
+            </div>
+          </div>
+          {/* Back button */}
+          <button onClick={() => navigate(-1)} className="absolute top-6 right-8 text-orange-600 hover:underline font-semibold">Back</button>
+        </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
+            <div className="text-gray-500 text-sm mb-1">Funding Needed</div>
+            <div className="text-2xl font-bold text-orange-600">{typeof startup.funding_needed === 'number' ? `₱${startup.funding_needed.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Not Provided'}</div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
+            <div className="text-gray-500 text-sm mb-1">Pitch Deck</div>
+            {startup.pitch_deck_url ? (
+              <a href={startup.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View</a>
             ) : (
-              <i className="fas fa-building text-4xl text-orange-500"></i>
+              <span className="text-gray-400">Not Provided</span>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-orange-600 mb-2">{startup.name}</h1>
-          <div className="text-gray-700 font-semibold mb-1">Industry: <span className="font-normal">{startup.industry}</span></div>
-          <div className="text-gray-700 font-semibold mb-1">Funding Stage: <span className="font-normal">{startup.funding_stage}</span></div>
-          <div className="text-gray-700 font-semibold mb-1">Startup Stage: <span className="font-normal">{startup.startup_stage}</span></div>
-        </div>
-        <div className="mb-6">
-          <div className="text-gray-800 font-semibold mb-1">Description:</div>
-          <div className="text-gray-700 whitespace-pre-line text-lg">{startup.description}</div>
-        </div>
-        <div className="mb-2">
-          <span className="font-semibold text-gray-800">Location:</span> <span className="text-gray-700">{startup.location}</span>
-        </div>
-        {startup.website && (
-          <div className="mb-2">
-            <span className="font-semibold text-gray-800">Website:</span> <a href={startup.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{startup.website}</a>
+          <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
+            <div className="text-gray-500 text-sm mb-1">Business Plan</div>
+            {startup.business_plan_url ? (
+              <a href={startup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View</a>
+            ) : (
+              <span className="text-gray-400">Not Provided</span>
+            )}
           </div>
-        )}
-        {startup.pitch_deck_url && (
-          <div className="mb-2">
-            <span className="font-semibold text-gray-800">Pitch Deck:</span> <a href={startup.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{startup.pitch_deck_url}</a>
-          </div>
-        )}
-        {startup.business_plan_url && (
-          <div className="mb-2">
-            <span className="font-semibold text-gray-800">Business Plan:</span> <a href={startup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{startup.business_plan_url}</a>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

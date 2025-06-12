@@ -102,10 +102,32 @@ const EntrepreneurDashboard = () => {
     const fetchCoFounders = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/cofounders', {
+        const coFoundersRes = await axios.get('/api/cofounders', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setCoFounders(response.data);
+        
+        // Fetch preferences for each co-founder
+        const coFoundersWithPreferences = await Promise.all(
+          coFoundersRes.data.map(async (coFounder) => {
+            try {
+              const preferencesRes = await axios.get(`/api/users/${coFounder.id}/preferences`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return {
+                ...coFounder,
+                preferred_location: preferencesRes.data?.preferred_location || coFounder.location
+              };
+            } catch (error) {
+              console.error(`Error fetching preferences for co-founder ${coFounder.id}:`, error);
+              return {
+                ...coFounder,
+                preferred_location: coFounder.location
+              };
+            }
+          })
+        );
+        
+        setCoFounders(coFoundersWithPreferences);
       } catch (error) {
         console.error('Error fetching co-founders:', error);
       }
@@ -115,10 +137,32 @@ const EntrepreneurDashboard = () => {
     const fetchInvestors = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/investors', {
+        const investorsRes = await axios.get('/api/investors', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setInvestors(response.data);
+        
+        // Fetch preferences for each investor
+        const investorsWithPreferences = await Promise.all(
+          investorsRes.data.map(async (investor) => {
+            try {
+              const preferencesRes = await axios.get(`/api/users/${investor.id}/preferences`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return {
+                ...investor,
+                preferred_location: preferencesRes.data?.preferred_location || investor.location
+              };
+            } catch (error) {
+              console.error(`Error fetching preferences for investor ${investor.id}:`, error);
+              return {
+                ...investor,
+                preferred_location: investor.location
+              };
+            }
+          })
+        );
+        
+        setInvestors(investorsWithPreferences);
       } catch (error) {
         console.error('Error fetching investors:', error);
       }
@@ -353,20 +397,42 @@ const EntrepreneurDashboard = () => {
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start">
                           <div className="font-bold text-lg mb-1 text-gray-900">{coFounder.name}</div>
-                          <div className="text-sm text-gray-500 mb-4">
-                            <span className="font-semibold">Industry:</span> {coFounder.industry ? coFounder.industry : 'Not provided'}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Industry:</span>{' '}
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                              {coFounder.industry ? coFounder.industry : 'Not provided'}
+                            </span>
                           </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Location:</span>{' '}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {coFounder.preferred_location ? coFounder.preferred_location : 'Not provided'}
+                            </span>
+                          </div>
+                          {coFounder.skills && coFounder.skills.length > 0 && (
+                            <div className="text-sm text-gray-500 mb-4">
+                              <span className="font-semibold">Skills:</span>{' '}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {coFounder.skills.map((skill, index) => (
+                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex w-full gap-2 mt-auto">
                             <button
-                              onClick={() => handleMessage(coFounder.id)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                              onClick={() => handleViewProfile(coFounder.id)}
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
                             >
-                              Message
+                              View Profile
                             </button>
                             <button
+                              onClick={() => handleMessage(coFounder.id)}
                               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
                             >
-                              Remove
+                              Message
                             </button>
                           </div>
                         </div>
@@ -433,20 +499,42 @@ const EntrepreneurDashboard = () => {
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start">
                           <div className="font-bold text-lg mb-1 text-gray-900">{investor.name}</div>
-                          <div className="text-sm text-gray-500 mb-4">
-                            <span className="font-semibold">Industry:</span> {investor.industry ? investor.industry : 'Not provided'}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Industry:</span>{' '}
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                              {investor.industry ? investor.industry : 'Not provided'}
+                            </span>
                           </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Location:</span>{' '}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {investor.preferred_location ? investor.preferred_location : 'Not provided'}
+                            </span>
+                          </div>
+                          {investor.skills && investor.skills.length > 0 && (
+                            <div className="text-sm text-gray-500 mb-4">
+                              <span className="font-semibold">Skills:</span>{' '}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {investor.skills.map((skill, index) => (
+                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex w-full gap-2 mt-auto">
                             <button
-                              onClick={() => handleMessage(investor.id)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                              onClick={() => handleViewProfile(investor.id)}
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
                             >
-                              Message
+                              View Profile
                             </button>
                             <button
+                              onClick={() => handleMessage(investor.id)}
                               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
                             >
-                              Remove
+                              Message
                             </button>
                           </div>
                         </div>

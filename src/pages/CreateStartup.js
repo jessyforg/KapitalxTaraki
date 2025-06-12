@@ -37,56 +37,8 @@ const industries = {
 };
 
 const locations = {
-  'National Capital Region (NCR)': [
-    'Manila', 'Quezon City', 'Caloocan', 'Las Piñas', 'Makati', 'Malabon', 'Mandaluyong', 'Marikina', 'Muntinlupa', 'Navotas', 'Parañaque', 'Pasay', 'Pasig', 'Pateros', 'San Juan', 'Taguig', 'Valenzuela'
-  ],
   'Cordillera Administrative Region (CAR)': [
     'Baguio City', 'Tabuk City', 'La Trinidad', 'Bangued', 'Lagawe', 'Bontoc'
-  ],
-  'Ilocos Region (Region I)': [
-    'San Fernando City', 'Laoag City', 'Vigan City', 'Dagupan City', 'San Carlos City', 'Urdaneta City'
-  ],
-  'Cagayan Valley (Region II)': [
-    'Tuguegarao City', 'Cauayan City', 'Santiago City', 'Ilagan City'
-  ],
-  'Central Luzon (Region III)': [
-    'San Fernando City', 'Angeles City', 'Olongapo City', 'Malolos City', 'Cabanatuan City', 'San Jose City', 'Science City of Muñoz', 'Palayan City'
-  ],
-  'CALABARZON (Region IV-A)': [
-    'Calamba City', 'San Pablo City', 'Antipolo City', 'Batangas City', 'Cavite City', 'Lipa City', 'San Pedro', 'Santa Rosa', 'Tagaytay City', 'Trece Martires City'
-  ],
-  'MIMAROPA (Region IV-B)': [
-    'Calapan City', 'Puerto Princesa City', 'San Jose', 'Romblon'
-  ],
-  'Bicol Region (Region V)': [
-    'Legazpi City', 'Naga City', 'Iriga City', 'Tabaco City', 'Sorsogon City', 'Ligao City'
-  ],
-  'Western Visayas (Region VI)': [
-    'Iloilo City', 'Bacolod City', 'Roxas City', 'San Carlos City', 'Silay City', 'Talisay City'
-  ],
-  'Central Visayas (Region VII)': [
-    'Cebu City', 'Mandaue City', 'Lapu-Lapu City', 'Talisay City', 'Danao City', 'Bogo City'
-  ],
-  'Eastern Visayas (Region VIII)': [
-    'Tacloban City', 'Ormoc City', 'Calbayog City', 'Baybay City', 'Maasin City', 'Catbalogan City'
-  ],
-  'Zamboanga Peninsula (Region IX)': [
-    'Zamboanga City', 'Dipolog City', 'Pagadian City', 'Isabela City'
-  ],
-  'Northern Mindanao (Region X)': [
-    'Cagayan de Oro City', 'Iligan City', 'Oroquieta City', 'Ozamiz City', 'Tangub City', 'Gingoog City'
-  ],
-  'Davao Region (Region XI)': [
-    'Davao City', 'Digos City', 'Tagum City', 'Panabo City', 'Samal City', 'Mati City'
-  ],
-  'SOCCSKSARGEN (Region XII)': [
-    'General Santos City', 'Koronadal City', 'Tacurong City', 'Kidapawan City'
-  ],
-  'Caraga (Region XIII)': [
-    'Butuan City', 'Surigao City', 'Bislig City', 'Tandag City', 'Bayugan City', 'Cabadbaran City'
-  ],
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)': [
-    'Cotabato City', 'Marawi City', 'Lamitan City'
   ]
 };
 

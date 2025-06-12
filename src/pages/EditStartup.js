@@ -20,6 +20,12 @@ const startupStages = [
   { value: 'maturity', label: 'Maturity Stage' },
 ];
 
+const locations = {
+  'Cordillera Administrative Region (CAR)': [
+    'Baguio City', 'Tabuk City', 'La Trinidad', 'Bangued', 'Lagawe', 'Bontoc'
+  ]
+};
+
 export default function EditStartup() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -201,12 +207,21 @@ export default function EditStartup() {
               <label className="block font-semibold mb-2 text-gray-700">
                 <i className="fas fa-map-marker-alt mr-2 text-orange-500"></i>Location
               </label>
-              <input 
+              <select 
                 name="location" 
                 value={form.location} 
                 onChange={handleChange} 
                 className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
+              >
+                <option value="">Select Location</option>
+                {Object.entries(locations).map(([region, cities]) => (
+                  <optgroup key={region} label={region}>
+                    {cities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block font-semibold mb-2 text-gray-700">

@@ -107,10 +107,32 @@ const InvestorDashboard = () => {
     const fetchEntrepreneurs = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/entrepreneurs', {
+        const entrepreneursRes = await axios.get('/api/entrepreneurs', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setEntrepreneurs(response.data);
+        
+        // Fetch preferences for each entrepreneur
+        const entrepreneursWithPreferences = await Promise.all(
+          entrepreneursRes.data.map(async (entrepreneur) => {
+            try {
+              const preferencesRes = await axios.get(`/api/users/${entrepreneur.id}/preferences`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return {
+                ...entrepreneur,
+                preferred_location: preferencesRes.data?.preferred_location || entrepreneur.location
+              };
+            } catch (error) {
+              console.error(`Error fetching preferences for entrepreneur ${entrepreneur.id}:`, error);
+              return {
+                ...entrepreneur,
+                preferred_location: entrepreneur.location
+              };
+            }
+          })
+        );
+        
+        setEntrepreneurs(entrepreneursWithPreferences);
       } catch (error) {
         console.error('Error fetching entrepreneurs:', error);
       }
@@ -118,10 +140,32 @@ const InvestorDashboard = () => {
     const fetchInvestors = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/investors', {
+        const investorsRes = await axios.get('/api/investors', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setInvestors(response.data);
+        
+        // Fetch preferences for each investor
+        const investorsWithPreferences = await Promise.all(
+          investorsRes.data.map(async (investor) => {
+            try {
+              const preferencesRes = await axios.get(`/api/users/${investor.id}/preferences`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return {
+                ...investor,
+                preferred_location: preferencesRes.data?.preferred_location || investor.location
+              };
+            } catch (error) {
+              console.error(`Error fetching preferences for investor ${investor.id}:`, error);
+              return {
+                ...investor,
+                preferred_location: investor.location
+              };
+            }
+          })
+        );
+        
+        setInvestors(investorsWithPreferences);
       } catch (error) {
         console.error('Error fetching investors:', error);
       }
@@ -178,6 +222,10 @@ const InvestorDashboard = () => {
 
   const handleEditStartup = (startupId) => {
     if (startupId) navigate(`/edit-startup/${startupId}`);
+  };
+
+  const handleViewProfile = (profileId) => {
+    if (profileId) navigate(`/profile/${profileId}`);
   };
 
   return (
@@ -408,13 +456,40 @@ const InvestorDashboard = () => {
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start">
                           <div className="font-bold text-lg mb-1 text-gray-900">{entrepreneur.name}</div>
-                          <div className="text-sm text-gray-500 mb-4">
-                            <span className="font-semibold">Industry:</span> {entrepreneur.industry ? entrepreneur.industry : 'Not provided'}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Industry:</span>{' '}
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                              {entrepreneur.industry ? entrepreneur.industry : 'Not provided'}
+                            </span>
                           </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Location:</span>{' '}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {entrepreneur.preferred_location ? entrepreneur.preferred_location : 'Not provided'}
+                            </span>
+                          </div>
+                          {entrepreneur.skills && entrepreneur.skills.length > 0 && (
+                            <div className="text-sm text-gray-500 mb-4">
+                              <span className="font-semibold">Skills:</span>{' '}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {entrepreneur.skills.map((skill, index) => (
+                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex w-full gap-2 mt-auto">
                             <button
+                              onClick={() => handleViewProfile(entrepreneur.id)}
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                            >
+                              View Profile
+                            </button>
+                            <button
                               onClick={() => handleMessage(entrepreneur.id)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
                             >
                               Message
                             </button>
@@ -485,13 +560,40 @@ const InvestorDashboard = () => {
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start">
                           <div className="font-bold text-lg mb-1 text-gray-900">{investor.name}</div>
-                          <div className="text-sm text-gray-500 mb-4">
-                            <span className="font-semibold">Industry:</span> {investor.industry ? investor.industry : 'Not provided'}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Industry:</span>{' '}
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                              {investor.industry ? investor.industry : 'Not provided'}
+                            </span>
                           </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Location:</span>{' '}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {investor.preferred_location ? investor.preferred_location : 'Not provided'}
+                            </span>
+                          </div>
+                          {investor.skills && investor.skills.length > 0 && (
+                            <div className="text-sm text-gray-500 mb-4">
+                              <span className="font-semibold">Skills:</span>{' '}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {investor.skills.map((skill, index) => (
+                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex w-full gap-2 mt-auto">
                             <button
+                              onClick={() => handleViewProfile(investor.id)}
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                            >
+                              View Profile
+                            </button>
+                            <button
                               onClick={() => handleMessage(investor.id)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
                             >
                               Message
                             </button>
