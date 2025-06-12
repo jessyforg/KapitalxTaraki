@@ -314,7 +314,12 @@ app.put('/api/user/:id', authenticateToken, async (req, res) => {
       social_links,
       show_in_search,
       show_in_messages,
-      show_in_pages
+      show_in_pages,
+      skills,
+      position_desired,
+      preferred_industries,
+      preferred_startup_stage,
+      preferred_location
     } = req.body;
     await pool.query('START TRANSACTION');
     try {
@@ -414,6 +419,40 @@ app.put('/api/user/:id', authenticateToken, async (req, res) => {
             social_links.microsoft_url,
             social_links.whatsapp_url,
             social_links.telegram_url
+          ]
+        );
+      }
+      // Update user skills
+      if (Array.isArray(skills)) {
+        await pool.query('DELETE FROM user_skills WHERE user_id = ?', [req.params.id]);
+        for (const skill of skills) {
+          await pool.query(
+            'INSERT INTO user_skills (user_id, skill_name, skill_level) VALUES (?, ?, ?)',
+            [req.params.id, skill, 'intermediate']
+          );
+        }
+      }
+      // Update user preferences
+      if (
+        position_desired !== undefined ||
+        preferred_industries !== undefined ||
+        preferred_startup_stage !== undefined ||
+        preferred_location !== undefined
+      ) {
+        await pool.query(
+          `INSERT INTO user_preferences (user_id, position_desired, preferred_industries, preferred_startup_stage, preferred_location)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             position_desired = VALUES(position_desired),
+             preferred_industries = VALUES(preferred_industries),
+             preferred_startup_stage = VALUES(preferred_startup_stage),
+             preferred_location = VALUES(preferred_location)`,
+          [
+            req.params.id,
+            position_desired || null,
+            preferred_industries ? JSON.stringify(preferred_industries) : null,
+            preferred_startup_stage || null,
+            preferred_location || null
           ]
         );
       }
@@ -868,6 +907,23 @@ app.put('/api/startups/:id', authenticateToken, upload.single('logo'), async (re
     );
     res.json({ success: true });
   } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add this route after authentication middleware is set up
+app.get('/api/users/:id/preferences', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM user_preferences WHERE user_id = ?',
+      [req.params.id]
+    );
+    if (!rows[0]) {
+      return res.json({}); // Fallback: return empty object if not found
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching user preferences:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

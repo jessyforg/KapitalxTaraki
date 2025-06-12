@@ -91,7 +91,7 @@ const api = {
 
   async updateUserProfile(userId, profileData) {
     try {
-      const response = await fetch(`${API_URL}/users/${userId}/profile`, {
+      const response = await fetch(`${API_URL}/user/${userId}`, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(profileData),
