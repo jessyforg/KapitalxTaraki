@@ -6,8 +6,9 @@ import aware from "../components/imgs/aware.webp";
 import ready from "../components/imgs/ready.webp";
 import know from "../components/imgs/knowledge.webp";
 import inno from "../components/imgs/inno.webp";
+import Footer from "../components/Footer";
 
-function Program() {
+function ProgramsPage() {
   useEffect(() => {
     AOS.init({
       duration: 800, // Animation duration
@@ -16,14 +17,17 @@ function Program() {
     });
   }, []);
   return (
-    <div>
+    <>
+      <Navbar />
       <div>
         <div className="">
-          <section id="program" className="mt-16 tablet:my-12 text-center">
+          {/* Add extra margin-top to lower the heading */}
+          <section id="program" className="mt-48 tablet:my-12 text-center">
             <h1
               className="font-semibold text-md tablet:text-lg tablet-m:text-2xl px-20 tablet:px-52 tablet-m:px-72 laptop-m:px-96 laptop-s:text-3xl laptop-m:text-[2.3rem] desktop-m:text-[2.9rem] laptop-s:py-6 laptop-m:py-8 desktop-s:py-10 laptop-s:bg-trkblack laptop-s:text-white aos-init"
               data-aos="fade-down"
             >
+            <br></br>
               We&apos;re covering a lot of developments in our news updates.
             </h1>
           </section>{" "}
@@ -162,7 +166,8 @@ function Program() {
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }
-export default Program;
+export default ProgramsPage;

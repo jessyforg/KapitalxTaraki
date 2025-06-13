@@ -3,18 +3,17 @@ import { scroller } from "react-scroll";
 import { Link, useNavigate } from "react-router-dom";
 import tarakiLogoBlack from "../components/imgs/taraki-black.svg";
 import tarakiLogoWhite from "../components/imgs/TARAKI 10X WHITE.png";
-import "aos/dist/aos.css";
 import Intto from "./imgs/InTTO.svg";
 import UP from "./imgs/SILBI_TBI.svg";
 import SLU from "./imgs/SLU.svg";
 import BSU from "./imgs/BSU.svg";
 import IFSU from "./imgs/IFSU-TBI.svg";
-import Henry from "./imgs/investors/Henry-removebg-preview.webp";
-import Jaydee from "./imgs/investors/Jaydee-removebg-preview.webp";
-import Wilson from "./imgs/investors/Wilson-removebg-preview.webp";
+import Henry from "./imgs/investors/Henry.webp";
+import Jaydee from "./imgs/investors/Jaydee.webp";
+import Wilson from "./imgs/investors/Wilson.webp";
 import Elmer from "./imgs/investors/Elmer-removebg-preview.webp";
-import Angelo from "./imgs/investors/Angelo-removebg-preview.webp";
-import Benjie from "./imgs/investors/Benjie-removebg-preview.webp";
+import Angelo from "./imgs/investors/Angelo.webp";
+import Benjie from "./imgs/investors/Benjie.webp";
 
 function TBI() {
   const navigate = useNavigate();
@@ -41,13 +40,6 @@ function TBI() {
       console.warn('Error accessing localStorage:', e);
     }
   }, [darkMode]);
-
-  const [fadeIn, setFadeIn] = useState(false);
-
-  React.useEffect(() => {
-    setFadeIn(true);
-  }, []);
-
   const handleScrollToHome = () => {
     scroller.scrollTo("Home", { smooth: true, duration: 1000, offset: -400 });
     navigate("/");
@@ -55,17 +47,17 @@ function TBI() {
 
   return (
     <>
-      <div className={`font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40 transition-opacity duration-700 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators
         </h1>
-        <section className="grid grid-cols-1 place-items-center justify-items-center tablet:grid gap-4 tablet-m:gap-1  tablet:grid-cols-2 tablet-m:grid-cols-3 tablet:px-12 laptop-m:px-24 desktop-s:px-28 desktop-m:px-36">
+        <section id="tbi" className="grid grid-cols-1 place-items-center justify-items-center tablet:grid gap-4 tablet-m:gap-1  tablet:grid-cols-2 tablet-m:grid-cols-3 tablet:px-12 laptop-m:px-24 desktop-s:px-28 desktop-m:px-36">
           <a href="/tbi/intto">
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-ucgreen hover:border-4">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
               <img
                 src={Intto}
                 alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 aos-init mb-1"
+                className="h-12 laptop-s:h-16 desktop-m:h-20 mb-1"
               />
               <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] text-ucgreen font-bold">
                 InTTO
@@ -83,7 +75,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-upred hover:border-4">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
               <img
                 src={UP}
                 alt="1st-ico"
@@ -105,7 +97,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-slublue hover:border-4">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
               <img
                 src={SLU}
                 alt="1st-ico"
@@ -127,7 +119,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-bsuyellow hover:border-4 tablet-m:hidden">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 tablet-m:hidden">
               <img
                 src={BSU}
                 alt="1st-ico"
@@ -149,7 +141,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-ifsugreen hover:border-4 tablet-m:hidden">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 tablet-m:hidden">
               <img
                 src={IFSU}
                 alt="1st-ico"
@@ -173,7 +165,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-bsuyellow hover:border-4">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
               <img
                 src={BSU}
                 alt="1st-ico"
@@ -195,7 +187,7 @@ function TBI() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 transition-all duration-300 hover:scale-110 hover:border-ifsugreen hover:border-4">
+            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
               <img
                 src={IFSU}
                 alt="1st-ico"
@@ -214,69 +206,97 @@ function TBI() {
           </a>
         </section>
 
-        <section className="my-10">
-          <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center mb-6">
-            Mentors
+        <section id="mentors" className="my-16">
+          <h1 className="font-bold text-2xl md:text-3xl text-center mb-12 text-gray-800 dark:text-white">
+            Our Mentors
           </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 tablet-m:grid-cols-3 gap-8 px-6 tablet-m:px-8 justify-center items-center place-items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 px-4 md:px-8 max-w-7xl mx-auto">
             {/* Henry */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Henry} alt="Henry James Banayat" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Henry} 
+                    alt="Henry James Banayat" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Henry James Banayat</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Director, Bitshares Labs, Inc. Blockchain and startup growth expert.</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Henry James Banayat</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Director of Business Development at Bitshares Labs, Inc.</p>
             </div>
             {/* Jaydee */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Jaydee} alt="Jaydee Rebadulla" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Jaydee} 
+                    alt="Jaydee Rebadulla" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Jaydee Rebadulla</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">CEO, Errand Doers PH; Director, Lycaon Creatives; Founder, El Lote PH.</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Jaydee Rebadulla</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Director at Lycaon Creatives; Chairman & CEO at Errand Doers PH; Owner and Founder at El Lote PH</p>
             </div>
             {/* Wilson */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Wilson} alt="Wilson Capuyan" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Wilson} 
+                    alt="Wilson Capuyan" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Wilson Capuyan</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Founder & GM, Pixels & Metrics. Startup growth strategist.</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Wilson Capuyan</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Elmer */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Elmer} alt="Elmer Macalingay" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Elmer} 
+                    alt="Elmer Macalingay" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Elmer Macalingay</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">Founder, Health 100 Restoreant. Food entrepreneur and innovator.</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Elmer Macalingay</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Benjie */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Benjie} alt="Hon. Benjamin Magalong" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Benjie} 
+                    alt="Hon. Benjamin Magalong" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Hon. Benjamin Magalong</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">City Mayor of Baguio. Innovation and governance advocate.</p>
-            </div>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Hon. Benjamin Magalong</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">City Mayor of Baguio</p>            </div>
             {/* Angelo */}
-            <div className="bg-white dark:bg-neutral-900 shadow-xl rounded-2xl flex flex-col items-center p-5 pt-3 transition-transform duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200 dark:border-neutral-800 w-64 h-96 md:w-80 md:h-[28rem] mx-auto">
-              <div className="w-64 h-80 md:w-72 md:h-[22rem] flex items-center justify-center mb-2 rounded-xl overflow-hidden">
-                <img src={Angelo} alt="Angelo Valdez" className="object-contain w-full h-full drop-shadow-lg rounded-xl" />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-[5px] border-orange-400 shadow-xl">
+                  <img 
+                    className="w-full h-full object-cover" 
+                    src={Angelo} 
+                    alt="Angelo Valdez" 
+                  />
+                </div>
               </div>
-              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-1 mt-1">Angelo Valdez</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">CEO, Harper and Hill. ASEAN HR leader and connector.</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Angelo Valdez</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">CEO of Harper and Hill, Global & International Network Connector, ASEAN HR Business leader & Former Director for South East Asia at Morgan Philips Group</p>
             </div>
           </div>
         </section>
       </div>
-
-      <footer className="text-center bg-white p-2 rounded-lg shadow mt-8 laptop-s:text-center">
-        <div className="w-full mx-auto max-w-screen-xl p-4 px-14 tablet:px-64 tablet:flex tablet:items-center tablet:justify-between laptop-s:px-[32rem] phone:px-16 tablet-m:px-96">
-          <span className="text-xs text-gray-400 text-center laptop-m:text-sm">
-            © 2024 | TARAKI | All Rights Reserved Designed by{" "}
-            <span className="font-bold text-gray-500"> TARAKI-CAR</span>
-          </span>
           <ul className="flex flex-wrap items-center mt-0 text-sm font-medium phone:hidden laptop:flex text-gray-400">
             <li>
               <a href="#section2" className="hover:underline me-4 tablet:me-6">
@@ -294,8 +314,6 @@ function TBI() {
               </a>
             </li>
           </ul>
-        </div>
-      </footer>
     </>
   );
 }

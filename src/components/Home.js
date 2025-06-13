@@ -23,17 +23,14 @@ function Home() {
           <source src={video} type="video/webm" />
           Your browser does not support the video tag.
         </video>
-        {/* Overlay for dark effect */}
-        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-80 z-10"></div>
-        {/* Centered logo and subtitle */}
+        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-30 z-10"></div>
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full">
           <img
             src={tarakiLogo}
             alt="TARAKI LOGO"
-            className="w-[28rem] tablet:w-[32rem] laptop-s:w-[36rem] desktop-m:w-[40rem] mx-auto"
+            className="w-[60rem] tablet:w-[60rem] laptop-s:w-[60rem] desktop-m:w-[60rem] mx-auto"
             style={{ filter: "invert(0)" }}
           />
-          {/* Navigation links below logo removed as per request */}
         </div>
       </section>
     </div>

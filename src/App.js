@@ -4,7 +4,6 @@ import Home from "./components/Home.js";
 import About from "./components/About.js";
 import Objective from "./components/Objectives.js";
 import Team from "./components/Team.js";
-import Program from "./components/Program.js";
 import Framework from "./components/Framework.js";
 import Events from "./components/Events.js";
 import FAQ from "./components/FAQ.js";
@@ -15,6 +14,7 @@ import InTTOTBI from "./components/InTTOTBI.js";
 import React, { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import ProgramsPage from "./pages/ProgramsPage.js";
 import EventsPage from './pages/EventsPage';
 import Ecosystem from "./pages/Ecosystem";
 import AdminDashboard from "./components/AdminDashboard.js";
@@ -34,7 +34,6 @@ function MainPage() {
       <About />
       <Objective />
       <Team />
-      <Program />
       <Events />
       <FAQ />
       <Contact />
@@ -56,6 +55,7 @@ function App() {
         <Route path="/Tbi/InTTO" element={<InTTOTBI />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/ecosystem" element={<Ecosystem />} />
+        <Route path="/programs" element={<ProgramsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/profile/:id" element={<UserProfile />} />

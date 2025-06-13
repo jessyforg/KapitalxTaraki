@@ -495,14 +495,17 @@ function Navbar() {
                   <ul className="py-1">
                     <li>
                       <Link
-                        to="/ecosystem#tbi"
-                        onClick={e => {
+                        to="/ecosystem#tbi"                        onClick={e => {
                           e.preventDefault();
                           if (location.pathname === '/ecosystem') {
                             const el = document.getElementById('tbi');
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            if (el) {
+                              const yOffset = -100; // Adjust this value to control the scroll position
+                              const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                              window.scrollTo({ top: y, behavior: 'smooth' });
+                            }
                           } else {
-                            window.location.href = '/ecosystem#tbi';
+                            navigate('/ecosystem', { state: { scrollTo: 'tbi' } });
                           }
                           closeNavbar();
                         }}
@@ -513,14 +516,17 @@ function Navbar() {
                     </li>
                     <li>
                       <Link
-                        to="/ecosystem#mentors"
-                        onClick={e => {
+                        to="/ecosystem#mentors"                        onClick={e => {
                           e.preventDefault();
                           if (location.pathname === '/ecosystem') {
                             const el = document.getElementById('mentors');
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            if (el) {
+                              const yOffset = -100; // Adjust this value to control the scroll position
+                              const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                              window.scrollTo({ top: y, behavior: 'smooth' });
+                            }
                           } else {
-                            window.location.href = '/ecosystem#mentors';
+                            navigate('/ecosystem', { state: { scrollTo: 'mentors' } });
                           }
                           closeNavbar();
                         }}
@@ -567,16 +573,12 @@ function Navbar() {
                 <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
                   <ul className="py-1">
                     <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollToSection("programs");
-                        }}
+                      <NavLink
+                        to="/programs"
                         className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                       >
                         Programs
-                      </Link>
+                      </NavLink>
                     </li>
                     <li>
                       <NavLink
