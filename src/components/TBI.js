@@ -11,7 +11,7 @@ import IFSU from "./imgs/IFSU-TBI.svg";
 import Henry from "./imgs/investors/Henry.webp";
 import Jaydee from "./imgs/investors/Jaydee.webp";
 import Wilson from "./imgs/investors/Wilson.webp";
-import Elmer from "./imgs/investors/Elmer-removebg-preview.webp";
+import Elmer from "./imgs/investors/Elmer.webp";
 import Angelo from "./imgs/investors/Angelo.webp";
 import Benjie from "./imgs/investors/Benjie.webp";
 
