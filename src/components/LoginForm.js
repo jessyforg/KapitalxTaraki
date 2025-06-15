@@ -27,9 +27,10 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess }) => {
       const response = await api.login(formData);
       if (response.token) {
         localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Fetch full user profile
+        const fullUser = await api.getUserProfile(response.user.id);
+        localStorage.setItem('user', JSON.stringify(fullUser));
         setSuccess('Login successful!');
-        // Redirect or update UI as needed
         if (onAuthSuccess) onAuthSuccess();
       } else {
         setError(response.message || 'Login failed');

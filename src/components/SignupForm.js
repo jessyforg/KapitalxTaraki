@@ -69,9 +69,10 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess }) {
       // Store token and user data
       if (response.token && response.user) {
         localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-
-        setRegisteredUser(response.user);
+        // Fetch full user profile
+        const fullUser = await api.getUserProfile(response.user.id);
+        localStorage.setItem('user', JSON.stringify(fullUser));
+        setRegisteredUser(fullUser);
         setShowUserDetails(true);
         setVerificationSent(true);
       } else {
