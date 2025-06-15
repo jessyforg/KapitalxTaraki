@@ -371,7 +371,7 @@ function Navbar() {
   }, [msgDropdownOpen]);
 
   return (
-    <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}> 
+    <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
         <div className="flex items-center justify-between mx-auto px-6 py-3">
           <Link
@@ -417,8 +417,8 @@ function Navbar() {
             </button>
           </div>
           <div
-          className="items-center justify-center hidden w-full tablet-m:flex tablet-m:w-auto mx-auto laptop-s:flex-1"
-           id="navbar-cta"
+            className="items-center justify-center hidden w-full tablet-m:flex tablet-m:w-auto mx-auto laptop-s:flex-1"
+            id="navbar-cta"
             ref={navbarStickyRef}
           >
             <ul className="flex flex-row items-center justify-center font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
@@ -655,9 +655,9 @@ function Navbar() {
                   </button>
                   {msgDropdownOpen && (
                     <div
-                      className={`absolute right-0 mt-2 w-96 max-w-[90vw] rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}
+                      className="absolute right-0 mt-2 w-96 max-w-[90vw] rounded-xl shadow-2xl z-50 bg-white border border-gray-200"
                     >
-                      <div className="p-4 border-b border-gray-200 dark:border-white/10 font-semibold">Messages</div>
+                      <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
                       <div className="max-h-96 overflow-y-auto">
                         {console.log('msgPreview to render:', msgPreview)}
                         {loadingPreview ? (
@@ -705,7 +705,7 @@ function Navbar() {
                           })
                         )}
                       </div>
-                      <div className="border-t border-gray-200 dark:border-white/10 p-2 text-center">
+                      <div className="border-t border-gray-200 p-2 text-center">
                         <button
                           className="text-orange-600 hover:underline text-sm font-medium"
                           onClick={() => {
@@ -807,7 +807,7 @@ function Navbar() {
           className="main-modal fixed w-full h-100 inset-0 z-50 overflow-hidden flex justify-center items-center animated fadeIn faster"
           style={{ display: "flex" }}
         >
-          <div className="modal-container bg-white dark:bg-[#232323] rounded-lg shadow-lg max-w-md w-full p-0 relative animate-slideInFromTop">
+          <div className={`modal-container ${darkMode ? 'bg-[#232323]' : 'bg-white'} rounded-lg shadow-lg max-w-md w-full p-0 relative animate-slideInFromTop`}>
             <div className="flex justify-center items-center border-b border-gray-200 dark:border-gray-700">
               <button
                 className={`flex-1 py-4 text-lg font-semibold transition-colors duration-200 ${authTab === 'login' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
