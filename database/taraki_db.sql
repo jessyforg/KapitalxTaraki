@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 11, 2025 at 03:36 AM
+-- Generation Time: Jun 15, 2025 at 06:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -138,7 +138,10 @@ CREATE TABLE `events` (
   `organizer_id` int(11) DEFAULT NULL,
   `status` enum('upcoming','ongoing','completed') DEFAULT 'upcoming',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `rsvp_link` varchar(255) DEFAULT NULL,
+  `time` time DEFAULT NULL,
+  `tags` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -363,6 +366,23 @@ CREATE TABLE `user_conversations` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_preferences`
+--
+
+CREATE TABLE `user_preferences` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `position_desired` varchar(100) DEFAULT NULL,
+  `preferred_industries` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferred_industries`)),
+  `preferred_startup_stage` enum('idea','mvp','scaling','established') DEFAULT NULL,
+  `preferred_location` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `user_privacy_settings`
 --
 
@@ -372,6 +392,20 @@ CREATE TABLE `user_privacy_settings` (
   `show_in_search` tinyint(1) DEFAULT 1,
   `show_in_messages` tinyint(1) DEFAULT 1,
   `show_in_pages` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_skills`
+--
+
+CREATE TABLE `user_skills` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `skill_name` varchar(100) NOT NULL,
+  `skill_level` enum('beginner','intermediate','expert') DEFAULT 'intermediate',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -396,38 +430,26 @@ CREATE TABLE `user_social_links` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `user_skills`
+-- Table structure for table `verification_documents`
 --
 
-CREATE TABLE `user_skills` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `verification_documents` (
+  `document_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `skill_name` varchar(100) NOT NULL,
-  `skill_level` enum('beginner','intermediate','expert') DEFAULT 'intermediate',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `user_skills_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_preferences`
---
-
-CREATE TABLE `user_preferences` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `position_desired` varchar(100) DEFAULT NULL,
-  `preferred_industries` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferred_industries`)),
-  `preferred_startup_stage` enum('idea','mvp','scaling','established') DEFAULT NULL,
-  `preferred_location` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `user_id` (`user_id`),
-  CONSTRAINT `user_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  `document_type` varchar(50) NOT NULL,
+  `document_number` varchar(100) DEFAULT NULL,
+  `issue_date` date DEFAULT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `issuing_authority` varchar(100) DEFAULT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `file_type` varchar(50) NOT NULL,
+  `file_size` int(11) NOT NULL,
+  `status` enum('pending','approved','not approved') DEFAULT 'pending',
+  `rejection_reason` varchar(255) DEFAULT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -560,9 +582,23 @@ ALTER TABLE `user_conversations`
   ADD KEY `other_user_id` (`other_user_id`);
 
 --
+-- Indexes for table `user_preferences`
+--
+ALTER TABLE `user_preferences`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `user_privacy_settings`
 --
 ALTER TABLE `user_privacy_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `user_skills`
+--
+ALTER TABLE `user_skills`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
@@ -571,6 +607,13 @@ ALTER TABLE `user_privacy_settings`
 --
 ALTER TABLE `user_social_links`
   ADD PRIMARY KEY (`user_id`);
+
+--
+-- Indexes for table `verification_documents`
+--
+ALTER TABLE `verification_documents`
+  ADD PRIMARY KEY (`document_id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -673,10 +716,28 @@ ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `user_preferences`
+--
+ALTER TABLE `user_preferences`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `user_privacy_settings`
 --
 ALTER TABLE `user_privacy_settings`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_skills`
+--
+ALTER TABLE `user_skills`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `verification_documents`
+--
+ALTER TABLE `verification_documents`
+  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -781,38 +842,36 @@ ALTER TABLE `user_conversations`
   ADD CONSTRAINT `user_conversations_ibfk_2` FOREIGN KEY (`other_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `user_preferences`
+--
+ALTER TABLE `user_preferences`
+  ADD CONSTRAINT `user_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `user_privacy_settings`
 --
 ALTER TABLE `user_privacy_settings`
   ADD CONSTRAINT `user_privacy_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `user_skills`
+--
+ALTER TABLE `user_skills`
+  ADD CONSTRAINT `user_skills_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `user_social_links`
 --
 ALTER TABLE `user_social_links`
   ADD CONSTRAINT `user_social_links_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `verification_documents`
+--
+ALTER TABLE `verification_documents`
+  ADD CONSTRAINT `verification_documents_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-CREATE TABLE Verification_Documents (
-    document_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    document_type VARCHAR(50) NOT NULL,
-    document_number VARCHAR(100),
-    issue_date DATE,
-    expiry_date DATE,
-    issuing_authority VARCHAR(100),
-    file_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    file_type VARCHAR(50) NOT NULL,
-    file_size INT NOT NULL,
-    status ENUM('pending', 'approved', 'not approved') DEFAULT 'pending',
-    rejection_reason VARCHAR(255),
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reviewed_at TIMESTAMP NULL,
-    reviewed_by INT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
