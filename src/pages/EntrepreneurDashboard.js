@@ -233,6 +233,21 @@ const EntrepreneurDashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-10 mt-24">
+          {/* Verification Banner */}
+          {user && user.verification_status !== 'verified' && (
+            <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-orange-400 text-3xl"><i className="fas fa-exclamation-triangle"></i></span>
+                <span className="text-xl font-bold text-orange-700">Account Verification Required</span>
+              </div>
+              <div className="text-orange-700 mb-2">Your account needs to be verified to access the following features:</div>
+              <ul className="list-disc ml-8 text-orange-700 mb-2">
+                <li>Creating new startups</li>
+                <li>Managing startup profiles</li>
+              </ul>
+              <button className="w-fit bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold mt-2" onClick={() => navigate('/verify-account')}>Verify Your Account</button>
+            </div>
+          )}
           {activeSection === 'startups' && (
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-6">Startups</h1>
@@ -279,7 +294,8 @@ const EntrepreneurDashboard = () => {
                 </div>
                 <button
                   onClick={handleCreateStartup}
-                  className="flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors"
+                  className="flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={user && !user.is_verified}
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Create Startup
