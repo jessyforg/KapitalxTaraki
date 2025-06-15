@@ -97,51 +97,22 @@ function AdminDashboard() {
   const [ticketSearch, setTicketSearch] = useState('');
   const [chatAnim, setChatAnim] = useState(false);
   const [selectedStartup, setSelectedStartup] = React.useState(null);
-  const [startups, setStartups] = React.useState([
-    {
-      id: 1,
-      name: 'AgriBoost',
-      industry: 'AgriTech',
-      entrepreneur: 'Maria Santos',
-      location: 'Baguio City',
-      stage: 'Seed',
-      funding: 'Pre-Seed',
-      website: 'https://agriboost.com',
-      documents: 'agriboost-pitch.pdf',
-      description: 'Empowering farmers with smart analytics and supply chain tools.',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      name: 'Finwise',
-      industry: 'Fintech',
-      entrepreneur: 'Juan Dela Cruz',
-      location: 'La Trinidad',
-      stage: 'Series A',
-      funding: 'Series A',
-      website: 'https://finwise.com',
-      documents: 'finwise-business-plan.pdf',
-      description: 'Revolutionizing microloans for small businesses.',
-      status: 'Accepted',
-    },
-    {
-      id: 3,
-      name: 'Marketly',
-      industry: 'Digital Marketing',
-      entrepreneur: 'Ana Lopez',
-      location: 'Ifugao',
-      stage: 'Ideation Stage',
-      funding: 'None',
-      website: 'https://marketly.com',
-      documents: '',
-      description: 'Connecting local businesses to digital audiences.',
-      status: 'Declined',
-    },
-  ]);
+  const [startups, setStartups] = React.useState([]);
+  const [startupLoading, setStartupLoading] = useState(false);
+  const [startupError, setStartupError] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Add state for selected pending startup and modal
+  const [pendingStartups, setPendingStartups] = useState([]);
+  const [selectedPendingStartup, setSelectedPendingStartup] = useState(null);
+  const [pendingStartupModalOpen, setPendingStartupModalOpen] = useState(false);
+
+  // Add state for event modal (sidebar version)
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '' });
 
   const roleLabels = {
     admin: 'Admin',
@@ -236,18 +207,26 @@ function AdminDashboard() {
   };
 
   // Add/Edit event modal logic
-  const handleEventSave = (event) => {
-    if (eventModal.event) {
-      // Edit existing event
-      setEvents(events.map(e =>
-        e === eventModal.event ? { ...event, registrationLink: event.registrationLink } : e
-      ));
-    } else {
-      // Add new event
-      setEvents([...events, { ...event, registrationLink: event.registrationLink }]);
+  const handleEventSave = async (event) => {
+    try {
+      // Save to backend
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(event)
+      });
+      if (!res.ok) throw new Error('Failed to create event');
+      const savedEvent = await res.json();
+      setEvents([...events, savedEvent]);
+      setEventModal({ open: false, event: null, date: null });
+      setEventFiles([]);
+    } catch (error) {
+      setEventNotification({ type: 'error', message: error.message });
     }
-    setEventModal({ open: false, event: null, date: null });
-    setEventFiles([]);
   };
 
   // When opening modal for edit, set preview
@@ -327,19 +306,92 @@ function AdminDashboard() {
     fetchCoords(suggestion.display_name);
   };
 
-  // Accept/Decline handlers at the top level of AdminDashboard
-  function handleAcceptStartup(id) {
-    setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'Accepted' } : s));
-    if (selectedStartup && selectedStartup.id === id) {
-      setSelectedStartup({ ...selectedStartup, status: 'Accepted' });
+  // Fetch startups
+  const fetchStartups = async () => {
+    setStartupLoading(true);
+    setStartupError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/startups', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch startups');
+      const data = await res.json();
+      setStartups(data);
+      setPendingStartups(data.filter(s => s.approval_status === 'pending'));
+    } catch (error) {
+      setStartupError(error.message);
+    } finally {
+      setStartupLoading(false);
+    }
+  };
+
+  // Fetch startups when startup tab is active
+  useEffect(() => {
+    if (activeTab === 'startup') {
+      fetchStartups();
+    }
+  }, [activeTab]);
+
+  // Accept/Decline handlers
+  async function handleAcceptStartup(id) {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ approval_comment: 'Approved by admin' })
+      });
+
+      if (!res.ok) throw new Error('Failed to approve startup');
+
+      // Refresh startups list after approval
+      fetchStartups();
+    } catch (error) {
+      console.error('Error approving startup:', error);
+      setStartupError(error.message);
     }
   }
-  function handleDeclineStartup(id) {
-    setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'Declined' } : s));
-    if (selectedStartup && selectedStartup.id === id) {
-      setSelectedStartup({ ...selectedStartup, status: 'Declined' });
+
+  async function handleDeclineStartup(id) {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ approval_comment: 'Rejected by admin' })
+      });
+
+      if (!res.ok) throw new Error('Failed to reject startup');
+
+      // Refresh startups list after rejection
+      fetchStartups();
+    } catch (error) {
+      console.error('Error rejecting startup:', error);
+      setStartupError(error.message);
     }
   }
+
+  // Render startup status badge
+  const renderStatusBadge = (status) => {
+    const statusStyles = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      rejected: 'bg-red-100 text-red-800 border-red-200'
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${statusStyles[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
 
   // Handle event edit
   const handleEditEvent = (event) => {
@@ -446,6 +498,83 @@ function AdminDashboard() {
       setModalActionLoading(false);
     }
   };
+
+  // Handler for opening pending startup modal
+  const handleOpenPendingStartupModal = (startup) => {
+    setSelectedPendingStartup(startup);
+    setPendingStartupModalOpen(true);
+  };
+  const handleClosePendingStartupModal = () => {
+    setSelectedPendingStartup(null);
+    setPendingStartupModalOpen(false);
+  };
+
+  // Add a helper function for formatting startup stage
+  const formatStartupStage = (stage) => {
+    if (!stage) return '';
+    const map = {
+      mvp: 'MVP',
+      ideation: 'Ideation',
+      validation: 'Validation',
+      growth: 'Growth',
+      maturity: 'Maturity',
+    };
+    return map[stage] || stage.charAt(0).toUpperCase() + stage.slice(1);
+  };
+
+  // Add event handler for sidebar modal
+  const handleSidebarEventSave = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const event_date = newEvent.date + (newEvent.time ? `T${newEvent.time}` : '');
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: newEvent.title,
+          event_date,
+          location: newEvent.location,
+          status: newEvent.status || 'upcoming',
+          rsvp_link: newEvent.rsvp_link,
+          time: newEvent.time,
+          description: newEvent.description,
+          tags: newEvent.tags
+        })
+      });
+      if (!res.ok) throw new Error('Failed to create event');
+      const savedEvent = await res.json();
+      setEvents([...events, savedEvent]);
+      setShowEventModal(false);
+      setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+    } catch (error) {
+      setEventNotification({ type: 'error', message: error.message });
+    }
+  };
+
+  // Add fetchEvents function
+  const fetchEvents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/events', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch events');
+      const data = await res.json();
+      setEvents(data);
+    } catch (error) {
+      setEventNotification({ type: 'error', message: error.message });
+    }
+  };
+
+  // Fetch events when Events tab is active
+  useEffect(() => {
+    if (activeTab === 'events') {
+      fetchEvents();
+    }
+  }, [activeTab]);
 
   // Main content for each tab
   const renderContent = () => {
@@ -558,75 +687,192 @@ function AdminDashboard() {
               const monthMatrix = getMonthMatrix(calendarDate);
               const monthName = calendarDate.toLocaleString('default', { month: 'long' });
               return (
-                <div className="flex flex-col gap-6">
-                  {/* Calendar Section */}
-                  <div className={`rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}>
-                    {/* Calendar Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-orange-100 dark:border-gray-700">
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={prevMonth}
-                          className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-lg transition"
-                        >
-                          <FiChevronLeft className="w-5 h-5" />
-                        </button>
-                        <h2 className="text-xl font-semibold">{monthName} {calendarDate.getFullYear()}</h2>
-                        <button
-                          onClick={nextMonth}
-                          className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-lg transition"
-                        >
-                          <FiChevronRight className="w-5 h-5" />
-                        </button>
+                <>
+                  <div className="flex flex-row gap-8 w-full">
+                    {/* Expanded Calendar Section */}
+                    <div className="flex-1 rounded-xl shadow-lg overflow-hidden bg-white border border-orange-100">
+                      {/* Calendar Header */}
+                      <div className="flex items-center justify-between p-6 border-b border-orange-100">
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={prevMonth}
+                            className="p-2 hover:bg-orange-100 rounded-lg transition"
+                          >
+                            <FiChevronLeft className="w-5 h-5" />
+                          </button>
+                          <h2 className="text-2xl font-semibold text-orange-700">{monthName} {calendarDate.getFullYear()}</h2>
+                          <button
+                            onClick={nextMonth}
+                            className="p-2 hover:bg-orange-100 rounded-lg transition"
+                          >
+                            <FiChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => setEventModal({ open: true, event: null, date: null })}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-                      >
-                        <FiPlus className="w-5 h-5" />
-                        <span>Add Event</span>
-                      </button>
-                    </div>
-                    {/* Calendar Grid */}
-                    <div className="p-4">
-                      <div className="grid grid-cols-7 gap-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                          <div key={day} className="text-center font-medium text-gray-500 dark:text-gray-400 py-2">
-                            {day}
-                          </div>
-                        ))}
-                        {monthMatrix.map((row, i) => (
-                          <React.Fragment key={i}>
-                            {row.map((day, j) => (
-                              <div
-                                key={`${i}-${j}`}
-                                className={`aspect-square p-2 border border-orange-100 dark:border-gray-700 rounded-lg ${
-                                  day.isCurrentMonth ? 'bg-white dark:bg-[#232323]' : 'bg-orange-50 dark:bg-[#1a1a1a]'
-                                }`}
-                              >
-                                <div className="flex flex-col h-full">
-                                  <span className={`text-sm ${day.isCurrentMonth ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
-                                    {day.date}
-                                  </span>
-                                  <div className="flex-1 flex flex-col gap-1 mt-1">
-                                    {getEventsForDate(day.dateStr).map(event => (
-                                      <div
-                                        key={event.id}
-                                        className="text-xs p-1 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 truncate cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-800 transition"
-                                        onClick={() => handleEditEvent(event)}
-                                      >
-                                        {event.title}
-                                      </div>
-                                    ))}
+                      {/* Calendar Grid */}
+                      <div className="p-6">
+                        <div className="grid grid-cols-7 gap-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                            <div key={day} className="text-center font-medium text-orange-700 py-2">
+                              {day}
+                            </div>
+                          ))}
+                          {monthMatrix.map((row, i) => (
+                            <React.Fragment key={i}>
+                              {row.map((day, j) => (
+                                <div
+                                  key={`${i}-${j}`}
+                                  className={`aspect-square p-2 border border-orange-100 rounded-lg ${
+                                    day && day.getMonth() === calendarDate.getMonth() ? 'bg-white' : 'bg-orange-50'
+                                  }`}
+                                >
+                                  <div className="flex flex-col h-full">
+                                    <div className="flex items-center justify-between">
+                                      <span className={`text-sm ${day && day.getMonth() === calendarDate.getMonth() ? 'text-orange-700' : 'text-gray-400'}`}>
+                                        {day ? day.getDate() : ''}
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 flex flex-col gap-1 mt-1 justify-end items-center">
+                                      {day && getEventsForDate(day.toISOString().split('T')[0]).length > 0 && (
+                                        <span className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white mt-2 block"></span>
+                                      )}
+                                      {day && getEventsForDate(day.toISOString().split('T')[0]).map(event => (
+                                        <div
+                                          key={event.id}
+                                          className="text-xs p-1 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition"
+                                          onClick={() => handleEditEvent(event)}
+                                        >
+                                          {event.title}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </React.Fragment>
-                        ))}
+                              ))}
+                            </React.Fragment>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                    {/* Taller Events Sidebar */}
+                    <div className="w-96 bg-white border border-orange-100 rounded-xl shadow-lg flex flex-col max-h-[700px]">
+                      <div className="flex items-center justify-between px-8 py-6 border-b border-orange-100">
+                        <span className="text-orange-700 text-xl font-semibold">Events</span>
+                        <button
+                          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 flex items-center justify-center"
+                          onClick={() => setShowEventModal(true)}
+                          title="Add Event"
+                        >
+                          <FiPlus size={22} />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto px-6 py-4">
+                        {events.length === 0 ? (
+                          <div className="text-gray-400 text-center mt-8">No events yet.</div>
+                        ) : (
+                          events.map(event => (
+                            <div key={event.id} className="bg-orange-50 rounded-lg p-4 mb-4 flex flex-col gap-1 border border-orange-100">
+                              <div className="flex items-center justify-between">
+                                <span className="text-orange-700 font-semibold">{event.title}</span>
+                                <button className="text-orange-400 hover:text-orange-600" onClick={() => handleEditEvent(event)} title="Edit Event">
+                                  <FiEdit2 size={16} />
+                                </button>
+                              </div>
+                              <span className="text-xs text-gray-500">{event.event_date ? new Date(event.event_date).toLocaleString() : ''}</span>
+                              {event.location && <span className="text-xs text-gray-500">{event.location}</span>}
+                              {event.rsvp_link && <a href={event.rsvp_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">RSVP</a>}
+                              {event.tags && (
+                                <span className="text-xs text-orange-600 font-semibold">{event.tags.split(',').map(tag => tag.trim()).filter(Boolean).map((tag, idx) => (
+                                  <span key={idx} className="inline-block bg-orange-200 text-orange-800 rounded-full px-2 py-0.5 mr-1">{tag}</span>
+                                ))}</span>
+                              )}
+                              {event.description && <span className="text-xs text-gray-600">{event.description}</span>}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {/* Add Event Modal */}
+                    {showEventModal && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn relative">
+                          <button className="absolute top-2 right-2 text-2xl text-orange-500 hover:text-orange-700" onClick={() => setShowEventModal(false)}>&times;</button>
+                          <h2 className="text-xl font-bold mb-4 text-orange-700">Create Event</h2>
+                          <div className="flex flex-col gap-4">
+                            <input
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              type="text"
+                              placeholder="Event name"
+                              value={newEvent.title}
+                              onChange={e => setNewEvent(ev => ({ ...ev, title: e.target.value }))}
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                                type="date"
+                                value={newEvent.date}
+                                onChange={e => setNewEvent(ev => ({ ...ev, date: e.target.value }))}
+                              />
+                              <input
+                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                                type="time"
+                                value={newEvent.time}
+                                onChange={e => setNewEvent(ev => ({ ...ev, time: e.target.value }))}
+                              />
+                            </div>
+                            <input
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              type="text"
+                              placeholder="Location"
+                              value={newEvent.location}
+                              onChange={e => setNewEvent(ev => ({ ...ev, location: e.target.value }))}
+                            />
+                            <input
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              type="text"
+                              placeholder="RSVP Link (optional)"
+                              value={newEvent.rsvp_link || ''}
+                              onChange={e => setNewEvent(ev => ({ ...ev, rsvp_link: e.target.value }))}
+                            />
+                            <select
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              value={newEvent.status || 'upcoming'}
+                              onChange={e => setNewEvent(ev => ({ ...ev, status: e.target.value }))}
+                            >
+                              <option value="upcoming">Upcoming</option>
+                              <option value="ongoing">Ongoing</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                            <input
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              type="text"
+                              placeholder="Tags (comma separated, e.g. workshop,networking)"
+                              value={newEvent.tags || ''}
+                              onChange={e => setNewEvent(ev => ({ ...ev, tags: e.target.value }))}
+                            />
+                            <textarea
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              placeholder="Description (optional)"
+                              value={newEvent.description || ''}
+                              onChange={e => setNewEvent(ev => ({ ...ev, description: e.target.value }))}
+                            />
+                            <div className="flex gap-2 mt-4">
+                              <button
+                                className="flex-1 bg-gray-200 text-orange-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                                onClick={() => setShowEventModal(false)}
+                              >Cancel</button>
+                              <button
+                                className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
+                                onClick={handleSidebarEventSave}
+                                disabled={!newEvent.title || !newEvent.date}
+                              >Create Event</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </>
               );
             case 'users':
               // Filter users based on role and search query
@@ -743,6 +989,52 @@ function AdminDashboard() {
                   </div>
                 </div>
               );
+            case 'startup':
+              return (
+                <div className="flex flex-col gap-6">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-6">Startup Management</h1>
+                  <div className="bg-white p-8 rounded-xl border border-orange-100 shadow-sm">
+                    {startupLoading ? (
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      </div>
+                    ) : startupError ? (
+                      <div className="text-red-500 text-center">{startupError}</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-left text-sm text-gray-700">
+                          <thead>
+                            <tr className="bg-orange-100 text-orange-700">
+                              <th className="px-4 py-3 font-semibold">Name</th>
+                              <th className="px-4 py-3 font-semibold">Industry</th>
+                              <th className="px-4 py-3 font-semibold">Co-founder</th>
+                              <th className="px-4 py-3 font-semibold">Location</th>
+                              <th className="px-4 py-3 font-semibold">Stage</th>
+                              <th className="px-4 py-3 font-semibold">Status</th>
+                              <th className="px-4 py-3 font-semibold text-center">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {startups.filter(startup => startup.approval_status === 'approved').map((startup) => (
+                              <tr key={startup.startup_id} className="border-b border-orange-100 hover:bg-orange-50 transition">
+                                <td className="px-4 py-3">{startup.name}</td>
+                                <td className="px-4 py-3">{startup.industry}</td>
+                                <td className="px-4 py-3">{startup.entrepreneur_name}</td>
+                                <td className="px-4 py-3">{startup.location}</td>
+                                <td className="px-4 py-3">{formatStartupStage(startup.startup_stage)}</td>
+                                <td className="px-4 py-3">{renderStatusBadge(startup.approval_status)}</td>
+                                <td className="px-4 py-3 text-center">
+                                  {/* No actions for approved startups */}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
             default:
               return null;
           }
@@ -782,7 +1074,7 @@ function AdminDashboard() {
           {renderContent()}
         </main>
         {/* Floating Pending Requests Card */}
-        {(activeTab === 'users' || activeTab === 'startup') && (
+        {activeTab === 'users' && (
           <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white rounded-2xl shadow-xl border border-orange-100 flex flex-col p-6">
             <h2 className="text-lg font-bold mb-4 text-orange-700 border-b border-orange-100 pb-2">Pending Verification Applications</h2>
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
@@ -847,6 +1139,58 @@ function AdminDashboard() {
                     ) : (
                       <a href={selectedRequest.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}}>View Document</a>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
+        {activeTab === 'startup' && (
+          <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white rounded-2xl shadow-xl border border-orange-100 flex flex-col p-6">
+            <h3 className="text-md font-semibold text-orange-700 mb-2">Pending Startup Applications</h3>
+            {pendingStartups.length === 0 ? (
+              <span className="text-gray-500">No pending startup applications.</span>
+            ) : (
+              pendingStartups.map(startup => (
+                <div key={startup.startup_id} className="rounded-lg p-3 border border-orange-100 bg-orange-50 flex items-center justify-between mb-2">
+                  <div>
+                    <span className="font-semibold text-black">{startup.name}</span>
+                    <span className="block text-xs text-gray-700">{startup.industry}</span>
+                    <span className="block text-xs text-gray-600">{startup.entrepreneur_name}</span>
+                  </div>
+                  <button className="ml-2 p-2 rounded-full hover:bg-orange-200 flex items-center justify-center" title="View Details" onClick={() => handleOpenPendingStartupModal(startup)}>
+                    <svg width="22" height="22" viewBox="0 0 24 24">
+                      <circle cx="12" cy="5" r="1.5" fill="#fb923c" />
+                      <circle cx="12" cy="12" r="1.5" fill="#fb923c" />
+                      <circle cx="12" cy="19" r="1.5" fill="#fb923c" />
+                    </svg>
+                  </button>
+                </div>
+              ))
+            )}
+            {/* Modal for pending startup details and approve/reject */}
+            {pendingStartupModalOpen && selectedPendingStartup && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+                  <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleClosePendingStartupModal}>&times;</button>
+                  <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Startup Application</h3>
+                  <div className="mb-4 w-full">
+                    <div className="font-semibold text-lg text-black mb-1">{selectedPendingStartup.name}</div>
+                    <div className="text-sm text-gray-700 mb-1">Industry: {selectedPendingStartup.industry}</div>
+                    <div className="text-sm text-gray-700 mb-1">Entrepreneur: {selectedPendingStartup.entrepreneur_name} ({selectedPendingStartup.entrepreneur_email})</div>
+                    <div className="text-sm text-gray-700 mb-1">Location: {selectedPendingStartup.location}</div>
+                    <div className="text-sm text-gray-700 mb-1">Stage: {formatStartupStage(selectedPendingStartup.startup_stage)}</div>
+                    <div className="text-sm text-gray-700 mb-1">Description: {selectedPendingStartup.description}</div>
+                    {selectedPendingStartup.pitch_deck_url && (
+                      <div className="text-sm text-gray-700 mb-1">Pitch Deck: <a href={selectedPendingStartup.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
+                    )}
+                    {selectedPendingStartup.business_plan_url && (
+                      <div className="text-sm text-gray-700 mb-1">Business Plan: <a href={selectedPendingStartup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <button onClick={() => { handleAcceptStartup(selectedPendingStartup.startup_id); handleClosePendingStartupModal(); }} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow">Approve</button>
+                    <button onClick={() => { handleDeclineStartup(selectedPendingStartup.startup_id); handleClosePendingStartupModal(); }} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow">Reject</button>
                   </div>
                 </div>
               </div>
