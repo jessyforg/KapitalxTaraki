@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import { calculateMatchScore } from '../utils/matchmaking';
+import { getCoFounders, getInvestors, getUserPreferences } from '../api/users';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
@@ -104,24 +106,19 @@ const EntrepreneurDashboard = () => {
       }
     };
 
-    // Fetch co-founders
+    // Fetch co-founders with match scores
     const fetchCoFounders = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const coFoundersRes = await axios.get('/api/cofounders', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const coFoundersData = await getCoFounders();
         
         // Fetch preferences for each co-founder
         const coFoundersWithPreferences = await Promise.all(
-          coFoundersRes.data.map(async (coFounder) => {
+          coFoundersData.map(async (coFounder) => {
             try {
-              const preferencesRes = await axios.get(`/api/users/${coFounder.id}/preferences`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const preferences = await getUserPreferences(coFounder.id);
               return {
                 ...coFounder,
-                preferred_location: preferencesRes.data?.preferred_location || coFounder.location
+                preferred_location: preferences?.preferred_location || coFounder.location
               };
             } catch (error) {
               console.error(`Error fetching preferences for co-founder ${coFounder.id}:`, error);
@@ -133,30 +130,33 @@ const EntrepreneurDashboard = () => {
           })
         );
         
-        setCoFounders(coFoundersWithPreferences);
+        // Calculate match scores for each co-founder
+        const coFoundersWithMatches = coFoundersWithPreferences
+          .filter(coFounder => coFounder.id !== user?.id) // Exclude current user
+          .map(coFounder => ({
+            ...coFounder,
+            match_score: calculateMatchScore(user, coFounder)
+          }));
+        
+        setCoFounders(coFoundersWithMatches);
       } catch (error) {
         console.error('Error fetching co-founders:', error);
       }
     };
 
-    // Fetch investors
+    // Fetch investors with match scores
     const fetchInvestors = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const investorsRes = await axios.get('/api/investors', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const investorsData = await getInvestors();
         
         // Fetch preferences for each investor
         const investorsWithPreferences = await Promise.all(
-          investorsRes.data.map(async (investor) => {
+          investorsData.map(async (investor) => {
             try {
-              const preferencesRes = await axios.get(`/api/users/${investor.id}/preferences`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const preferences = await getUserPreferences(investor.id);
               return {
                 ...investor,
-                preferred_location: preferencesRes.data?.preferred_location || investor.location
+                preferred_location: preferences?.preferred_location || investor.location
               };
             } catch (error) {
               console.error(`Error fetching preferences for investor ${investor.id}:`, error);
@@ -168,16 +168,26 @@ const EntrepreneurDashboard = () => {
           })
         );
         
-        setInvestors(investorsWithPreferences);
+        // Calculate match scores for each investor
+        const investorsWithMatches = investorsWithPreferences
+          .filter(investor => investor.id !== user?.id) // Exclude current user
+          .map(investor => ({
+            ...investor,
+            match_score: calculateMatchScore(user, investor)
+          }));
+        
+        setInvestors(investorsWithMatches);
       } catch (error) {
         console.error('Error fetching investors:', error);
       }
     };
 
     fetchStartups();
-    fetchCoFounders();
-    fetchInvestors();
-  }, []);
+    if (user) {
+      fetchCoFounders();
+      fetchInvestors();
+    }
+  }, [user]);
 
   const handleCreateStartup = () => {
     navigate('/create-startup');
@@ -213,6 +223,169 @@ const EntrepreneurDashboard = () => {
       </span>
     );
   };
+
+  // Add match score badge component
+  const MatchScoreBadge = ({ score }) => {
+    const getScoreColor = (score) => {
+      if (score >= 80) return 'bg-green-100 text-green-800';
+      if (score >= 60) return 'bg-yellow-100 text-yellow-800';
+      return 'bg-red-100 text-red-800';
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getScoreColor(score)}`}>
+        {score}% Match
+      </span>
+    );
+  };
+
+  // Update the co-founders section render
+  const renderCoFounders = () => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {coFounders
+        .filter(c => (!coFounderFilters.industry || c.industry === coFounderFilters.industry) && 
+                     (!coFounderFilters.location || c.location === coFounderFilters.location))
+        .map((coFounder, idx) => (
+          <div
+            key={coFounder.id || idx}
+            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+            style={{ minWidth: '260px' }}
+          >
+            {/* Profile image */}
+            <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
+              {coFounder.profile_image ? (
+                <img src={coFounder.profile_image} alt={coFounder.name} className="object-cover w-full h-full" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-orange-500">
+                  <i className="fas fa-user text-white text-6xl"></i>
+                </div>
+              )}
+            </div>
+            {/* Info section */}
+            <div className="w-full px-5 py-4 flex flex-col items-start">
+              <div className="flex justify-between items-center w-full mb-1">
+                <div className="font-bold text-lg text-gray-900">{coFounder.name}</div>
+                <MatchScoreBadge score={coFounder.match_score} />
+              </div>
+              <div className="text-sm text-gray-500 mb-2">
+                <span className="font-semibold">Industry:</span>{' '}
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                  {coFounder.industry ? coFounder.industry : 'Not provided'}
+                </span>
+              </div>
+              <div className="text-sm text-gray-500 mb-2">
+                <span className="font-semibold">Location:</span>{' '}
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                  {coFounder.preferred_location ? coFounder.preferred_location : 'Not provided'}
+                </span>
+              </div>
+              {coFounder.skills && coFounder.skills.length > 0 && (
+                <div className="text-sm text-gray-500 mb-4">
+                  <span className="font-semibold">Skills:</span>{' '}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {coFounder.skills.map((skill, index) => (
+                      <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex w-full gap-2 mt-auto">
+                <button
+                  onClick={() => handleViewProfile(coFounder.id)}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  disabled={!isUserVerified}
+                >
+                  View Profile
+                </button>
+                <button
+                  onClick={() => handleMessage(coFounder.id)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                  disabled={!isUserVerified}
+                >
+                  Message
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  // Update the investors section render
+  const renderInvestors = () => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {investors
+        .filter(i => (!investorFilters.industry || i.industry === investorFilters.industry) && 
+                     (!investorFilters.location || i.location === investorFilters.location))
+        .map((investor, idx) => (
+          <div
+            key={investor.id || idx}
+            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+            style={{ minWidth: '260px' }}
+          >
+            {/* Profile image */}
+            <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
+              {investor.profile_image ? (
+                <img src={investor.profile_image} alt={investor.name} className="object-cover w-full h-full" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-orange-500">
+                  <i className="fas fa-user text-white text-6xl"></i>
+                </div>
+              )}
+            </div>
+            {/* Info section */}
+            <div className="w-full px-5 py-4 flex flex-col items-start">
+              <div className="flex justify-between items-center w-full mb-1">
+                <div className="font-bold text-lg text-gray-900">{investor.name}</div>
+                <MatchScoreBadge score={investor.match_score} />
+              </div>
+              <div className="text-sm text-gray-500 mb-2">
+                <span className="font-semibold">Industry:</span>{' '}
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                  {investor.industry ? investor.industry : 'Not provided'}
+                </span>
+              </div>
+              <div className="text-sm text-gray-500 mb-2">
+                <span className="font-semibold">Location:</span>{' '}
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                  {investor.preferred_location ? investor.preferred_location : 'Not provided'}
+                </span>
+              </div>
+              {investor.skills && investor.skills.length > 0 && (
+                <div className="text-sm text-gray-500 mb-4">
+                  <span className="font-semibold">Skills:</span>{' '}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {investor.skills.map((skill, index) => (
+                      <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex w-full gap-2 mt-auto">
+                <button
+                  onClick={() => handleViewProfile(investor.id)}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  disabled={!isUserVerified}
+                >
+                  View Profile
+                </button>
+                <button
+                  onClick={() => handleMessage(investor.id)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                  disabled={!isUserVerified}
+                >
+                  Message
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
 
   return (
     <>
@@ -427,72 +600,7 @@ const EntrepreneurDashboard = () => {
                 </select>
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {coFounders
-                    .filter(c => (!coFounderFilters.industry || c.industry === coFounderFilters.industry) && (!coFounderFilters.location || c.location === coFounderFilters.location))
-                    .map((coFounder, idx) => (
-                      <div
-                        key={coFounder.id || idx}
-                        className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
-                        style={{ minWidth: '260px' }}
-                      >
-                        {/* Profile image */}
-                        <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
-                          {coFounder.profile_image ? (
-                            <img src={coFounder.profile_image} alt={coFounder.name} className="object-cover w-full h-full" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-orange-500">
-                              <i className="fas fa-user text-white text-6xl"></i>
-                            </div>
-                          )}
-                        </div>
-                        {/* Info section */}
-                        <div className="w-full px-5 py-4 flex flex-col items-start">
-                          <div className="font-bold text-lg mb-1 text-gray-900">{coFounder.name}</div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            <span className="font-semibold">Industry:</span>{' '}
-                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
-                              {coFounder.industry ? coFounder.industry : 'Not provided'}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            <span className="font-semibold">Location:</span>{' '}
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                              {coFounder.preferred_location ? coFounder.preferred_location : 'Not provided'}
-                            </span>
-                          </div>
-                          {coFounder.skills && coFounder.skills.length > 0 && (
-                            <div className="text-sm text-gray-500 mb-4">
-                              <span className="font-semibold">Skills:</span>{' '}
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {coFounder.skills.map((skill, index) => (
-                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex w-full gap-2 mt-auto">
-                            <button
-                              onClick={() => handleViewProfile(coFounder.id)}
-                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                              disabled={!isUserVerified}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              onClick={() => handleMessage(coFounder.id)}
-                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
-                              disabled={!isUserVerified}
-                            >
-                              Message
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                {renderCoFounders()}
               </div>
             </div>
           )}
@@ -531,72 +639,7 @@ const EntrepreneurDashboard = () => {
                 </select>
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {investors
-                    .filter(i => (!investorFilters.industry || i.industry === investorFilters.industry) && (!investorFilters.location || i.location === investorFilters.location))
-                    .map((investor, idx) => (
-                      <div
-                        key={investor.id || idx}
-                        className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
-                        style={{ minWidth: '260px' }}
-                      >
-                        {/* Profile image */}
-                        <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
-                          {investor.profile_image ? (
-                            <img src={investor.profile_image} alt={investor.name} className="object-cover w-full h-full" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-orange-500">
-                              <i className="fas fa-user text-white text-6xl"></i>
-                            </div>
-                          )}
-                        </div>
-                        {/* Info section */}
-                        <div className="w-full px-5 py-4 flex flex-col items-start">
-                          <div className="font-bold text-lg mb-1 text-gray-900">{investor.name}</div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            <span className="font-semibold">Industry:</span>{' '}
-                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
-                              {investor.industry ? investor.industry : 'Not provided'}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            <span className="font-semibold">Location:</span>{' '}
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                              {investor.preferred_location ? investor.preferred_location : 'Not provided'}
-                            </span>
-                          </div>
-                          {investor.skills && investor.skills.length > 0 && (
-                            <div className="text-sm text-gray-500 mb-4">
-                              <span className="font-semibold">Skills:</span>{' '}
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {investor.skills.map((skill, index) => (
-                                  <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex w-full gap-2 mt-auto">
-                            <button
-                              onClick={() => handleViewProfile(investor.id)}
-                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                              disabled={!isUserVerified}
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              onClick={() => handleMessage(investor.id)}
-                              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
-                              disabled={!isUserVerified}
-                            >
-                              Message
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                {renderInvestors()}
               </div>
             </div>
           )}
