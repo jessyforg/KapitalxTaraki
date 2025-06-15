@@ -75,22 +75,29 @@ const InvestorDashboard = () => {
   ]);
   const [entrepreneurFilters, setEntrepreneurFilters] = useState({ industry: '', location: '' });
   const [investorFilters, setInvestorFilters] = useState({ industry: '', location: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Add a helper for verification
+  const isUserVerified = user && user.verification_status === 'verified';
 
   useEffect(() => {
     const fetchAvailableStartups = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
-        const params = {};
-        if (filters.industry) params.industry = filters.industry;
-        if (filters.location) params.location = filters.location;
-        if (filters.startup_stage) params.startup_stage = filters.startup_stage;
-        const response = await axios.get('/api/investor/available-startups', {
-          headers: { Authorization: `Bearer ${token}` },
-          params
+        const res = await fetch('/api/startups', {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-        setAvailableStartups(response.data);
+        if (!res.ok) throw new Error('Failed to fetch startups');
+        const data = await res.json();
+        // Only show approved startups
+        setAvailableStartups(data.filter(startup => startup.approval_status === 'approved'));
       } catch (error) {
         console.error('Error fetching available startups:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
     const fetchMatchedStartups = async () => {
@@ -174,7 +181,7 @@ const InvestorDashboard = () => {
     fetchMatchedStartups();
     fetchEntrepreneurs();
     fetchInvestors();
-  }, [filters]);
+  }, []);
 
   const handleViewStartup = (startupId) => {
     if (startupId) navigate(`/startup/${startupId}`);
@@ -226,6 +233,21 @@ const InvestorDashboard = () => {
 
   const handleViewProfile = (profileId) => {
     if (profileId) navigate(`/profile/${profileId}`);
+  };
+
+  // Render startup status badge
+  const renderStatusBadge = (status) => {
+    const statusStyles = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      rejected: 'bg-red-100 text-red-800 border-red-200'
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${statusStyles[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
 
   return (
@@ -328,61 +350,76 @@ const InvestorDashboard = () => {
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {availableStartups.map((startup, idx) => (
-                    <div
-                      key={startup.startup_id || startup.id || idx}
-                      className="rounded-xl border border-gray-300 bg-gray-100 flex flex-col overflow-hidden"
-                      style={{ minHeight: '340px', maxWidth: '260px' }}
-                    >
-                      {/* Logo or placeholder */}
-                      <div className="flex-1 flex items-center justify-center bg-white" style={{ minHeight: '150px' }}>
-                        {startup.logo_url ? (
-                          <img src={startup.logo_url} alt={startup.name} className="object-contain h-24" />
-                        ) : (
-                          <div className="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center">
-                            <i className="fas fa-user text-white text-4xl"></i>
-                          </div>
-                        )}
-                      </div>
-                      {/* Info section */}
-                      <div className="bg-gray-100 p-4 flex flex-col gap-1 border-t border-gray-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
-                            <i className="fas fa-user text-white text-lg"></i>
-                          </div>
-                          <span className="font-bold text-base text-black">{startup.name}</span>
-                        </div>
-                        <div className="text-sm text-black font-semibold">
-                          <span className="font-bold">Industry:</span> {startup.industry}
-                        </div>
-                        <div className="text-sm text-black">
-                          <span className="font-bold">Description:</span> {startup.description && startup.description.length > 80 ? `${startup.description.slice(0, 80)}...` : startup.description}
-                        </div>
-                        <div className="flex flex-col gap-2 mt-3">
-                          {startup.entrepreneur_id === user?.id && (
-                            <button
-                              onClick={() => handleEditStartup(startup.startup_id ?? startup.id)}
-                              className="w-full bg-white border border-gray-400 text-gray-800 font-semibold py-2 rounded-lg transition-colors hover:bg-gray-200"
-                            >
-                              Edit
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleViewStartup(startup.startup_id ?? startup.id)}
-                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                          >
-                            View Details
-                          </button>
-                          <button
-                            onClick={() => handleMatchStartup(startup.startup_id ?? startup.id)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
-                          >
-                            Match with Startup
-                          </button>
-                        </div>
-                      </div>
+                  {loading ? (
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                     </div>
-                  ))}
+                  ) : error ? (
+                    <div className="text-red-500 text-center">{error}</div>
+                  ) : availableStartups.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      No startups available at the moment.
+                    </div>
+                  ) : (
+                    availableStartups.map((startup, idx) => (
+                      <div
+                        key={startup.startup_id || startup.id || idx}
+                        className="rounded-xl border border-gray-300 bg-gray-100 flex flex-col overflow-hidden"
+                        style={{ minHeight: '340px', maxWidth: '260px' }}
+                      >
+                        {/* Logo or placeholder */}
+                        <div className="flex-1 flex items-center justify-center bg-white" style={{ minHeight: '150px' }}>
+                          {startup.logo_url ? (
+                            <img src={startup.logo_url} alt={startup.name} className="object-contain h-24" />
+                          ) : (
+                            <div className="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center">
+                              <i className="fas fa-user text-white text-4xl"></i>
+                            </div>
+                          )}
+                        </div>
+                        {/* Info section */}
+                        <div className="bg-gray-100 p-4 flex flex-col gap-1 border-t border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
+                              <i className="fas fa-user text-white text-lg"></i>
+                            </div>
+                            <span className="font-bold text-base text-black">{startup.name}</span>
+                          </div>
+                          <div className="text-sm text-black font-semibold">
+                            <span className="font-bold">Industry:</span> {startup.industry}
+                          </div>
+                          <div className="text-sm text-black">
+                            <span className="font-bold">Description:</span> {startup.description && startup.description.length > 80 ? `${startup.description.slice(0, 80)}...` : startup.description}
+                          </div>
+                          <div className="text-sm text-black">
+                            <span className="font-bold">Status:</span> {renderStatusBadge(startup.approval_status)}
+                          </div>
+                          <div className="flex flex-col gap-2 mt-3">
+                            {startup.entrepreneur_id === user?.id && (
+                              <button
+                                onClick={() => handleEditStartup(startup.startup_id ?? startup.id)}
+                                className="w-full bg-white border border-gray-400 text-gray-800 font-semibold py-2 rounded-lg transition-colors hover:bg-gray-200"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleViewStartup(startup.startup_id ?? startup.id)}
+                              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => handleMatchStartup(startup.startup_id ?? startup.id)}
+                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                            >
+                              Match with Startup
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -499,12 +536,14 @@ const InvestorDashboard = () => {
                             <button
                               onClick={() => handleViewProfile(entrepreneur.id)}
                               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                              disabled={!isUserVerified}
                             >
                               View Profile
                             </button>
                             <button
                               onClick={() => handleMessage(entrepreneur.id)}
                               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                              disabled={!isUserVerified}
                             >
                               Message
                             </button>
@@ -603,12 +642,14 @@ const InvestorDashboard = () => {
                             <button
                               onClick={() => handleViewProfile(investor.id)}
                               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                              disabled={!isUserVerified}
                             >
                               View Profile
                             </button>
                             <button
                               onClick={() => handleMessage(investor.id)}
                               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                              disabled={!isUserVerified}
                             >
                               Message
                             </button>
