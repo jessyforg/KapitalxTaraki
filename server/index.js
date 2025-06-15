@@ -657,14 +657,17 @@ app.post('/api/startups', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Name and industry are required' });
     }
 
-    // Insert into startups table
+    // Insert into startups table with explicit pending status
     const [result] = await pool.query(
       `INSERT INTO startups 
-        (entrepreneur_id, name, industry, description, location, funding_needed, pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage, website, startup_stage, approval_status, created_at, updated_at)
+        (entrepreneur_id, name, industry, description, location, funding_needed, 
+         pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage, 
+         website, startup_stage, approval_status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())`,
       [
-        req.user.id, name, industry, description, location, funding_needed, pitch_deck_url,
-        business_plan_url, logo_url, video_url, funding_stage, website, startup_stage
+        req.user.id, name, industry, description, location, funding_needed,
+        pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage,
+        website, startup_stage
       ]
     );
 
@@ -678,10 +681,45 @@ app.post('/api/startups', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all startups
+// Get startups with visibility control
 app.get('/api/startups', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM startups');
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    let query = `
+      SELECT s.*, 
+             CONCAT(u.first_name, ' ', u.last_name) as entrepreneur_name,
+             u.email as entrepreneur_email
+      FROM startups s
+      JOIN users u ON s.entrepreneur_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    // If not admin, only show approved startups or user's own startups
+    if (userRole !== 'admin') {
+      query += ` AND (s.approval_status = 'approved' OR s.entrepreneur_id = ?)`;
+      params.push(userId);
+    }
+
+    // Add filters if provided
+    if (req.query.industry) {
+      query += ` AND s.industry LIKE ?`;
+      params.push(`%${req.query.industry}%`);
+    }
+    if (req.query.location) {
+      query += ` AND s.location LIKE ?`;
+      params.push(`%${req.query.location}%`);
+    }
+    if (req.query.funding_stage) {
+      query += ` AND s.funding_stage = ?`;
+      params.push(req.query.funding_stage);
+    }
+
+    query += ` ORDER BY s.created_at DESC`;
+
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error('Error fetching startups:', error);
@@ -1209,6 +1247,91 @@ app.post('/api/admin/verification/document/:id/reject', authenticateToken, async
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Approve startup (admin only)
+app.post('/api/admin/startups/:id/approve', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can approve startups' });
+    }
+
+    const { id } = req.params;
+    const { approval_comment } = req.body;
+
+    // Update startup status
+    await pool.query(
+      `UPDATE startups 
+       SET approval_status = 'approved', 
+           approved_by = ?, 
+           approval_comment = ?,
+           updated_at = NOW()
+       WHERE startup_id = ?`,
+      [req.user.id, approval_comment, id]
+    );
+
+    res.json({ message: 'Startup approved successfully' });
+  } catch (error) {
+    console.error('Error approving startup:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reject startup (admin only)
+app.post('/api/admin/startups/:id/reject', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can reject startups' });
+    }
+
+    const { id } = req.params;
+    const { approval_comment } = req.body;
+
+    if (!approval_comment) {
+      return res.status(400).json({ error: 'Rejection reason is required' });
+    }
+
+    // Update startup status
+    await pool.query(
+      `UPDATE startups 
+       SET approval_status = 'rejected', 
+           approved_by = ?, 
+           approval_comment = ?,
+           updated_at = NOW()
+       WHERE startup_id = ?`,
+      [req.user.id, approval_comment, id]
+    );
+
+    res.json({ message: 'Startup rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting startup:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create Event endpoint
+app.post('/api/events', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, event_date, location, status, rsvp_link, time, tags } = req.body;
+    if (!title || !event_date) {
+      return res.status(400).json({ error: 'Title and event_date are required' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO events (title, description, event_date, location, organizer_id, status, rsvp_link, time, tags, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [title, description, event_date, location, req.user.id, status || 'upcoming', rsvp_link, time, tags]
+    );
+    const [rows] = await pool.query('SELECT * FROM events WHERE id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const eventsRouter = require('../taraki-backend/src/routes/events');
+app.use('/api/events', eventsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
