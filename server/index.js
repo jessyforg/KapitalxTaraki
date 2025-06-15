@@ -719,7 +719,11 @@ app.get('/api/startups', authenticateToken, async (req, res) => {
 
     query += ` ORDER BY s.created_at DESC`;
 
+    console.log('DEBUG: /api/startups SQL:', query);
+    console.log('DEBUG: /api/startups params:', params);
+
     const [rows] = await pool.query(query, params);
+    console.log('DEBUG: /api/startups result:', rows);
     res.json(rows);
   } catch (error) {
     console.error('Error fetching startups:', error);
@@ -728,17 +732,32 @@ app.get('/api/startups', authenticateToken, async (req, res) => {
 });
 
 // Get all co-founders (exclude logged-in user)
-app.get('/api/cofounders', authenticateToken, async (req, res) => {
+app.get('/api/users/cofounders', authenticateToken, async (req, res) => {
   try {
-    // Only return verified entrepreneurs
-    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND id != ? AND is_verified = 1', ['entrepreneur', req.user.id]);
+    // Only return entrepreneurs with verification_status = 'verified'
+    const [rows] = await pool.query(`
+      SELECT u.*, up.preferred_location, up.preferred_industries, up.preferred_startup_stage
+      FROM users u
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.role = 'entrepreneur' 
+      AND u.id != ? 
+      AND u.verification_status = 'verified'
+      AND u.show_in_search = 1
+    `, [req.user.id]);
+
     const cofounders = rows.map(u => ({
       id: u.id,
       name: `${u.first_name} ${u.last_name}`,
       email: u.email,
       bio: u.introduction || '',
-      profile_image: u.profile_image || null
+      profile_image: u.profile_image || null,
+      industry: u.industry,
+      location: u.location,
+      preferred_location: u.preferred_location,
+      preferred_industries: u.preferred_industries ? JSON.parse(u.preferred_industries) : [],
+      preferred_startup_stage: u.preferred_startup_stage
     }));
+
     res.json(cofounders);
   } catch (error) {
     console.error('Error fetching co-founders:', error);
@@ -747,17 +766,34 @@ app.get('/api/cofounders', authenticateToken, async (req, res) => {
 });
 
 // Get all investors
-app.get('/api/investors', authenticateToken, async (req, res) => {
+app.get('/api/users/role/investor', authenticateToken, async (req, res) => {
   try {
-    // Only return verified investors
-    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND is_verified = 1', ['investor']);
+    // Only return investors with verification_status = 'verified'
+    const [rows] = await pool.query(`
+      SELECT u.*, i.preferred_industries, i.preferred_locations, i.funding_stage_preferences,
+             up.preferred_location
+      FROM users u
+      LEFT JOIN investors i ON u.id = i.investor_id
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.role = 'investor' 
+      AND u.verification_status = 'verified'
+      AND u.show_in_search = 1
+    `);
+
     const investors = rows.map(u => ({
       id: u.id,
       name: `${u.first_name} ${u.last_name}`,
       email: u.email,
       bio: u.introduction || '',
-      profile_image: u.profile_image || null
+      profile_image: u.profile_image || null,
+      industry: u.industry,
+      location: u.location,
+      preferred_location: u.preferred_location,
+      preferred_industries: u.preferred_industries ? JSON.parse(u.preferred_industries) : [],
+      preferred_locations: u.preferred_locations ? JSON.parse(u.preferred_locations) : [],
+      funding_stage_preferences: u.funding_stage_preferences ? JSON.parse(u.funding_stage_preferences) : []
     }));
+
     res.json(investors);
   } catch (error) {
     console.error('Error fetching investors:', error);
@@ -1332,6 +1368,58 @@ app.post('/api/events', authenticateToken, async (req, res) => {
 
 const eventsRouter = require('../taraki-backend/src/routes/events');
 app.use('/api/events', eventsRouter);
+
+// Get all startups matched with the logged-in investor
+app.get('/api/startups/matched', authenticateToken, async (req, res) => {
+  console.log('DEBUG: /api/startups/matched endpoint hit by user', req.user);
+  try {
+    const investor_id = req.user.id;
+    const [rows] = await pool.query(
+      `SELECT s.*
+       FROM startups s
+       INNER JOIN matches m ON s.startup_id = m.startup_id
+       WHERE m.investor_id = ?`,
+      [investor_id]
+    );
+    console.log('DEBUG: Matched startups SQL result:', rows);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching matched startups:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all entrepreneurs
+app.get('/api/users/role/entrepreneur', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT u.*, up.preferred_location, up.preferred_industries, up.preferred_startup_stage
+      FROM users u
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.role = 'entrepreneur'
+      AND u.verification_status = 'verified'
+      AND u.show_in_search = 1
+    `);
+
+    const entrepreneurs = rows.map(u => ({
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`,
+      email: u.email,
+      bio: u.introduction || '',
+      profile_image: u.profile_image || null,
+      industry: u.industry,
+      location: u.location,
+      preferred_location: u.preferred_location,
+      preferred_industries: u.preferred_industries ? JSON.parse(u.preferred_industries) : [],
+      preferred_startup_stage: u.preferred_startup_stage
+    }));
+
+    res.json(entrepreneurs);
+  } catch (error) {
+    console.error('Error fetching entrepreneurs:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
