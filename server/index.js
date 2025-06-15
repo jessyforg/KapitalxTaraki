@@ -692,8 +692,8 @@ app.get('/api/startups', authenticateToken, async (req, res) => {
 // Get all co-founders (exclude logged-in user)
 app.get('/api/cofounders', authenticateToken, async (req, res) => {
   try {
-    // Use 'introduction' as bio, and select from users where role = 'entrepreneur' and not the logged-in user
-    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND id != ?', ['entrepreneur', req.user.id]);
+    // Only return verified entrepreneurs
+    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND id != ? AND is_verified = 1', ['entrepreneur', req.user.id]);
     const cofounders = rows.map(u => ({
       id: u.id,
       name: `${u.first_name} ${u.last_name}`,
@@ -711,8 +711,8 @@ app.get('/api/cofounders', authenticateToken, async (req, res) => {
 // Get all investors
 app.get('/api/investors', authenticateToken, async (req, res) => {
   try {
-    // Fetch from users table where role = 'investor'
-    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ?', ['investor']);
+    // Only return verified investors
+    const [rows] = await pool.query('SELECT id, first_name, last_name, email, introduction, profile_image FROM users WHERE role = ? AND is_verified = 1', ['investor']);
     const investors = rows.map(u => ({
       id: u.id,
       name: `${u.first_name} ${u.last_name}`,
@@ -856,8 +856,9 @@ app.delete('/api/investor/unmatch/:startup_id', authenticateToken, async (req, r
 // Get all entrepreneurs (exclude logged-in user)
 app.get('/api/entrepreneurs', authenticateToken, async (req, res) => {
   try {
+    // Only return verified entrepreneurs
     const [rows] = await pool.query(
-      'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ?',
+      'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ? AND verification_status = "verified"',
       ['entrepreneur', req.user.id]
     );
     const entrepreneurs = rows.map(u => ({
@@ -924,6 +925,287 @@ app.get('/api/users/:id/preferences', authenticateToken, async (req, res) => {
     res.json(rows[0]);
   } catch (error) {
     console.error('Error fetching user preferences:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all users endpoint
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const [users] = await pool.query(`
+      SELECT id, first_name, last_name, email, role, is_verified, created_at, updated_at
+      FROM users
+      ORDER BY created_at DESC
+    `);
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Set up multer for file uploads
+const verificationUpload = multer({
+  dest: 'uploads/verification_documents/',
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type.'));
+  }
+});
+
+// GET verification status and documents
+app.get('/api/verification/status', authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    // Get user status
+    const [[user]] = await pool.query('SELECT verification_status FROM users WHERE id = ?', [user_id]);
+    // Get all documents
+    const [documents] = await pool.query('SELECT * FROM Verification_Documents WHERE user_id = ? ORDER BY uploaded_at DESC', [user_id]);
+    res.json({ verification_status: user?.verification_status || 'pending', documents });
+  } catch (error) {
+    console.error('Error fetching verification status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST upload verification document
+app.post('/api/verification/upload', authenticateToken, verificationUpload.single('document'), async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const { document_type, document_number, issue_date, expiry_date, issuing_authority } = req.body;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No file uploaded' });
+    // Move file to permanent location with unique name
+    const ext = path.extname(file.originalname);
+    const newFileName = `${Date.now()}_${user_id}${ext}`;
+    const newPath = path.join('uploads/verification_documents/', newFileName);
+    fs.renameSync(file.path, newPath);
+    // Insert document record
+    await pool.query(
+      `INSERT INTO Verification_Documents (user_id, document_type, document_number, issue_date, expiry_date, issuing_authority, file_name, file_path, file_type, file_size, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [user_id, document_type, document_number, issue_date || null, expiry_date || null, issuing_authority, newFileName, newPath, file.mimetype, file.size]
+    );
+    // Update user verification status
+    const [[counts]] = await pool.query(
+      `SELECT 
+        COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
+      FROM Verification_Documents WHERE user_id = ?`, [user_id]
+    );
+    let new_status = 'pending';
+    if (counts.not_approved_count > 0) new_status = 'not approved';
+    else if (counts.pending_count > 0) new_status = 'pending';
+    else if (counts.approved_count > 0 && counts.approved_count === (counts.not_approved_count + counts.pending_count + counts.approved_count)) new_status = 'verified';
+    await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', [new_status, user_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error uploading verification document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT update verification document
+app.put('/api/verification/document/:id', authenticateToken, verificationUpload.single('document'), async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const doc_id = req.params.id;
+    // Get the document
+    const [[doc]] = await pool.query('SELECT * FROM Verification_Documents WHERE document_id = ?', [doc_id]);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    if (doc.user_id !== user_id) return res.status(403).json({ error: 'Not authorized' });
+
+    // Prepare update fields
+    const { document_type, document_number, issue_date, expiry_date, issuing_authority } = req.body;
+    let file_name = doc.file_name;
+    let file_path = doc.file_path;
+    let file_type = doc.file_type;
+    let file_size = doc.file_size;
+    // If new file uploaded, replace old file
+    if (req.file) {
+      // Delete old file
+      if (fs.existsSync(doc.file_path)) {
+        fs.unlinkSync(doc.file_path);
+      }
+      const ext = path.extname(req.file.originalname);
+      const newFileName = `${Date.now()}_${user_id}${ext}`;
+      const newPath = path.join('uploads/verification_documents/', newFileName);
+      fs.renameSync(req.file.path, newPath);
+      file_name = newFileName;
+      file_path = newPath;
+      file_type = req.file.mimetype;
+      file_size = req.file.size;
+    }
+    // Update document
+    await pool.query(
+      `UPDATE Verification_Documents SET document_type=?, document_number=?, issue_date=?, expiry_date=?, issuing_authority=?, file_name=?, file_path=?, file_type=?, file_size=?, status='pending', rejection_reason=NULL WHERE document_id=?`,
+      [document_type, document_number, issue_date || null, expiry_date || null, issuing_authority, file_name, file_path, file_type, file_size, doc_id]
+    );
+    // Update user verification status
+    const [[counts]] = await pool.query(
+      `SELECT 
+        COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
+      FROM Verification_Documents WHERE user_id = ?`, [user_id]
+    );
+    let new_status = 'pending';
+    if (counts.not_approved_count > 0) new_status = 'not approved';
+    else if (counts.pending_count > 0) new_status = 'pending';
+    else if (counts.approved_count > 0 && counts.approved_count === (counts.not_approved_count + counts.pending_count + counts.approved_count)) new_status = 'verified';
+    await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', [new_status, user_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating verification document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE verification document
+app.delete('/api/verification/document/:id', authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const doc_id = req.params.id;
+    // Get the document
+    const [[doc]] = await pool.query('SELECT * FROM Verification_Documents WHERE document_id = ?', [doc_id]);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    if (doc.user_id !== user_id) return res.status(403).json({ error: 'Not authorized' });
+    // Delete file from disk
+    if (fs.existsSync(doc.file_path)) {
+      fs.unlinkSync(doc.file_path);
+    }
+    // Delete from database
+    await pool.query('DELETE FROM Verification_Documents WHERE document_id = ?', [doc_id]);
+    // Update user verification status
+    const [[counts]] = await pool.query(
+      `SELECT 
+        COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
+      FROM Verification_Documents WHERE user_id = ?`, [user_id]
+    );
+    let new_status = 'pending';
+    if (counts.not_approved_count > 0) new_status = 'not approved';
+    else if (counts.pending_count > 0) new_status = 'pending';
+    else if (counts.approved_count > 0 && counts.approved_count === (counts.not_approved_count + counts.pending_count + counts.approved_count)) new_status = 'verified';
+    await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', [new_status, user_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting verification document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Get all pending verification documents with user info
+app.get('/api/admin/verification/pending', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const [docs] = await pool.query(`
+      SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified
+      FROM Verification_Documents vd
+      JOIN users u ON vd.user_id = u.id
+      WHERE vd.status = 'pending'
+      ORDER BY vd.uploaded_at ASC
+    `);
+    res.json(docs);
+  } catch (error) {
+    console.error('Error fetching pending verification documents:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Get details of a specific verification document
+app.get('/api/admin/verification/document/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const doc_id = req.params.id;
+    const [[doc]] = await pool.query(`
+      SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified
+      FROM Verification_Documents vd
+      JOIN users u ON vd.user_id = u.id
+      WHERE vd.document_id = ?
+    `, [doc_id]);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    res.json(doc);
+  } catch (error) {
+    console.error('Error fetching verification document details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Approve a verification document
+app.post('/api/admin/verification/document/:id/approve', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const doc_id = req.params.id;
+    const admin_id = req.user.id;
+    // Update document status
+    await pool.query(
+      `UPDATE Verification_Documents SET status='approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=NULL WHERE document_id=?`,
+      [admin_id, doc_id]
+    );
+    // Get user_id
+    const [[doc]] = await pool.query('SELECT user_id FROM Verification_Documents WHERE document_id = ?', [doc_id]);
+    if (doc) {
+      // Recalculate user verification status
+      const user_id = doc.user_id;
+      const [[counts]] = await pool.query(
+        `SELECT 
+          COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+          COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
+        FROM Verification_Documents WHERE user_id = ?`, [user_id]
+      );
+      let new_status = 'pending';
+      if (counts.not_approved_count > 0) new_status = 'not approved';
+      else if (counts.pending_count > 0) new_status = 'pending';
+      else if (counts.approved_count > 0 && counts.approved_count === (counts.not_approved_count + counts.pending_count + counts.approved_count)) new_status = 'verified';
+      await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', [new_status, user_id]);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error approving verification document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Reject a verification document
+app.post('/api/admin/verification/document/:id/reject', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const doc_id = req.params.id;
+    const admin_id = req.user.id;
+    const { rejection_reason } = req.body;
+    if (!rejection_reason) return res.status(400).json({ error: 'Rejection reason is required' });
+    // Update document status
+    await pool.query(
+      `UPDATE Verification_Documents SET status='not approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=? WHERE document_id=?`,
+      [admin_id, rejection_reason, doc_id]
+    );
+    // Get user_id
+    const [[doc]] = await pool.query('SELECT user_id FROM Verification_Documents WHERE document_id = ?', [doc_id]);
+    if (doc) {
+      // Recalculate user verification status
+      const user_id = doc.user_id;
+      const [[counts]] = await pool.query(
+        `SELECT 
+          COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+          COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
+        FROM Verification_Documents WHERE user_id = ?`, [user_id]
+      );
+      let new_status = 'pending';
+      if (counts.not_approved_count > 0) new_status = 'not approved';
+      else if (counts.pending_count > 0) new_status = 'pending';
+      else if (counts.approved_count > 0 && counts.approved_count === (counts.not_approved_count + counts.pending_count + counts.approved_count)) new_status = 'verified';
+      await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', [new_status, user_id]);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error rejecting verification document:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -25,6 +25,7 @@ import CreateStartup from './pages/CreateStartup';
 import InvestorDashboard from './pages/InvestorDashboard';
 import EditStartup from './pages/EditStartup';
 import StartupDetails from './pages/StartupDetails';
+import VerifyAccount from './pages/VerifyAccount';
 
 function MainPage() {
   return (
@@ -66,6 +67,7 @@ function App() {
         <Route path="/dashboard" element={<Navigate to="/entrepreneur-dashboard" />} />
         <Route path="/startup/:id" element={<StartupDetails />} />
         <Route path="/edit-startup/:id" element={<EditStartup />} />
+        <Route path="/verify-account" element={<VerifyAccount />} />
       </Routes>
     </BrowserRouter>
   );
