@@ -1,6 +1,14 @@
 <?php
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $host = 'localhost';
 $dbname = 'taraki_db';
@@ -27,11 +35,16 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM investors");
     $totalInvestors = $stmt->fetchColumn();
 
+    // Get total upcoming events
+    $stmt = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= NOW()");
+    $totalUpcomingEvents = $stmt->fetchColumn();
+
     echo json_encode([
         'total_users' => $totalUsers,
         'total_startups' => $totalStartups,
         'total_entrepreneurs' => $totalEntrepreneurs,
-        'total_investors' => $totalInvestors
+        'total_investors' => $totalInvestors,
+        'total_upcoming_events' => $totalUpcomingEvents
     ]);
 
 } catch(PDOException $e) {
