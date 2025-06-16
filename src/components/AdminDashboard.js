@@ -114,6 +114,15 @@ function AdminDashboard() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '' });
 
+  // Dashboard analytics state
+  const [dashboardStats, setDashboardStats] = useState({
+    total_users: 0,
+    total_startups: 0,
+    total_entrepreneurs: 0,
+    total_investors: 0,
+    total_upcoming_events: 0
+  });
+
   const roleLabels = {
     admin: 'Admin',
     entrepreneur: 'Entrepreneur',
@@ -576,6 +585,36 @@ function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Fetch dashboard analytics
+  const fetchDashboardStats = () => {
+    fetch('http://localhost/Taraki(2025)/KapitalxTaraki/src/api/get_stats.php')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.error) {
+          // Try to fetch upcoming events count from backend if available
+          if (typeof data.total_upcoming_events !== 'undefined') {
+            setDashboardStats(data);
+          } else {
+            // Fallback: calculate upcoming events from events state
+            setDashboardStats(stats => ({
+              ...data,
+              total_upcoming_events: Array.isArray(events)
+                ? events.filter(e => new Date(e.date) >= new Date()).length
+                : 0
+            }));
+          }
+        }
+      })
+      .catch(error => console.error('Error fetching dashboard stats:', error));
+  };
+
+  // Update upcoming events count if events change
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      fetchDashboardStats();
+    }
+  }, [activeTab, events]);
+
   // Main content for each tab
   const renderContent = () => {
     return (
@@ -583,7 +622,6 @@ function AdminDashboard() {
         {(() => {
           switch (activeTab) {
             case 'dashboard':
-              // Define filteredUsers before use
               // Show upcoming events from the events state (created by admin)
               const upcomingEvents = events
                 .filter(e => new Date(e.date) >= new Date())
@@ -591,66 +629,30 @@ function AdminDashboard() {
                 .slice(0, 3); // Show next 3 upcoming events
               return (
                 <div className="flex flex-col gap-6 w-full">
-                  {/* Topbar */}
-                  <div className="flex items-center justify-between mb-6">
-                    <input type="text" placeholder="Search" className={`rounded-lg px-4 py-2 w-1/3 focus:outline-none ${darkMode ? 'bg-[#232323] border border-gray-700 text-white' : 'bg-orange-50 border border-orange-300 text-black'}`} />
-                    <div className="flex items-center gap-6">
-                      {/* Single Admin Notification Bell */}
-                      <button className="relative group focus:outline-none" title="Admin Notifications" onClick={() => setShowMessages(true)}>
-                        <FiBell size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
-                        {(pendingRequests.length > 0 || (tickets && tickets.some(t => t.status === 'Open'))) && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
-                        )}
-                      </button>
-                      <button className="relative group focus:outline-none" title="Messages" onClick={() => setShowMessages(true)}>
-                        <FiMail size={22} className="text-orange-400 group_hover:text-orange-500 transition" />
-                        {(pendingRequests.length > 0 || tickets.some(t => t.status === 'Open')) && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-[#232323]" style={{display:'inline-block'}}></span>
-                        )}
-                      </button>
-                    </div>
-                    {/* Messages Modal */}
-                    {showMessages && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                        <div className={`bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6 w-full max-w-md relative`}>
-                          <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowMessages(false)}>&times;</button>
-                          <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>User Messages</h2>
-                          <div className="flex flex-col gap-3 max-h-80 overflow-y-auto">
-                            {pendingRequests.length === 0 && <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>No new messages from users.</span>}
-                            {pendingRequests.map(req => (
-                              <div key={req.id} className={`rounded-lg p-3 border ${darkMode ? 'bg-[#181818] border-gray-700' : 'bg-orange-50 border-orange-300'}`}>
-                                <span className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>{req.name}</span>
-                                <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>{req.email}</span>
-                                <span className={`block text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Requested: {req.time} ago</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Topbar (removed search, notification, and messages icons) */}
+                  <div className="mb-6"></div>
                   {/* Stat Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Investors</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>189</span>
-                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>+8.2%</span>
+                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_investors}</span>
+                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
                     <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Startups</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>53</span>
-                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>-1.4%</span>
+                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_startups}</span>
+                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
                     <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
-                      <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Site Visitors</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>189</span>
-                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}>+8.2%</span>
+                      <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Entrepreneurs</span>
+                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_entrepreneurs}</span>
+                      <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
                     <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Upcoming Events</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{upcomingEvents.length}</span>
+                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_upcoming_events}</span>
                       <div className="mt-2 w-full">
-                        {upcomingEvents.length === 0 && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events.</span>}
+                        {dashboardStats.total_upcoming_events === 0 && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events.</span>}
                         {upcomingEvents.map((event, idx) => (
                           <div key={idx} className={`flex flex-col mb-2 p-2 rounded border ${darkMode ? 'bg-[#181818] border-orange-900/30' : 'bg-orange-50 border-orange-200'}`}>
                             <span className={`text-xs font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>{event.title}</span>
