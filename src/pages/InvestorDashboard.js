@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { calculateMatchScore } from '../utils/matchmaking';
-import { getEntrepreneurs, getUserPreferences } from '../api/users';
+import { getEntrepreneurs, getUserPreferences, getInvestors } from '../api/users';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
@@ -154,6 +154,21 @@ const InvestorDashboard = () => {
       fetchEntrepreneurs();
     }
   }, [user]);
+
+  // Fetch investors when 'investors' tab is active
+  useEffect(() => {
+    if (activeSection === 'investors') {
+      const fetchInvestors = async () => {
+        try {
+          const investorsData = await getInvestors();
+          setInvestors(investorsData);
+        } catch (error) {
+          console.error('Error fetching investors:', error);
+        }
+      };
+      fetchInvestors();
+    }
+  }, [activeSection]);
 
   // Filter out matched startups from availableStartups
   const matchedIds = new Set(matchedStartups.map(s => s.startup_id));
@@ -393,6 +408,72 @@ const InvestorDashboard = () => {
     </div>
   );
 
+  // Render investors section
+  const renderInvestors = () => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {investors.map((investor) => (
+        <div
+          key={investor.id}
+          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+          style={{ minWidth: '260px' }}
+        >
+          {/* Profile image */}
+          <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
+            {investor.profile_image ? (
+              <img src={investor.profile_image} alt={investor.name} className="object-cover w-full h-full" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-orange-500">
+                <i className="fas fa-user text-white text-6xl"></i>
+              </div>
+            )}
+          </div>
+          {/* Info section */}
+          <div className="w-full px-5 py-4 flex flex-col items-start">
+            <div className="font-bold text-lg text-gray-900 mb-1">{investor.name || investor.full_name || investor.email}</div>
+            <div className="text-sm text-gray-500 mb-2">
+              <span className="font-semibold">Industry:</span>{' '}
+              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                {investor.industry}
+              </span>
+            </div>
+            <div className="text-sm text-gray-500 mb-2">
+              <span className="font-semibold">Location:</span>{' '}
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                {investor.location}
+              </span>
+            </div>
+            {investor.skills && investor.skills.length > 0 && (
+              <div className="text-sm text-gray-500 mb-4">
+                <span className="font-semibold">Skills:</span>{' '}
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {investor.skills.map((skill, index) => (
+                    <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex w-full gap-2 mt-auto">
+              <button
+                onClick={() => handleViewProfile(investor.id)}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                View Profile
+              </button>
+              <button
+                onClick={() => handleMessage(investor.id)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+              >
+                Message
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <>
       <Navbar />
@@ -469,6 +550,14 @@ const InvestorDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-800 mb-6">Entrepreneurs</h1>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {renderEntrepreneurs()}
+              </div>
+            </div>
+          )}
+          {activeSection === 'investors' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-6">Investors</h1>
+              <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                {renderInvestors()}
               </div>
             </div>
           )}
