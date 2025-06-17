@@ -640,6 +640,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               <>
                 <button className="relative flex items-center justify-center" aria-label="Notifications">
                   <FaBell size={22} className="text-orange-500" />
+                  <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
+                    {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ? 
+                      msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
+                  </span>
                 </button>
                 <div
                   className="relative"
@@ -657,7 +661,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                     }}
                   >
                     <FaEnvelope size={22} className="text-orange-500" />
-                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
+                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
                       {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ? 
                         msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
                     </span>
@@ -836,9 +840,9 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
             </div>
             <div className="p-8">
               {authTab === 'login' ? (
-                <LoginForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} />
+                <LoginForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} onClose={modalClose} />
               ) : (
-                <SignupForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} />
+                <SignupForm authTab={authTab} setAuthTab={setAuthTab} onAuthSuccess={handleAuthSuccess} onClose={modalClose} />
               )}
             </div>
             <button
