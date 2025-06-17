@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaBell, FaLock, FaPalette, FaGlobe, FaEnvelope, FaBuilding, FaChartLine } from 'react-icons/fa';
+import { FaUser, FaBell, FaLock, FaPalette, FaGlobe, FaEnvelope, FaBuilding, FaChartLine, FaQuestionCircle } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import FAQs from '../components/FAQ';
+import { updateProfile, changePassword, updateNotificationPrefs } from '../api/user';
+import { submitTicket } from '../api/tickets';
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -22,6 +25,27 @@ function Settings() {
       return false;
     }
   });
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    bio: user?.bio || ''
+  });
+  const [profileMessage, setProfileMessage] = useState('');
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    messages: true,
+    application_status: true,
+    investment_matches: true,
+    job_offers: true,
+    system_alerts: true
+  });
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [ticketForm, setTicketForm] = useState({ title: '', description: '', type: 'bug' });
+  const [ticketMessage, setTicketMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,10 +83,8 @@ function Settings() {
     { id: 'notifications', label: 'Notifications', icon: <FaBell /> },
     { id: 'security', label: 'Security', icon: <FaLock /> },
     { id: 'appearance', label: 'Appearance', icon: <FaPalette /> },
-    { id: 'language', label: 'Language', icon: <FaGlobe /> },
     { id: 'messages', label: 'Messages', icon: <FaEnvelope /> },
-    { id: 'company', label: 'Company', icon: <FaBuilding /> },
-    { id: 'preferences', label: 'Preferences', icon: <FaChartLine /> },
+    { id: 'help', label: 'Help & Support', icon: <FaQuestionCircle /> },
   ];
 
   const renderTabContent = () => {
@@ -92,7 +114,9 @@ function Settings() {
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.first_name}
+                  name="first_name"
+                  value={profileForm.first_name}
+                  onChange={handleProfileChange}
                 />
               </div>
               <div>
@@ -100,7 +124,9 @@ function Settings() {
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.last_name}
+                  name="last_name"
+                  value={profileForm.last_name}
+                  onChange={handleProfileChange}
                 />
               </div>
               <div>
@@ -108,7 +134,9 @@ function Settings() {
                 <input
                   type="email"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.email}
+                  name="email"
+                  value={profileForm.email}
+                  onChange={handleProfileChange}
                 />
               </div>
               <div>
@@ -116,7 +144,9 @@ function Settings() {
                 <input
                   type="tel"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.phone}
+                  name="phone"
+                  value={profileForm.phone}
+                  onChange={handleProfileChange}
                 />
               </div>
             </div>
@@ -125,7 +155,9 @@ function Settings() {
               <textarea
                 className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                 rows="4"
-                defaultValue={user?.bio}
+                name="bio"
+                value={profileForm.bio}
+                onChange={handleProfileChange}
               />
             </div>
           </div>
@@ -140,7 +172,12 @@ function Settings() {
                 <div key={item} className="flex items-center justify-between">
                   <span>{item}</span>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notificationPrefs[item.toLowerCase().replace(' ', '_')]}
+                      onChange={() => handleNotificationToggle(item.toLowerCase().replace(' ', '_'))}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                   </label>
                 </div>
@@ -160,6 +197,9 @@ function Settings() {
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    name="current"
+                    value={passwordForm.current}
+                    onChange={handlePasswordChange}
                   />
                 </div>
                 <div>
@@ -167,6 +207,9 @@ function Settings() {
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    name="new"
+                    value={passwordForm.new}
+                    onChange={handlePasswordChange}
                   />
                 </div>
                 <div>
@@ -174,6 +217,9 @@ function Settings() {
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    name="confirm"
+                    value={passwordForm.confirm}
+                    onChange={handlePasswordChange}
                   />
                 </div>
               </div>
@@ -212,30 +258,6 @@ function Settings() {
           </div>
         );
 
-      case 'language':
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Interface Language</label>
-              <select className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Time Zone</label>
-              <select className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500">
-                <option value="utc">UTC</option>
-                <option value="est">EST</option>
-                <option value="pst">PST</option>
-                <option value="gmt">GMT</option>
-              </select>
-            </div>
-          </div>
-        );
-
       case 'messages':
         return (
           <div className="space-y-6">
@@ -261,67 +283,66 @@ function Settings() {
           </div>
         );
 
-      case 'company':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">Company Name</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.company_name}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Industry</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.industry}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Location</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.location}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Website</label>
-                <input
-                  type="url"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  defaultValue={user?.website}
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'preferences':
+      case 'help':
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Investment Preferences</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Minimum Investment</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                    defaultValue={user?.min_investment}
-                  />
+              <h3 className="text-lg font-semibold mb-4">Help & Support</h3>
+              <div className="space-y-6">
+                <div className="bg-orange-50 p-6 rounded-lg">
+                  <h4 className="text-lg font-medium text-orange-800 mb-2">Submit Ticket</h4>
+                  <p className="text-gray-600 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
+                  <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors" onClick={() => setShowTicketModal(true)}>
+                    Submit Ticket
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Maximum Investment</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                    defaultValue={user?.max_investment}
-                  />
+                {showTicketModal && (
+                  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                    <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-lg">
+                      <h3 className="text-lg font-semibold mb-4">Submit a Support Ticket</h3>
+                      <form className="space-y-4" onSubmit={handleTicketSubmit}>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Title</label>
+                          <input type="text" name="title" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.title} onChange={handleTicketChange} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Description</label>
+                          <textarea name="description" className="w-full border border-gray-300 rounded px-3 py-2" rows="4" value={ticketForm.description} onChange={handleTicketChange} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Type</label>
+                          <select name="type" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.type} onChange={handleTicketChange}>
+                            <option value="bug">Bug</option>
+                            <option value="suggestion">Suggestion</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowTicketModal(false)}>Cancel</button>
+                          <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Submit</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-gray-800">Frequently Asked Questions</h4>
+                  <FAQs />
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-gray-800">Documentation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
+                      <h5 className="font-medium text-gray-800 mb-2">User Guide</h5>
+                      <p className="text-gray-600">Learn how to use all features of the platform</p>
+                    </div>
+                    <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
+                      <h5 className="font-medium text-gray-800 mb-2">API Documentation</h5>
+                      <p className="text-gray-600">Technical documentation for developers</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -330,6 +351,65 @@ function Settings() {
 
       default:
         return null;
+    }
+  };
+
+  const handleProfileChange = (e) => {
+    setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+  };
+
+  const handleProfileSave = async () => {
+    try {
+      await updateProfile(profileForm);
+      setProfileMessage('Profile updated successfully!');
+    } catch {
+      setProfileMessage('Failed to update profile.');
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordSave = async () => {
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordMessage('Passwords do not match.');
+      return;
+    }
+    try {
+      await changePassword({ current: passwordForm.current, new: passwordForm.new });
+      setPasswordMessage('Password changed successfully!');
+    } catch {
+      setPasswordMessage('Failed to change password.');
+    }
+  };
+
+  const handleNotificationToggle = (key) => {
+    setNotificationPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleNotificationSave = async () => {
+    try {
+      await updateNotificationPrefs(notificationPrefs);
+      setNotificationMessage('Notification preferences updated!');
+    } catch {
+      setNotificationMessage('Failed to update notification preferences.');
+    }
+  };
+
+  const handleTicketChange = (e) => {
+    setTicketForm({ ...ticketForm, [e.target.name]: e.target.value });
+  };
+
+  const handleTicketSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await submitTicket(ticketForm);
+      setTicketMessage('Ticket submitted successfully!');
+      setTicketForm({ title: '', description: '', type: 'bug' });
+      setShowTicketModal(false);
+    } catch {
+      setTicketMessage('Failed to submit ticket.');
     }
   };
 
