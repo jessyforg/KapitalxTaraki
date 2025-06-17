@@ -29,6 +29,8 @@ const profile = {
 };
 
 function AdminDashboard() {
+  const [selectedStartupModal, setSelectedStartupModal] = useState(null);
+  const [startupModalOpen, setStartupModalOpen] = useState(false);
   const [tabs] = useState(initialTabs); // Remove setTabs since it's unused
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
@@ -124,6 +126,7 @@ function AdminDashboard() {
   const [industryFilter, setIndustryFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [roleFilterReport, setRoleFilterReport] = useState('');
+  const [startupTab, setStartupTab] = useState('approved'); // 'approved' or 'pending'
   const filteredStartups = startups.filter(s =>
     (!industryFilter || s.industry === industryFilter) &&
     (!locationFilter || s.location === locationFilter)
@@ -731,77 +734,75 @@ function AdminDashboard() {
               const monthMatrix = getMonthMatrix(calendarDate);
               const monthName = calendarDate.toLocaleString('default', { month: 'long' });
               return (
-                <>
-                  <div className="flex flex-row gap-8 w-full">
-                    {/* Expanded Calendar Section */}
-                    <div className="flex-1 rounded-xl shadow-lg overflow-hidden bg-white border border-orange-100">
-                      {/* Calendar Header */}
-                      <div className="flex items-center justify-between p-6 border-b border-orange-100">
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={prevMonth}
-                            className="p-2 hover:bg-orange-100 rounded-lg transition"
-                          >
-                            <FiChevronLeft className="w-5 h-5" />
-                          </button>
-                          <h2 className="text-2xl font-semibold text-orange-700">{monthName} {calendarDate.getFullYear()}</h2>
-                          <button
-                            onClick={nextMonth}
-                            className="p-2 hover:bg-orange-100 rounded-lg transition"
-                          >
-                            <FiChevronRight className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      {/* Calendar Grid */}
-                      <div className="p-6">
-                        <div className="grid grid-cols-7 gap-2">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                            <div key={day} className="text-center font-medium text-orange-700 py-2">
-                              {day}
-                            </div>
-                          ))}
-                          {monthMatrix.map((row, i) => (
-                            <React.Fragment key={i}>
-                              {row.map((day, j) => (
-                                <div
-                                  key={`${i}-${j}`}
-                                  className={`aspect-square p-2 border border-orange-100 rounded-lg ${
-                                    day && day.getMonth() === calendarDate.getMonth() ? 'bg-white' : 'bg-orange-50'
-                                  }`}
-                                >
-                                  <div className="flex flex-col h-full">
-                                    <div className="flex items-center justify-between">
-                                      <span className={`text-sm ${day && day.getMonth() === calendarDate.getMonth() ? 'text-orange-700' : 'text-gray-400'}`}>
-                                        {day ? day.getDate() : ''}
-                                      </span>
-                                    </div>
-                                    <div className="flex-1 flex flex-col gap-1 mt-1 justify-end items-center">
-                                      {day && getEventsForDate(day.toISOString().split('T')[0]).length > 0 && (
-                                        <span className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white mt-2 block"></span>
-                                      )}
-                                      {day && getEventsForDate(day.toISOString().split('T')[0]).map(event => (
-                                        <div
-                                          key={event.id}
-                                          className="text-xs p-1 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition"
-                                          onClick={() => handleEditEvent(event)}
-                                        >
-                                          {event.title}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </React.Fragment>
-                          ))}
-                        </div>
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                  {/* Calendar Section */}
+                  <div className="flex-1 min-w-0">
+                    {/* Calendar Header */}
+                    <div className="flex items-center justify-between p-4 md:p-6 border-b border-orange-100">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={prevMonth}
+                          className="p-2 hover:bg-orange-100 rounded-lg transition"
+                        >
+                          <FiChevronLeft className="w-5 h-5" />
+                        </button>
+                        <h2 className="text-xl md:text-2xl font-semibold text-orange-700">{monthName} {calendarDate.getFullYear()}</h2>
+                        <button
+                          onClick={nextMonth}
+                          className="p-2 hover:bg-orange-100 rounded-lg transition"
+                        >
+                          <FiChevronRight className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
-                    {/* Taller Events Sidebar */}
-                    <div className="w-96 bg-white border border-orange-100 rounded-xl shadow-lg flex flex-col max-h-[700px]">
-                      <div className="flex items-center justify-between px-8 py-6 border-b border-orange-100">
-                        <span className="text-orange-700 text-xl font-semibold">Events</span>
+                    {/* Calendar Grid */}
+                    <div className="overflow-x-auto">
+                      <div className="grid grid-cols-7 gap-2 min-w-[420px]">
+                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                          <div key={day} className="text-center font-medium text-orange-700 py-2 text-xs md:text-base">
+                            {day}
+                          </div>
+                        ))}
+                        {monthMatrix.map((row, i) => (
+                          <React.Fragment key={i}>
+                            {row.map((day, j) => (
+                              <div
+                                key={`${i}-${j}`}
+                                className={`aspect-square p-2 border border-orange-100 rounded-lg ${
+                                  day && day.getMonth() === calendarDate.getMonth() ? 'bg-white' : 'bg-orange-50'
+                                }`}
+                              >
+                                <div className="flex flex-col h-full">
+                                  <div className="flex items-center justify-between">
+                                    <span className={`text-xs md:text-sm ${day && day.getMonth() === calendarDate.getMonth() ? 'text-orange-700' : 'text-gray-400'}`}>{day ? day.getDate() : ''}</span>
+                                  </div>
+                                  <div className="flex-1 flex flex-col gap-1 mt-1 justify-end items-center">
+                                    {day && getEventsForDate(day.toISOString().split('T')[0]).length > 0 && (
+                                      <span className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white mt-2 block"></span>
+                                    )}
+                                    {day && getEventsForDate(day.toISOString().split('T')[0]).map(event => (
+                                      <div
+                                        key={event.id}
+                                        className="text-xs p-1 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition"
+                                        onClick={() => handleEditEvent(event)}
+                                      >
+                                        {event.title}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Events Sidebar */}
+                  <div className="w-full md:w-96 mt-4 md:mt-0">
+                    <div className="bg-white border border-orange-100 rounded-xl shadow-lg flex flex-col max-h-[700px]">
+                      <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-orange-100">
+                        <span className="text-orange-700 text-lg md:text-xl font-semibold">Events</span>
                         <button
                           className="bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 flex items-center justify-center"
                           onClick={() => setShowEventModal(true)}
@@ -810,7 +811,7 @@ function AdminDashboard() {
                           <FiPlus size={22} />
                         </button>
                       </div>
-                      <div className="flex-1 overflow-y-auto px-6 py-4">
+                      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
                         {events.length === 0 ? (
                           <div className="text-gray-400 text-center mt-8">No events yet.</div>
                         ) : (
@@ -916,7 +917,7 @@ function AdminDashboard() {
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               );
             case 'users':
               // Use the filteredUsers variable from the top-level scope
@@ -1048,50 +1049,97 @@ function AdminDashboard() {
                     }}>Export to PDF</button>
                   </div>
                   <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-full text-left text-sm text-gray-700">
+                    <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
                       <thead>
-                        <tr className="bg-orange-100 text-orange-700">
-                          {reportType === 'startups' ? (
-                            <>
-                              <th className="px-4 py-3 font-semibold">ID</th>
-                              <th className="px-4 py-3 font-semibold">Name</th>
-                              <th className="px-4 py-3 font-semibold">Industry</th>
-                              <th className="px-4 py-3 font-semibold">Location</th>
-                              <th className="px-4 py-3 font-semibold">Description</th>
-                            </>
-                          ) : (
-                            <>
-                              <th className="px-4 py-3 font-semibold">ID</th>
-                              <th className="px-4 py-3 font-semibold">First Name</th>
-                              <th className="px-4 py-3 font-semibold">Last Name</th>
-                              <th className="px-4 py-3 font-semibold">Email</th>
-                              <th className="px-4 py-3 font-semibold">Role</th>
-                              <th className="px-4 py-3 font-semibold">Industry</th>
-                              <th className="px-4 py-3 font-semibold">Location</th>
-                            </>
-                          )}
+                        <tr className="bg-orange-100">
+                          <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
+                          <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
+                          <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
+                          <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
+                          <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
+                          <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
+                          <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="bg-white divide-y divide-orange-100">
                         {(reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
                           <tr key={item.startup_id || item.id} className="border-b border-orange-100 hover:bg-orange-50 transition">
                             {reportType === 'startups' ? (
                               <>
-                                <td className="px-4 py-3">{item.startup_id}</td>
-                                <td className="px-4 py-3">{item.name}</td>
-                                <td className="px-4 py-3">{item.industry}</td>
-                                <td className="px-4 py-3">{item.location}</td>
-                                <td className="px-4 py-3">{item.description}</td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="flex flex-col">
+                                    <div className="text-sm font-medium text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.name}</div>
+                                    <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{item.industry}</div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.industry}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.entrepreneur_name}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.location}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(item.startup_stage)}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                  {renderStatusBadge(item.approval_status)}
+                                </td>
+                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
+                                  {item.approval_status === 'pending' ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleAcceptStartup(item.startup_id)}
+                                        className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
+                                      >Approve</button>
+                                      <button
+                                        onClick={() => handleDeclineStartup(item.startup_id)}
+                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                      >Reject</button>
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-300">—</span>
+                                  )}
+                                </td>
                               </>
                             ) : (
                               <>
-                                <td className="px-4 py-3">{item.id}</td>
-                                <td className="px-4 py-3">{item.first_name}</td>
-                                <td className="px-4 py-3">{item.last_name}</td>
-                                <td className="px-4 py-3">{item.email}</td>
-                                <td className="px-4 py-3">{item.role}</td>
-                                <td className="px-4 py-3">{item.industry}</td>
-                                <td className="px-4 py-3">{item.location}</td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.first_name} {item.last_name}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.email}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{roleLabels[item.role] || item.role}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.location}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(item.startup_stage)}</div>
+                                </td>
+                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                  {renderStatusBadge(item.approval_status)}
+                                </td>
+                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
+                                  {item.approval_status === 'pending' ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleAcceptStartup(item.startup_id)}
+                                        className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
+                                      >Approve</button>
+                                      <button
+                                        onClick={() => handleDeclineStartup(item.startup_id)}
+                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                      >Reject</button>
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-300">—</span>
+                                  )}
+                                </td>
                               </>
                             )}
                           </tr>
@@ -1103,9 +1151,25 @@ function AdminDashboard() {
               );
             case 'startup':
               return (
-                <div className="flex flex-col gap-6">
-                  <h1 className="text-3xl font-bold text-gray-800 mb-6">Startup Management</h1>
-                  <div className="bg-white p-8 rounded-xl border border-orange-100 shadow-sm">
+                <div className="flex flex-col gap-6 w-full">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Startup Management</h1>
+                  {/* Tab Buttons */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${startupTab === 'approved' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => setStartupTab('approved')}
+                    >
+                      Approved
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${startupTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => setStartupTab('pending')}
+                    >
+                      Pending
+                    </button>
+                  </div>
+                  {/* Table */}
+                  <div className="bg-white p-4 md:p-8 rounded-xl border border-orange-100 shadow-sm w-full">
                     {startupLoading ? (
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -1113,33 +1177,71 @@ function AdminDashboard() {
                     ) : startupError ? (
                       <div className="text-red-500 text-center">{startupError}</div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm text-gray-700">
+                      <div className="overflow-x-auto w-full">
+                        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
                           <thead>
-                            <tr className="bg-orange-100 text-orange-700">
-                              <th className="px-4 py-3 font-semibold">Name</th>
-                              <th className="px-4 py-3 font-semibold">Industry</th>
-                              <th className="px-4 py-3 font-semibold">Co-founder</th>
-                              <th className="px-4 py-3 font-semibold">Location</th>
-                              <th className="px-4 py-3 font-semibold">Stage</th>
-                              <th className="px-4 py-3 font-semibold">Status</th>
-                              <th className="px-4 py-3 font-semibold text-center">Actions</th>
+                            <tr className="bg-orange-100">
+                              <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
+                              <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
+                              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
+                              <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            {startups.filter(startup => startup.approval_status === 'approved').map((startup) => (
-                              <tr key={startup.startup_id} className="border-b border-orange-100 hover:bg-orange-50 transition">
-                                <td className="px-4 py-3">{startup.name}</td>
-                                <td className="px-4 py-3">{startup.industry}</td>
-                                <td className="px-4 py-3">{startup.entrepreneur_name}</td>
-                                <td className="px-4 py-3">{startup.location}</td>
-                                <td className="px-4 py-3">{formatStartupStage(startup.startup_stage)}</td>
-                                <td className="px-4 py-3">{renderStatusBadge(startup.approval_status)}</td>
-                                <td className="px-4 py-3 text-center">
-                                  {/* No actions for approved startups */}
-                                </td>
+                          <tbody className="bg-white divide-y divide-orange-100">
+                            {startups.filter(startup => startup.approval_status === startupTab).length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-lg">No {startupTab === 'pending' ? 'pending' : 'approved'} startups found.</td>
                               </tr>
-                            ))}
+                            ) : (
+                              startups.filter(startup => startup.approval_status === startupTab).map((startup) => (
+                                <tr
+                                  key={startup.startup_id}
+                                  className="hover:bg-orange-50 transition cursor-pointer"
+                                  onClick={() => { setSelectedStartupModal(startup); setStartupModalOpen(true); }}
+                                >
+                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="flex flex-col">
+                                      <div className="text-sm font-medium text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.name}</div>
+                                      <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
+                                  </td>
+                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.entrepreneur_name}</div>
+                                  </td>
+                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.location}</div>
+                                  </td>
+                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(startup.startup_stage)}</div>
+                                  </td>
+                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                    {renderStatusBadge(startup.approval_status)}
+                                  </td>
+                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center" onClick={e => e.stopPropagation()}>
+                                    {startupTab === 'pending' ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleAcceptStartup(startup.startup_id)}
+                                          className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
+                                        >Approve</button>
+                                        <button
+                                          onClick={() => handleDeclineStartup(startup.startup_id)}
+                                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                        >Reject</button>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-300">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -1374,59 +1476,31 @@ function AdminDashboard() {
             )}
           </aside>
         )}
-        {activeTab === 'startup' && (
-          <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white rounded-2xl shadow-xl border border-orange-100 flex flex-col p-6">
-            <h3 className="text-md font-semibold text-orange-700 mb-2">Pending Startup Applications</h3>
-            {pendingStartups.length === 0 ? (
-              <span className="text-gray-500">No pending startup applications.</span>
-            ) : (
-              pendingStartups.map(startup => (
-                <div key={startup.startup_id} className="rounded-lg p-3 border border-orange-100 bg-orange-50 flex items-center justify-between mb-2">
-                  <div>
-                    <span className="font-semibold text-black">{startup.name}</span>
-                    <span className="block text-xs text-gray-700">{startup.industry}</span>
-                    <span className="block text-xs text-gray-600">{startup.entrepreneur_name}</span>
-                  </div>
-                  <button className="ml-2 p-2 rounded-full hover:bg-orange-200 flex items-center justify-center" title="View Details" onClick={() => handleOpenPendingStartupModal(startup)}>
-                    <svg width="22" height="22" viewBox="0 0 24 24">
-                      <circle cx="12" cy="5" r="1.5" fill="#fb923c" />
-                      <circle cx="12" cy="12" r="1.5" fill="#fb923c" />
-                      <circle cx="12" cy="19" r="1.5" fill="#fb923c" />
-                    </svg>
-                  </button>
-                </div>
-              ))
-            )}
-            {/* Modal for pending startup details and approve/reject */}
-            {pendingStartupModalOpen && selectedPendingStartup && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
-                  <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleClosePendingStartupModal}>&times;</button>
-                  <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Startup Application</h3>
-                  <div className="mb-4 w-full">
-                    <div className="font-semibold text-lg text-black mb-1">{selectedPendingStartup.name}</div>
-                    <div className="text-sm text-gray-700 mb-1">Industry: {selectedPendingStartup.industry}</div>
-                    <div className="text-sm text-gray-700 mb-1">Entrepreneur: {selectedPendingStartup.entrepreneur_name} ({selectedPendingStartup.entrepreneur_email})</div>
-                    <div className="text-sm text-gray-700 mb-1">Location: {selectedPendingStartup.location}</div>
-                    <div className="text-sm text-gray-700 mb-1">Stage: {formatStartupStage(selectedPendingStartup.startup_stage)}</div>
-                    <div className="text-sm text-gray-700 mb-1">Description: {selectedPendingStartup.description}</div>
-                    {selectedPendingStartup.pitch_deck_url && (
-                      <div className="text-sm text-gray-700 mb-1">Pitch Deck: <a href={selectedPendingStartup.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
-                    )}
-                    {selectedPendingStartup.business_plan_url && (
-                      <div className="text-sm text-gray-700 mb-1">Business Plan: <a href={selectedPendingStartup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <button onClick={() => { handleAcceptStartup(selectedPendingStartup.startup_id); handleClosePendingStartupModal(); }} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow">Approve</button>
-                    <button onClick={() => { handleDeclineStartup(selectedPendingStartup.startup_id); handleClosePendingStartupModal(); }} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow">Reject</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </aside>
-        )}
       </div>
+      {/* Startup Details Modal */}
+      {startupModalOpen && selectedStartupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setStartupModalOpen(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Startup Details</h3>
+            <div className="mb-4 w-full">
+              <div className="font-semibold text-lg text-black mb-1">{selectedStartupModal.name}</div>
+              <div className="text-sm text-gray-700 mb-1">Industry: {selectedStartupModal.industry}</div>
+              <div className="text-sm text-gray-700 mb-1">Founder: {selectedStartupModal.entrepreneur_name} ({selectedStartupModal.entrepreneur_email})</div>
+              <div className="text-sm text-gray-700 mb-1">Location: {selectedStartupModal.location}</div>
+              <div className="text-sm text-gray-700 mb-1">Stage: {formatStartupStage(selectedStartupModal.startup_stage)}</div>
+              <div className="text-sm text-gray-700 mb-1">Status: {renderStatusBadge(selectedStartupModal.approval_status)}</div>
+              <div className="text-sm text-gray-700 mb-1">Description: {selectedStartupModal.description}</div>
+              {selectedStartupModal.pitch_deck_url && (
+                <div className="text-sm text-gray-700 mb-1">Pitch Deck: <a href={selectedStartupModal.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
+              )}
+              {selectedStartupModal.business_plan_url && (
+                <div className="text-sm text-gray-700 mb-1">Business Plan: <a href={selectedStartupModal.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
