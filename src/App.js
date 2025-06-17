@@ -37,7 +37,6 @@ function MainPage() {
       <About />
       <Objective />
       <Team />
-      <Events />
       <FAQ />
       <Contact />
       <Footer />
