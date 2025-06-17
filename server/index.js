@@ -28,20 +28,34 @@ const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
+  try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header' });
     }
-    req.user = user;
-    next();
-  });
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) {
+        console.error('Token verification error:', err);
+        if (err.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: 'Token expired' });
+        }
+        return res.status(403).json({ error: 'Invalid token' });
+      }
+
+      // Add user info to request
+      req.user = decoded;
+      next();
+    });
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.status(500).json({ error: 'Authentication error' });
+  }
 };
 
 // Database configuration
@@ -58,6 +72,10 @@ const pool = mysql.createPool(dbConfig);
 // Now import and use the messages router
 const messagesRouter = require('./routes/messages')(pool);
 app.use('/api/messages', messagesRouter);
+
+// Add search route
+const searchRouter = require('./routes/search');
+app.use('/api/search', searchRouter);
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
