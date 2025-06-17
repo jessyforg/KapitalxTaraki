@@ -136,6 +136,21 @@ const api = {
     }
   },
 
+  // Get user preferences
+  async getUserPreferences(userId) {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/preferences`, {
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch user preferences');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch user preferences');
+    }
+  },
+
   // Event endpoints
   async createEvent(eventData) {
     try {

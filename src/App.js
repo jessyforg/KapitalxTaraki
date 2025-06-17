@@ -26,6 +26,8 @@ import InvestorDashboard from './pages/InvestorDashboard';
 import EditStartup from './pages/EditStartup';
 import StartupDetails from './pages/StartupDetails';
 import VerifyAccount from './pages/VerifyAccount';
+import Settings from './pages/Settings';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function MainPage() {
   return (
@@ -57,17 +59,18 @@ function App() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/ecosystem" element={<Ecosystem />} />
         <Route path="/programs" element={<ProgramsPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/profile/:id" element={<UserProfile />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/entrepreneur-dashboard" element={<EntrepreneurDashboard />} />
-        <Route path="/create-startup" element={<CreateStartup />} />
-        <Route path="/investor-dashboard" element={<InvestorDashboard />} />
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/entrepreneur-dashboard" element={<ProtectedRoute allowedRoles={['entrepreneur']}><EntrepreneurDashboard /></ProtectedRoute>} />
+        <Route path="/create-startup" element={<ProtectedRoute allowedRoles={['entrepreneur']}><CreateStartup /></ProtectedRoute>} />
+        <Route path="/investor-dashboard" element={<ProtectedRoute allowedRoles={['investor']}><InvestorDashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/entrepreneur-dashboard" />} />
-        <Route path="/startup/:id" element={<StartupDetails />} />
-        <Route path="/edit-startup/:id" element={<EditStartup />} />
-        <Route path="/verify-account" element={<VerifyAccount />} />
+        <Route path="/startup/:id" element={<ProtectedRoute><StartupDetails /></ProtectedRoute>} />
+        <Route path="/edit-startup/:id" element={<ProtectedRoute allowedRoles={['entrepreneur']}><EditStartup /></ProtectedRoute>} />
+        <Route path="/verify-account" element={<ProtectedRoute><VerifyAccount /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
