@@ -457,12 +457,12 @@ function Settings() {
         <main className="flex-1 pl-72 pt-24 p-8">
           <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg">
             {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 bg-white px-8 pt-8 z-10 relative overflow-x-auto whitespace-nowrap" style={{ overflowY: 'hidden' }}>
+            <div className="flex border-b border-gray-200 bg-white px-2 pt-2 z-10 relative overflow-x-auto whitespace-nowrap" style={{ overflowY: 'hidden' }}>
               {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 -mb-px border-b-2 font-medium transition-colors text-base laptop-s:text-lg ${
+                  className={`flex items-center gap-1 px-2 py-1 -mb-px border-b-2 font-medium transition-colors text-xs sm:text-sm ${
                     activeTab === tab.id
                       ? 'border-orange-500 text-orange-600'
                       : 'border-transparent text-gray-500 hover:text-orange-600'
