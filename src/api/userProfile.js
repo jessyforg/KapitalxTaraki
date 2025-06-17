@@ -3,15 +3,16 @@ const API_URL = 'http://localhost:5000/api';
 const getHeaders = () => {
   try {
     const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`
     };
   } catch (error) {
     console.warn('Error accessing localStorage:', error);
-    return {
-      'Content-Type': 'application/json',
-    };
+    throw error;
   }
 };
 

@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import emailjs from "@emailjs/browser";
 import { scroller } from "react-scroll";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope } from "react-icons/fa";
+import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope, FaSearch } from "react-icons/fa";
 import userProfileAPI from '../api/userProfile';
 import axios from 'axios';
+import { debounce } from 'lodash';
 
 function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
   const form = useRef();
@@ -294,6 +295,13 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     const loadUserProfile = async () => {
       if (user?.id) {
         try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            console.warn('No authentication token found');
+            handleLogout(); // Logout if no token is found
+            return;
+          }
+
           const profile = await userProfileAPI.getUserProfile(user.id);
           if (profile) {
             const updatedUser = { ...user, ...profile };
@@ -307,6 +315,9 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
           }
         } catch (error) {
           console.error('Error loading user profile:', error);
+          if (error.message === 'Failed to fetch user profile') {
+            handleLogout(); // Logout if token is invalid
+          }
         }
       }
     };
@@ -327,13 +338,23 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     setLoadingPreview(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found');
+        handleLogout(); // Logout if no token is found
+        return;
+      }
+
       const res = await axios.get('http://localhost:5000/api/messages/preview', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
-      console.log('Fetched preview:', res.data); // DEBUG LOG
       setMsgPreview(res.data);
     } catch (e) {
-      console.error('Preview fetch error:', e); // DEBUG LOG
+      console.error('Preview fetch error:', e);
+      if (e.response?.status === 403) {
+        handleLogout(); // Logout if token is invalid
+      }
       setMsgPreview([]);
     }
     setLoadingPreview(false);
@@ -377,6 +398,79 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     '/investor-dashboard'
   ].some(path => location.pathname.startsWith(path));
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef(null);
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    if (!showSearchResults) return;
+    function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchResults(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSearchResults]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query) => {
+      if (!query.trim()) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.warn('No authentication token found');
+          handleLogout(); // Logout if no token is found
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setSearchResults(response.data);
+      } catch (error) {
+        console.error('Search error:', error);
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          handleLogout(); // Logout if token is invalid or expired
+        }
+        setSearchResults([]);
+      }
+      setIsSearching(false);
+    }, 300),
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setIsSearching(true);
+    setShowSearchResults(true);
+    debouncedSearch(query);
+  };
+
+  // Handle search result click
+  const handleResultClick = (result) => {
+    setShowSearchResults(false);
+    setSearchQuery('');
+    if (result.type === 'user') {
+      navigate(`/profile/${result.id}`);
+    } else if (result.type === 'startup') {
+      navigate(`/startup/${result.id}`);
+    }
+  };
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
@@ -395,6 +489,89 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               style={{ filter: darkMode ? "invert(0)" : "invert(0)" }}
             />
           </Link>
+          <div className="relative flex-1 max-w-xl mx-4" ref={searchRef}>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => setShowSearchResults(true)}
+                placeholder="Search users and startups..."
+                className={`w-full px-4 py-2 pl-10 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-[#181818] border-white/20 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:border-orange-500 transition-colors`}
+              />
+              <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`} />
+            </div>
+
+            {showSearchResults && (searchQuery.trim() || isSearching) && (
+              <div className={`absolute w-full mt-2 rounded-lg shadow-lg z-50 ${
+                darkMode 
+                  ? 'bg-[#181818] border border-white/20' 
+                  : 'bg-white border border-gray-200'
+              }`}>
+                {isSearching ? (
+                  <div className="p-4 text-center text-gray-500">Searching...</div>
+                ) : searchResults.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">No results found</div>
+                ) : (
+                  <div className="max-h-96 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <button
+                        key={`${result.type}-${result.id}`}
+                        onClick={() => handleResultClick(result)}
+                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        {result.type === 'user' ? (
+                          <>
+                            {result.profile_image ? (
+                              <img
+                                src={result.profile_image}
+                                alt={result.name}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                                {result.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 text-left">
+                              <div className="font-semibold">{result.name}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{result.role}</div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {result.logo ? (
+                              <img
+                                src={result.logo}
+                                alt={result.name}
+                                className="w-10 h-10 rounded-lg object-cover border-2 border-orange-500"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white">
+                                {result.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 text-left">
+                              <div className="font-semibold">{result.name}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{result.industry}</div>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
             <button
               data-collapse-toggle="navbar-cta"
