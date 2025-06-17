@@ -51,161 +51,111 @@ function TBI() {
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators
         </h1>
-        <section id="tbi" className="grid grid-cols-1 place-items-center justify-items-center tablet:grid gap-4 tablet-m:gap-1  tablet:grid-cols-2 tablet-m:grid-cols-3 tablet:px-12 laptop-m:px-24 desktop-s:px-28 desktop-m:px-36">
-          <a href="/tbi/intto">
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
-              <img
-                src={Intto}
-                alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 mb-1"
-              />
-              <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] text-ucgreen font-bold">
-                InTTO
-              </h3>
-              <p className="text-[0.7rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                The Innovation and Technology Transfer Office (InTTO) fosters
-                innovation by offering business and technology transfer
-                opportunities to faculty, students, alumni, and the community
-                through its two specialized units.
-              </p>
-            </div>
-          </a>
-          <a
-            href="https://upbsilbi.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
-              <img
-                src={UP}
-                alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 aos-init"
-              />
-              <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] font-bold text-upred">
-                SILBI
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem] text-center font-regular px-10 mt-1 aos-init">
-                Silbi, meaning "service" in Filipino, reflects UP Baguio's
-                dedication to community service. The SILBI Center drives
-                transformation in Cordillera and Northern Luzon through research
-                and innovation, fostering public service initiatives.
-              </p>
-            </div>
-          </a>
-          <a
-            href="https://www.facebook.com/slu.edu.ph"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
-              <img
-                src={SLU}
-                alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 aos-init"
-              />
-              <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] font-bold text-slublue">
-                ConRes
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                Established in 2017 with CHED funding, the SIRIB Center created
-                a Technology Hub and Co-Working Space. It launched
-                "Technopreneurship 101" to integrate entrepreneurship into
-                engineering education, fostering tech-savvy entrepreneurs.
-              </p>
-            </div>
-          </a>
-          <a
-            href="https://www.facebook.com/BenguetStateUniversity"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 tablet-m:hidden">
-              <img
-                src={BSU}
-                alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 aos-init"
-              />
-              <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] font-bold text-bsuyellow">
-                ATBI / IC
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
-                Technology Business Incubator/Innovation Center supports
-                start-ups and micro businesses in agricultural technology,
-                offering professional services to help them grow.
-              </p>
-            </div>
-          </a>
-          <a
-            href="https://www.facebook.com/ifugaostateuniversity"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80 tablet-m:hidden">
-              <img
-                src={IFSU}
-                alt="1st-ico"
-                className="h-[4.5rem] laptop-s:h-10 laptop-s:w-10 desktop-m:w-[25rem] aos-init"
-              />
-              <h3 className="py-3 text-center text-[0.9rem] laptop-s:text-xl desktop-m:[1.5rem] font-bold text-ifsugreen">
-                IFSU IPTBM
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
-                Technology Business Incubator/Innovation Center supports
-                start-ups and micro businesses in agricultural technology,
-                offering professional services to help them grow.
-              </p>
-            </div>
-          </a>
-        </section>
-        <section className="grid grid-cols-1 place-items-center justify-items-center tablet-m:grid gap-4 tablet-m:gap-1  tablet:grid-cols-2 tablet-m:grid-cols-2 tablet-m:px-[12.5rem] laptop-s:px-[15.3rem] laptop-m:px-[18.9rem] desktop-s:px-[21.3rem] desktop-m:px-[26rem] phone:pt-4 phone:hidden tablet:hidden">
-          <a
-            href="https://www.facebook.com/BenguetStateUniversity"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
-              <img
-                src={BSU}
-                alt="1st-ico"
-                className="h-12 laptop-s:h-16 desktop-m:h-20 aos-init"
-              />
-              <h3 className="py-3 text-center text-xl laptop-s:text-xl desktop-m:[1.5rem] font-bold text-bsuyellow">
-                ATBI / IC
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
-                Technology Business Incubator/Innovation Center supports
-                start-ups and micro businesses in agricultural technology,
-                offering professional services to help them grow.
-              </p>
-            </div>
-          </a>
-          <a
-            href="https://www.facebook.com/ifugaostateuniversity"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="border flex flex-col justify-center items-center mt-5 border-gray-300 rounded-lg w-72 h-60 laptop-s:w-[23rem] laptop-m:w-[25rem] desktop-s:w-[27rem] desktop-m:w-[32rem] laptop-s:h-72 desktop-m:h-80">
-              <img
-                src={IFSU}
-                alt="1st-ico"
-                className="h-14 tablet-m:w-[3.8rem] laptop-s:h-[4.5rem] laptop-s:w-20 desktop-m:w-[5.7rem] desktop-m:h-20 aos-init"
-              />
-              <h3 className="py-3 text-center text-xl laptop-s:text-xl desktop-m:[1.5rem] font-bold text-ifsugreen">
-                IFSU IPTBM
-              </h3>
-              <p className="text-[0.7rem] tablet-m:text-[0.6rem] laptop-s:text-[0.8rem] desktop-m:text-[0.9rem]  text-center font-regular px-10 mt-1 aos-init">
-                Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
-                Technology Business Incubator/Innovation Center supports
-                start-ups and micro businesses in agricultural technology,
-                offering professional services to help them grow.
-              </p>
-            </div>
-          </a>
-        </section>
-
+        <div className="px-2 sm:px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* InTTO */}
+            <a href="/tbi/intto">
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <img
+                  src={Intto}
+                  alt="1st-ico"
+                  className="w-24 h-24 object-contain mb-4"
+                />
+                <h2 className="font-bold text-lg mb-2 text-center">InTTO</h2>
+                <p className="text-gray-600 text-center">
+                  The Innovation and Technology Transfer Office (InTTO) fosters
+                  innovation by offering business and technology transfer
+                  opportunities to faculty, students, alumni, and the community
+                  through its two specialized units.
+                </p>
+              </div>
+            </a>
+            {/* SILBI */}
+            <a
+              href="https://upbsilbi.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <img
+                  src={UP}
+                  alt="1st-ico"
+                  className="w-24 h-24 object-contain mb-4"
+                />
+                <h2 className="font-bold text-lg mb-2 text-center">SILBI</h2>
+                <p className="text-gray-600 text-center">
+                  Silbi, meaning "service" in Filipino, reflects UP Baguio's
+                  dedication to community service. The SILBI Center drives
+                  transformation in Cordillera and Northern Luzon through research
+                  and innovation, fostering public service initiatives.
+                </p>
+              </div>
+            </a>
+            {/* ConRes */}
+            <a
+              href="https://www.facebook.com/slu.edu.ph"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <img
+                  src={SLU}
+                  alt="1st-ico"
+                  className="w-24 h-24 object-contain mb-4"
+                />
+                <h2 className="font-bold text-lg mb-2 text-center">ConRes</h2>
+                <p className="text-gray-600 text-center">
+                  Established in 2017 with CHED funding, the SIRIB Center created
+                  a Technology Hub and Co-Working Space. It launched
+                  "Technopreneurship 101" to integrate entrepreneurship into
+                  engineering education, fostering tech-savvy entrepreneurs.
+                </p>
+              </div>
+            </a>
+            {/* ATBI / IC */}
+            <a
+              href="https://www.facebook.com/BenguetStateUniversity"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <img
+                  src={BSU}
+                  alt="1st-ico"
+                  className="w-24 h-24 object-contain mb-4"
+                />
+                <h2 className="font-bold text-lg mb-2 text-center">ATBI / IC</h2>
+                <p className="text-gray-600 text-center">
+                  Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
+                  Technology Business Incubator/Innovation Center supports
+                  start-ups and micro businesses in agricultural technology,
+                  offering professional services to help them grow.
+                </p>
+              </div>
+            </a>
+            {/* IFSU IPTBM */}
+            <a
+              href="https://www.facebook.com/ifugaostateuniversity"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <img
+                  src={IFSU}
+                  alt="1st-ico"
+                  className="w-24 h-24 object-contain mb-4"
+                />
+                <h2 className="font-bold text-lg mb-2 text-center">IFSU IPTBM</h2>
+                <p className="text-gray-600 text-center">
+                  Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
+                  Technology Business Incubator/Innovation Center supports
+                  start-ups and micro businesses in agricultural technology,
+                  offering professional services to help them grow.
+                </p>
+              </div>
+            </a>
+          </div>
+        </div>
         <section id="mentors" className="my-16">
           <h1 className="font-bold text-2xl md:text-3xl text-center mb-12 text-gray-800 dark:text-white">
             Our Mentors
