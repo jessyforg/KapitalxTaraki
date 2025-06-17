@@ -4,6 +4,11 @@ import { FaTicketAlt } from 'react-icons/fa'; // Add ticket icon
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
 import Navbar from './Navbar'; // Add Navbar import
+import { getTickets, updateTicket } from '../api/tickets';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 const initialTabs = [
@@ -65,30 +70,9 @@ function AdminDashboard() {
   const locationDebounceRef = React.useRef();
   const [showMessages, setShowMessages] = useState(false);
   // Add state for tickets and ticket modal
-  const [tickets, setTickets] = useState([
-    {
-      id: 1,
-      title: 'Consultation Request',
-      type: 'Consult',
-      status: 'Open',
-      submittedBy: 'Jane Doe',
-      date: '2025-06-05',
-      messages: [
-        { from: 'user', text: 'I need help with my startup idea.', time: '2025-06-05 10:00' },
-      ],
-    },
-    {
-      id: 2,
-      title: 'Bug Report',
-      type: 'Issue',
-      status: 'Open',
-      submittedBy: 'John Smith',
-      date: '2025-06-04',
-      messages: [
-        { from: 'user', text: 'There is a bug on the dashboard.', time: '2025-06-04 09:30' },
-      ],
-    },
-  ]);
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketsError, setTicketsError] = useState('');
   const [activeTicket, setActiveTicket] = useState(null);
   const [adminReply, setAdminReply] = useState('');
   // Add state for ticket filters and search
@@ -127,6 +111,42 @@ function AdminDashboard() {
     admin: 'Admin',
     entrepreneur: 'Entrepreneur',
     investor: 'Investor',
+  };
+
+  // Add state for editing ticket
+  const [editingTicket, setEditingTicket] = useState(null);
+  const [adminResponse, setAdminResponse] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [updateMessage, setUpdateMessage] = useState('');
+
+  // Add at the top of AdminDashboard function, after other useState hooks
+  const [reportType, setReportType] = useState('startups');
+  const [industryFilter, setIndustryFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [roleFilterReport, setRoleFilterReport] = useState('');
+  const filteredStartups = startups.filter(s =>
+    (!industryFilter || s.industry === industryFilter) &&
+    (!locationFilter || s.location === locationFilter)
+  );
+  const filteredUsers = users.filter(u =>
+    (!roleFilterReport || u.role === roleFilterReport) &&
+    (!locationFilter || u.location === locationFilter) &&
+    (!industryFilter || u.industry === industryFilter)
+  );
+  const exportToExcel = (data, filename) => {
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `${filename}.xlsx`);
+  };
+  const exportToPDF = (data, columns, filename) => {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [columns],
+      body: data.map(row => columns.map(col => row[col] || '')),
+    });
+    doc.save(`${filename}.pdf`);
   };
 
   // Handle user edit
@@ -615,6 +635,28 @@ function AdminDashboard() {
     }
   }, [activeTab, events]);
 
+  // Fetch startups and users when Site Performance tab is active
+  useEffect(() => {
+    if (activeTab === 'sitePerformance') {
+      if (startups.length === 0) fetchStartups();
+      if (users.length === 0) fetchUsers();
+    }
+  }, [activeTab]);
+
+  // Compute unique industries and locations
+  const allIndustries = [
+    ...new Set([
+      ...startups.map(s => s.industry).filter(Boolean),
+      ...users.map(u => u.industry).filter(Boolean)
+    ])
+  ];
+  const allLocations = [
+    ...new Set([
+      ...startups.map(s => s.location).filter(Boolean),
+      ...users.map(u => u.location).filter(Boolean)
+    ])
+  ];
+
   // Main content for each tab
   const renderContent = () => {
     return (
@@ -877,21 +919,7 @@ function AdminDashboard() {
                 </>
               );
             case 'users':
-              // Filter users based on role and search query
-              const filteredUsers = users.filter(user => {
-                const matchesRole =
-                  roleFilter === 'all' ||
-                  (user.role && user.role.toLowerCase() === roleFilter.toLowerCase());
-                const nameString =
-                  (user.first_name && user.last_name
-                    ? `${user.first_name} ${user.last_name}`
-                    : user.full_name || '') +
-                  ' ' +
-                  (user.email || '');
-                const matchesSearch = nameString.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesRole && matchesSearch;
-              });
-
+              // Use the filteredUsers variable from the top-level scope
               return (
                 <div className="flex flex-col gap-6">
                   <h1 className="text-3xl font-bold text-gray-800 mb-6">User Management</h1>
@@ -980,14 +1008,96 @@ function AdminDashboard() {
             case 'sitePerformance':
               return (
                 <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323] border-orange-700' : 'bg-white border-orange-400'}`}>
-                  {/* Topbar for site performance */}
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Site Performance</h2>
-                    <div className="flex items-center gap-4">
-                      <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
-                        Generate Report
-                      </button>
-                    </div>
+                  <div className="flex gap-2 mb-4">
+                    <select value={reportType} onChange={e => setReportType(e.target.value)} className="border rounded px-2 py-1">
+                      <option value="startups">Startups</option>
+                      <option value="users">Users</option>
+                    </select>
+                    <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="border rounded px-2 py-1">
+                      <option value="">All Industries</option>
+                      {allIndustries.map(ind => (
+                        <option key={ind} value={ind}>{ind}</option>
+                      ))}
+                    </select>
+                    <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="border rounded px-2 py-1">
+                      <option value="">All Locations</option>
+                      {allLocations.map(loc => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                    {reportType === 'users' && (
+                      <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="border rounded px-2 py-1">
+                        <option value="">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="entrepreneur">Entrepreneur</option>
+                        <option value="investor">Investor</option>
+                      </select>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
+                      const data = reportType === 'startups' ? filteredStartups : filteredUsers;
+                      exportToExcel(data, `${reportType}-report`);
+                    }}>Export to Excel</button>
+                    <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
+                      const data = reportType === 'startups' ? filteredStartups : filteredUsers;
+                      const columns = reportType === 'startups'
+                        ? ['startup_id', 'name', 'industry', 'location', 'description']
+                        : ['id', 'first_name', 'last_name', 'email', 'role', 'industry', 'location'];
+                      exportToPDF(data, columns, `${reportType}-report`);
+                    }}>Export to PDF</button>
+                  </div>
+                  <div className="overflow-x-auto rounded-lg">
+                    <table className="min-w-full text-left text-sm text-gray-700">
+                      <thead>
+                        <tr className="bg-orange-100 text-orange-700">
+                          {reportType === 'startups' ? (
+                            <>
+                              <th className="px-4 py-3 font-semibold">ID</th>
+                              <th className="px-4 py-3 font-semibold">Name</th>
+                              <th className="px-4 py-3 font-semibold">Industry</th>
+                              <th className="px-4 py-3 font-semibold">Location</th>
+                              <th className="px-4 py-3 font-semibold">Description</th>
+                            </>
+                          ) : (
+                            <>
+                              <th className="px-4 py-3 font-semibold">ID</th>
+                              <th className="px-4 py-3 font-semibold">First Name</th>
+                              <th className="px-4 py-3 font-semibold">Last Name</th>
+                              <th className="px-4 py-3 font-semibold">Email</th>
+                              <th className="px-4 py-3 font-semibold">Role</th>
+                              <th className="px-4 py-3 font-semibold">Industry</th>
+                              <th className="px-4 py-3 font-semibold">Location</th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
+                          <tr key={item.startup_id || item.id} className="border-b border-orange-100 hover:bg-orange-50 transition">
+                            {reportType === 'startups' ? (
+                              <>
+                                <td className="px-4 py-3">{item.startup_id}</td>
+                                <td className="px-4 py-3">{item.name}</td>
+                                <td className="px-4 py-3">{item.industry}</td>
+                                <td className="px-4 py-3">{item.location}</td>
+                                <td className="px-4 py-3">{item.description}</td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="px-4 py-3">{item.id}</td>
+                                <td className="px-4 py-3">{item.first_name}</td>
+                                <td className="px-4 py-3">{item.last_name}</td>
+                                <td className="px-4 py-3">{item.email}</td>
+                                <td className="px-4 py-3">{item.role}</td>
+                                <td className="px-4 py-3">{item.industry}</td>
+                                <td className="px-4 py-3">{item.location}</td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
@@ -1037,6 +1147,112 @@ function AdminDashboard() {
                   </div>
                 </div>
               );
+            case 'tickets':
+              return (
+                <div className="flex flex-col gap-6">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-6">Support Tickets</h1>
+                  <div className="bg-white p-8 rounded-xl border border-orange-100 shadow-sm">
+                    {ticketsLoading ? (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      </div>
+                    ) : ticketsError ? (
+                      <div className="flex-1 flex items-center justify-center text-red-500">{ticketsError}</div>
+                    ) : tickets.length === 0 ? (
+                      <div className="text-gray-400 text-center mt-8">No tickets found.</div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-lg">
+                        <table className="min-w-full text-left text-sm text-gray-700">
+                          <thead>
+                            <tr className="bg-orange-100 text-orange-700">
+                              <th className="px-4 py-3 font-semibold">ID</th>
+                              <th className="px-4 py-3 font-semibold">Title</th>
+                              <th className="px-4 py-3 font-semibold">Type</th>
+                              <th className="px-4 py-3 font-semibold">Status</th>
+                              <th className="px-4 py-3 font-semibold">Submitted By</th>
+                              <th className="px-4 py-3 font-semibold">Created At</th>
+                              <th className="px-4 py-3 font-semibold">Admin Response</th>
+                              <th className="px-4 py-3 font-semibold">Admin Notes</th>
+                              <th className="px-4 py-3 font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {tickets.map(ticket => (
+                              <React.Fragment key={ticket.ticket_id}>
+                                <tr className="border-b border-orange-100 hover:bg-orange-50 transition">
+                                  <td className="px-4 py-3">{ticket.ticket_id}</td>
+                                  <td className="px-4 py-3">{ticket.title}</td>
+                                  <td className="px-4 py-3">{ticket.type}</td>
+                                  <td className="px-4 py-3">{ticket.status}</td>
+                                  <td className="px-4 py-3">{ticket.user_id}</td>
+                                  <td className="px-4 py-3">{ticket.created_at}</td>
+                                  <td className="px-4 py-3">{ticket.admin_response || ''}</td>
+                                  <td className="px-4 py-3">{ticket.admin_notes || ''}</td>
+                                  <td className="px-4 py-3">
+                                    <button
+                                      className="px-2 py-1 bg-orange-200 text-orange-800 rounded hover:bg-orange-300"
+                                      onClick={() => {
+                                        setEditingTicket(ticket.ticket_id);
+                                        setAdminResponse(ticket.admin_response || '');
+                                        setAdminNotes(ticket.admin_notes || '');
+                                        setUpdateMessage('');
+                                      }}
+                                    >Respond/Note</button>
+                                  </td>
+                                </tr>
+                                {editingTicket === ticket.ticket_id && (
+                                  <tr>
+                                    <td colSpan={9} className="bg-orange-50 px-4 py-4">
+                                      <div className="flex flex-col gap-2">
+                                        <textarea
+                                          className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
+                                          placeholder="Admin Response"
+                                          value={adminResponse}
+                                          onChange={e => setAdminResponse(e.target.value)}
+                                        />
+                                        <textarea
+                                          className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
+                                          placeholder="Admin Notes"
+                                          value={adminNotes}
+                                          onChange={e => setAdminNotes(e.target.value)}
+                                        />
+                                        <div className="flex gap-2">
+                                          <button
+                                            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+                                            onClick={async () => {
+                                              try {
+                                                await updateTicket(ticket.ticket_id, { admin_response: adminResponse, admin_notes: adminNotes });
+                                                setUpdateMessage('Ticket updated!');
+                                                setEditingTicket(null);
+                                                setTicketsLoading(true);
+                                                getTickets()
+                                                  .then(data => setTickets(data))
+                                                  .catch(err => setTicketsError(err.message))
+                                                  .finally(() => setTicketsLoading(false));
+                                              } catch {
+                                                setUpdateMessage('Failed to update ticket.');
+                                              }
+                                            }}
+                                          >Save</button>
+                                          <button
+                                            className="px-4 py-2 bg-gray-200 rounded"
+                                            onClick={() => setEditingTicket(null)}
+                                          >Cancel</button>
+                                        </div>
+                                        {updateMessage && <div className="text-sm text-orange-700 mt-2">{updateMessage}</div>}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
             default:
               return null;
           }
@@ -1044,6 +1260,17 @@ function AdminDashboard() {
       </>
     );
   };
+
+  useEffect(() => {
+    if (activeTab === 'tickets') {
+      setTicketsLoading(true);
+      setTicketsError('');
+      getTickets()
+        .then(data => setTickets(data))
+        .catch(err => setTicketsError(err.message))
+        .finally(() => setTicketsLoading(false));
+    }
+  }, [activeTab]);
 
   return (
     <>
