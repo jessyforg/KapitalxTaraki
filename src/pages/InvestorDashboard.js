@@ -10,6 +10,9 @@ const sidebarLinks = [
   { key: 'matches', label: 'Matches', icon: 'fa-star' },
   { key: 'entrepreneurs', label: 'Entrepreneurs', icon: 'fa-users' },
   { key: 'investors', label: 'Investors', icon: 'fa-hand-holding-usd' },
+  { key: 'ecosystem', label: 'Ecosystem', icon: 'fa-globe' },
+  { key: 'events', label: 'Events', icon: 'fa-calendar' },
+  { key: 'settings', label: 'Settings', icon: 'fa-cog' },
 ];
 
 const industries = {
@@ -503,7 +506,13 @@ const InvestorDashboard = () => {
                     ? 'bg-orange-50 text-orange-600'
                     : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700'
                 }`}
-                onClick={() => setActiveSection(link.key)}
+                onClick={() => {
+                  if (['ecosystem', 'events', 'settings'].includes(link.key)) {
+                    navigate(`/${link.key}`);
+                  } else {
+                    setActiveSection(link.key);
+                  }
+                }}
               >
                 <i className={`fas ${link.icon}`}></i>
                 <span>{link.label}</span>
