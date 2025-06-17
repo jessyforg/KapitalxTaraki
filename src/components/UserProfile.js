@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import api from '../services/api';
 import userProfileAPI from '../api/userProfile';
 import {
-  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt
+  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap
 } from 'react-icons/fa';
 
 // Format date to YYYY-MM-DD to avoid timezone issues
@@ -40,7 +40,7 @@ const formatGender = (gender) => {
 };
 
 // Move these components outside the main function so they are not re-created on every render
-function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user }) {
+function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user, isOwnProfile }) {
   // Handle date change
   const handleDateChange = (e) => {
     const newDate = e.target.value;
@@ -57,7 +57,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
     <div className="bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">General Information</h2>
-        {!isEditingGeneral && (
+        {!isEditingGeneral && isOwnProfile && (
           <button onClick={() => setIsEditingGeneral(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
         )}
       </div>
@@ -139,12 +139,12 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
   );
 }
 
-function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user }) {
+function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) {
   return (
     <div className="bg-white rounded-2xl shadow p-6 border border-gray-200 h-auto min-h-0 mb-12">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-bold text-orange-600">About</h2>
-        {!isEditingAbout && (
+        {!isEditingAbout && isOwnProfile && (
           <button onClick={() => setIsEditingAbout(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
         )}
       </div>
@@ -163,7 +163,7 @@ function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleS
   );
 }
 
-function ProfessionalBackgroundCard({ employments: initialEmployments, setEmployments, isEditingProfessional, setIsEditingProfessional, handleSaveProfessional, user }) {
+function ProfessionalBackgroundCard({ employments: initialEmployments, setEmployments, isEditingProfessional, setIsEditingProfessional, handleSaveProfessional, user, isOwnProfile }) {
   // Use local state for editing
   const [localEmployments, setLocalEmployments] = useState(initialEmployments || []);
 
@@ -219,7 +219,7 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
     <div className="bg-white rounded-2xl shadow p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-orange-600">Professional Background</h3>
-        {!isEditingProfessional && (
+        {!isEditingProfessional && isOwnProfile && (
           <button
             onClick={() => setIsEditingProfessional(true)}
             className="text-orange-500 font-semibold hover:underline"
@@ -310,7 +310,7 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
   );
 }
 
-function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcademicProfile, isEditingAcademic, setIsEditingAcademic, handleSaveAcademic, user }) {
+function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcademicProfile, isEditingAcademic, setIsEditingAcademic, handleSaveAcademic, user, isOwnProfile }) {
   // Use local state for editing
   const [localAcademicProfile, setLocalAcademicProfile] = useState(initialAcademicProfile || []);
 
@@ -365,7 +365,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
     <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">Education</h2>
-        {!isEditingAcademic && (
+        {!isEditingAcademic && isOwnProfile && (
           <button onClick={() => setIsEditingAcademic(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
         )}
       </div>
@@ -667,6 +667,190 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
   );
 }
 
+// Add a helper function for formatting
+function formatPreferenceText(text) {
+  if (!text) return '';
+  // Replace underscores and hyphens with spaces, capitalize each word
+  return text
+    .replace(/_/g, ' ')
+    .replace(/-/g, '- ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+    .replace(/- /g, '-'); // Keep hyphenated words tight
+}
+
+function formatStartupStage(stage) {
+  if (!stage) return '';
+  if (stage.toLowerCase() === 'mvp') return 'MVP';
+  return formatPreferenceText(stage);
+}
+
+function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPreferences, setIsEditingPreferences, handleSavePreferences, user, isOwnProfile }) {
+  const [localPreferences, setLocalPreferences] = useState(preferences || {
+    position_desired: '',
+    preferred_industries: [],
+    preferred_startup_stage: '',
+    preferred_location: ''
+  });
+
+  // Update local state when preferences change and not editing
+  useEffect(() => {
+    if (!isEditingPreferences) {
+      // Parse preferred_industries if it's a string
+      const parsedPreferences = preferences ? {
+        ...preferences,
+        preferred_industries: typeof preferences.preferred_industries === 'string' 
+          ? JSON.parse(preferences.preferred_industries) 
+          : (preferences.preferred_industries || [])
+      } : {
+        position_desired: '',
+        preferred_industries: [],
+        preferred_startup_stage: '',
+        preferred_location: ''
+      };
+      setLocalPreferences(parsedPreferences);
+    }
+  }, [preferences, isEditingPreferences]);
+
+  // Handle save
+  const handleSave = async () => {
+    // Ensure preferred_industries is a string when saving
+    const preferencesToSave = {
+      ...localPreferences,
+      preferred_industries: JSON.stringify(localPreferences.preferred_industries)
+    };
+    await handleSavePreferences(preferencesToSave);
+    setIsEditingPreferences(false);
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    const parsedPreferences = preferences ? {
+      ...preferences,
+      preferred_industries: typeof preferences.preferred_industries === 'string' 
+        ? JSON.parse(preferences.preferred_industries) 
+        : (preferences.preferred_industries || [])
+    } : {
+      position_desired: '',
+      preferred_industries: [],
+      preferred_startup_stage: '',
+      preferred_location: ''
+    };
+    setLocalPreferences(parsedPreferences);
+    setIsEditingPreferences(false);
+  };
+
+  // Ensure preferred_industries is always an array
+  const industries = Array.isArray(localPreferences.preferred_industries) 
+    ? localPreferences.preferred_industries 
+    : (typeof localPreferences.preferred_industries === 'string' 
+      ? JSON.parse(localPreferences.preferred_industries) 
+      : []);
+
+  return (
+    <div className="bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-orange-600">Matchmaking Preferences</h2>
+        {!isEditingPreferences && isOwnProfile && (
+          <button onClick={() => setIsEditingPreferences(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+      {isEditingPreferences ? (
+        <div className="space-y-6">
+          <div>
+            <div className="text-gray-600 mb-1">Position Desired</div>
+            <select
+              value={localPreferences.position_desired || ''}
+              onChange={e => setLocalPreferences({ ...localPreferences, position_desired: e.target.value })}
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+            >
+              <option value="">Select position</option>
+              <option value="co-founder">Co-Founder</option>
+              <option value="technical_co-founder">Technical Co-Founder</option>
+              <option value="business_co-founder">Business Co-Founder</option>
+              <option value="investor">Investor</option>
+              <option value="advisor">Advisor</option>
+            </select>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Industries</div>
+            <select
+              multiple
+              value={industries}
+              onChange={e => {
+                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                setLocalPreferences({ ...localPreferences, preferred_industries: selected });
+              }}
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+            >
+              <option value="Technology">Technology</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Finance">Finance</option>
+              <option value="Education">Education</option>
+              <option value="Retail">Retail</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Agriculture">Agriculture</option>
+              <option value="Transportation">Transportation</option>
+            </select>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Startup Stage</div>
+            <select
+              value={localPreferences.preferred_startup_stage || ''}
+              onChange={e => setLocalPreferences({ ...localPreferences, preferred_startup_stage: e.target.value })}
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+            >
+              <option value="">Select stage</option>
+              <option value="idea">Idea Stage</option>
+              <option value="mvp">MVP Stage</option>
+              <option value="scaling">Scaling Stage</option>
+              <option value="established">Established Stage</option>
+            </select>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Location</div>
+            <input
+              type="text"
+              value={localPreferences.preferred_location || ''}
+              onChange={e => setLocalPreferences({ ...localPreferences, preferred_location: e.target.value })}
+              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              placeholder="Enter preferred location"
+            />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+            <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <div className="text-gray-600 mb-1">Position Desired</div>
+            <div className="font-semibold">{formatPreferenceText(localPreferences.position_desired) || 'Not specified'}</div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Industries</div>
+            <div className="font-semibold">
+              {industries.length > 0
+                ? industries.map(formatPreferenceText).join(', ')
+                : 'Not specified'}
+            </div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Startup Stage</div>
+            <div className="font-semibold">{formatStartupStage(localPreferences.preferred_startup_stage) || 'Not specified'}</div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">Preferred Location</div>
+            <div className="font-semibold">{formatPreferenceText(localPreferences.preferred_location) || 'Not specified'}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserProfile() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
@@ -684,6 +868,8 @@ export default function UserProfile() {
   const [isEditingProfessional, setIsEditingProfessional] = useState(false);
   const [isEditingAcademic, setIsEditingAcademic] = useState(false);
   const [isEditingSocial, setIsEditingSocial] = useState(false);
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
+  const [preferences, setPreferences] = useState(null);
 
   const [generalInfo, setGeneralInfo] = useState({
     firstName: user?.first_name || '',
@@ -771,6 +957,15 @@ export default function UserProfile() {
       const loggedInUser = JSON.parse(localStorage.getItem('user'));
       if (loggedInUser && String(loggedInUser.id) === String(userId)) {
         localStorage.setItem('user', JSON.stringify(profile));
+      }
+      
+      // Fetch preferences
+      try {
+        const prefs = await api.getUserPreferences(userId);
+        setPreferences(prefs);
+      } catch (err) {
+        console.error('Error fetching preferences:', err);
+        setPreferences(null);
       }
     } catch (err) {
       setError('Failed to load profile');
@@ -995,6 +1190,22 @@ export default function UserProfile() {
     }
   };
 
+  const handleSavePreferences = async (updatedPreferences) => {
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        ...user,
+        position_desired: updatedPreferences.position_desired,
+        preferred_industries: updatedPreferences.preferred_industries,
+        preferred_startup_stage: updatedPreferences.preferred_startup_stage,
+        preferred_location: updatedPreferences.preferred_location
+      });
+      setPreferences(updatedPreferences);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update matchmaking preferences.');
+    }
+  };
+
   if (!user) {
     return <div className="flex flex-col min-h-screen"><Navbar /><div className="flex-1 flex justify-center items-center text-gray-200 bg-[#181818]">Please log in to view your profile.</div></div>;
   }
@@ -1011,54 +1222,56 @@ export default function UserProfile() {
               <FaUser className="text-white" size={60} />
             </div>
           )}
-          {/* Profile picture upload button */}
-          <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
-            <input
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  // Validate file type
-                  if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file');
-                    return;
-                  }
+          {/* Profile picture upload button - only show for profile owner */}
+          {isOwnProfile && (
+            <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                      alert('Please select an image file');
+                      return;
+                    }
 
-                  // Validate file size (5MB)
-                  if (file.size > 5 * 1024 * 1024) {
-                    alert('Image size must be less than 5MB');
-                    return;
-                  }
+                    // Validate file size (5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert('Image size must be less than 5MB');
+                      return;
+                    }
 
-                  try {
-                    const reader = new window.FileReader();
-                    reader.onloadend = async () => {
-                      try {
-                        const base64Image = reader.result;
-                        await userProfileAPI.updateProfileImage(user.id, base64Image);
-                        await fetchProfile(user.id);
-                        // Show success message
-                        alert('Profile image updated successfully');
-                      } catch (error) {
-                        console.error('Error updating profile image:', error);
-                        alert(error.message || 'Failed to update profile image. Please try again.');
-                      }
-                    };
-                    reader.onerror = () => {
-                      alert('Error reading the image file. Please try again.');
-                    };
-                    reader.readAsDataURL(file);
-                  } catch (error) {
-                    console.error('Error processing image:', error);
-                    alert('Error processing the image. Please try again.');
+                    try {
+                      const reader = new window.FileReader();
+                      reader.onloadend = async () => {
+                        try {
+                          const base64Image = reader.result;
+                          await userProfileAPI.updateProfileImage(user.id, base64Image);
+                          await fetchProfile(user.id);
+                          // Show success message
+                          alert('Profile image updated successfully');
+                        } catch (error) {
+                          console.error('Error updating profile image:', error);
+                          alert(error.message || 'Failed to update profile image. Please try again.');
+                        }
+                      };
+                      reader.onerror = () => {
+                        alert('Error reading the image file. Please try again.');
+                      };
+                      reader.readAsDataURL(file);
+                    } catch (error) {
+                      console.error('Error processing image:', error);
+                      alert('Error processing the image. Please try again.');
+                    }
                   }
-                }
-              }}
-            />
-            <span className="text-xs text-orange-500 font-semibold">Edit</span>
-          </label>
+                }}
+              />
+              <span className="text-xs text-orange-500 font-semibold">Edit</span>
+            </label>
+          )}
         </div>
         <div className="text-center">
           <div className="font-bold text-xl text-gray-800">{user.first_name} {user.last_name}</div>
@@ -1067,15 +1280,16 @@ export default function UserProfile() {
       </div>
       <nav className="flex-1 w-full">
         <ul className="space-y-6 text-left">
-          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('personal')}><FaBars /> Personal Details</li>
-          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('academic')}><FaBars /> Academic Profile</li>
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('personal')}><FaUser /> Personal Details</li>
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('academic')}><FaGraduationCap /> Academic Profile</li>
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('matchmaking')}><FaHandshake /> Matchmaking Preferences</li>
           {isOwnProfile && (
-            <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('privacy')}><FaBars /> Privacy Settings</li>
+            <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('privacy')}><FaLock /> Privacy Settings</li>
           )}
         </ul>
       </nav>
       <div className="mt-auto w-full pt-8">
-        <button className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"><FaBars /> Logout</button>
+        <button className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"><FaSignOutAlt /> Logout</button>
       </div>
     </div>
   );
@@ -1123,6 +1337,7 @@ export default function UserProfile() {
         setIsEditingProfessional={setIsEditingProfessional} 
         handleSaveProfessional={handleSaveProfessional} 
         user={user} 
+        isOwnProfile={isOwnProfile}
       />
     </div>
   );
@@ -1137,6 +1352,7 @@ export default function UserProfile() {
         setIsEditingAcademic={setIsEditingAcademic}
         handleSaveAcademic={handleSaveAcademic}
         user={user}
+        isOwnProfile={isOwnProfile}
       />
     </div>
   );
@@ -1154,10 +1370,37 @@ export default function UserProfile() {
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           {activeSection === 'personal' && <>
-            <GeneralInfo generalInfo={generalInfo} setGeneralInfo={setGeneralInfo} isEditingGeneral={isEditingGeneral} setIsEditingGeneral={setIsEditingGeneral} handleSaveGeneral={handleSaveGeneral} user={user} />
-            <AboutCard about={about} setAbout={setAbout} isEditingAbout={isEditingAbout} setIsEditingAbout={setIsEditingAbout} handleSaveAbout={handleSaveAbout} user={user} />
+            <GeneralInfo 
+              generalInfo={generalInfo} 
+              setGeneralInfo={setGeneralInfo} 
+              isEditingGeneral={isEditingGeneral} 
+              setIsEditingGeneral={setIsEditingGeneral} 
+              handleSaveGeneral={handleSaveGeneral} 
+              user={user} 
+              isOwnProfile={isOwnProfile}
+            />
+            <AboutCard 
+              about={about} 
+              setAbout={setAbout} 
+              isEditingAbout={isEditingAbout} 
+              setIsEditingAbout={setIsEditingAbout} 
+              handleSaveAbout={handleSaveAbout} 
+              user={user} 
+              isOwnProfile={isOwnProfile}
+            />
           </>}
           {activeSection === 'academic' && <AcademicProfile />}
+          {activeSection === 'matchmaking' && (
+            <MatchmakingPreferencesCard
+              preferences={preferences}
+              setPreferences={setPreferences}
+              isEditingPreferences={isEditingPreferences}
+              setIsEditingPreferences={setIsEditingPreferences}
+              handleSavePreferences={handleSavePreferences}
+              user={user}
+              isOwnProfile={isOwnProfile}
+            />
+          )}
           {activeSection === 'privacy' && isOwnProfile && <PrivacySettings />}
         </div>
         {activeSection === 'personal' && <RightPanel />}
