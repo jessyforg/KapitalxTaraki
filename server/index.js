@@ -1421,6 +1421,9 @@ app.get('/api/users/role/entrepreneur', authenticateToken, async (req, res) => {
   }
 });
 
+const ticketsRouter = require('./routes/tickets')(pool);
+app.use('/api/tickets', ticketsRouter);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
