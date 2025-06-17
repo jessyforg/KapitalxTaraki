@@ -37,7 +37,7 @@ function TarakiTeam() {
         <div className="cont tablet:px-8 phone:py-2">
           <section className="mt-16 tablet:mt-12 text-center">
             <h1
-              className="font-montserrat font-extrabold text-md tablet:text-lg tablet-m:text-2xl laptop-s:text-3xl laptop-m:text-[2.3rem] desktop-m:text-[2.9rem] desktop-m:mb-7 aos-init"
+              className="font-montserrat font-bold text-md tablet:text-lg tablet-m:text-2xl laptop-s:text-3xl laptop-m:text-[2.3rem] desktop-m:text-[2.9rem] desktop-m:mb-7 aos-init"
               data-aos="fade-down"
               data-aos-delay="200"
             >
@@ -617,7 +617,7 @@ function TarakiTeam() {
                   <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Dr. Thelma D. Palaoag
                   </h1>
-                  <h1 className="font-montserrat laptop-s:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat font-semibold laptop-s:text-xl desktop-m:text-2xl">
                     Project Leader
                   </h1>
                   <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[1.65rem] laptop-s:pb-[1.7rem] desktop-m:pb-[3.2rem]">
@@ -708,7 +708,7 @@ function TarakiTeam() {
                   <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Jezelle Q. Oliva
                   </h1>
-                  <h1 className="font-montserrat laptop-s:text-lg laptop-m:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat font-semibold laptop-s:text-lg laptop-m:text-xl desktop-m:text-2xl">
                     Startup Community Enabler
                   </h1>
                   <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed tablet-m:pb-[3.2rem] laptop-s:pb-[3.27rem] laptop-m:pb-[3.4rem] desktop-m:pb-[3.19rem]">
@@ -799,7 +799,7 @@ function TarakiTeam() {
                   <h1 className="font-montserrat laptop-s:text-[1.2rem] laptop-m:text-2xl desktop-m:text-3xl font-semibold text-orange-700">
                     Pia Bernardine T. Capuyan
                   </h1>
-                  <h1 className="font-montserrat laptop-s:text-lg  laptop-m:text-xl desktop-m:text-2xl">
+                  <h1 className="font-montserrat font-semibold laptop-s:text-lg  laptop-m:text-xl desktop-m:text-2xl">
                     Project Assistant
                   </h1>
                   <p className="font-montserrat bg-white font-extralight laptop-s:mt-2 laptop-s:text-[1rem] laptop-m:text-lg desktop-m:text-xl leading-relaxed laptop-l:pb-[1.65rem] desktop-s:pb-[1.6rem] desktop-m:pb-[1.475rem]">
@@ -883,5 +883,4 @@ function TarakiTeam() {
     </section>
   );
 }
-
 export default TarakiTeam;

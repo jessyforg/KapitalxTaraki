@@ -47,7 +47,7 @@ function TBI() {
 
   return (
     <>
-      <div className="font-montserrat mt-4 laptop-s:mt-8 desktop-s:mt-10 desktop-m:mt-12">
+      <div className="font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators
         </h1>
@@ -222,8 +222,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Henry James Banayat</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Director of Business Development at Bitshares Labs, Inc.</p>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Henry James Banayat</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Director of Business Development at Bitshares Labs, Inc.</p>
             </div>
             {/* Jaydee */}
             <div className="flex flex-col items-center">
@@ -236,8 +236,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Jaydee Rebadulla</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Director at Lycaon Creatives; Chairman & CEO at Errand Doers PH; Owner and Founder at El Lote PH</p>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Jaydee Rebadulla</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Director at Lycaon Creatives; Chairman & CEO at Errand Doers PH; Owner and Founder at El Lote PH</p>
             </div>
             {/* Wilson */}
             <div className="flex flex-col items-center">
@@ -250,8 +250,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Wilson Capuyan</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Wilson Capuyan</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Elmer */}
             <div className="flex flex-col items-center">
@@ -264,8 +264,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Elmer Macalingay</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Elmer Macalingay</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Benjie */}
             <div className="flex flex-col items-center">
@@ -278,8 +278,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Hon. Benjamin Magalong</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">City Mayor of Baguio</p>            </div>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Hon. Benjamin Magalong</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">City Mayor of Baguio</p>            </div>
             {/* Angelo */}
             <div className="flex flex-col items-center">
               <div className="relative">
@@ -291,8 +291,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-100 mt-6">Angelo Valdez</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mt-2 max-w-xs">CEO of Harper and Hill, Global & International Network Connector, ASEAN HR Business leader & Former Director for South East Asia at Morgan Philips Group</p>
+              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Angelo Valdez</h2>
+              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">CEO of Harper and Hill, Global & International Network Connector, ASEAN HR Business leader & Former Director for South East Asia at Morgan Philips Group</p>
             </div>
           </div>
         </section>

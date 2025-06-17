@@ -429,7 +429,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
             ref={navbarStickyRef}
           >
             {!hideNavLinks && (
-              <ul className="flex flex-row items-center justify-center font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
+              <ul className="flex flex-row items-center justify-center font-semibold p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
                 <li className="dropdown relative group">
                   <span className="rounded-md">
                     <button
