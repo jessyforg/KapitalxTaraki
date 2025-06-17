@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaGoogle, FaFacebookF, FaMicrosoft } from 'react-icons/fa';
 import api from '../services/api';
 
-const LoginForm = ({ authTab, setAuthTab, onAuthSuccess }) => {
+const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -42,7 +42,16 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn relative">
+        {onClose && (
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-orange-600 text-2xl"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
+            &times;
+          </button>
+        )}
         <div className="flex justify-between mb-6">
           <button
             className={`flex-1 py-2 text-lg font-semibold transition-colors duration-200 ${authTab === 'login' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
