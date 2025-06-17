@@ -9,7 +9,7 @@ import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnv
 import userProfileAPI from '../api/userProfile';
 import axios from 'axios';
 
-function Navbar() {
+function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
   const form = useRef();
   const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
@@ -221,6 +221,7 @@ function Navbar() {
     }
     setUser(null);
     setIsEditing(false);
+    navigate('/');
   };
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -370,6 +371,12 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [msgDropdownOpen]);
 
+  // Hide nav links on role-specific dashboards (but NOT admin)
+  const hideNavLinks = hideNavLinksProp || [
+    '/entrepreneur-dashboard',
+    '/investor-dashboard'
+  ].some(path => location.pathname.startsWith(path));
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
@@ -421,210 +428,212 @@ function Navbar() {
             id="navbar-cta"
             ref={navbarStickyRef}
           >
-            <ul className="flex flex-row items-center justify-center font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
-              <li className="dropdown relative group">
-                <span className="rounded-md">
-                  <button
-                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  >
-                    Home
-                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
-                  <ul className="py-1">
-                    <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollToSection("objectives");
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        Objectives
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollToSection("team");
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        TARAKIs
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollToSection("FAQs");
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        FAQ
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li className="dropdown relative group">
-                <span className="rounded-md">
-                  <button
-                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  >
-                    Ecosystem
-                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
-                  <ul className="py-1">
-                    <li>
-                      <Link
-                        to="/ecosystem#tbi"                        onClick={e => {
-                          e.preventDefault();
-                          if (location.pathname === '/ecosystem') {
-                            const el = document.getElementById('tbi');
-                            if (el) {
-                              const yOffset = -100; // Adjust this value to control the scroll position
-                              const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                              window.scrollTo({ top: y, behavior: 'smooth' });
-                            }
-                          } else {
-                            navigate('/ecosystem', { state: { scrollTo: 'tbi' } });
-                          }
-                          closeNavbar();
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        TBI
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/ecosystem#mentors"                        onClick={e => {
-                          e.preventDefault();
-                          if (location.pathname === '/ecosystem') {
-                            const el = document.getElementById('mentors');
-                            if (el) {
-                              const yOffset = -100; // Adjust this value to control the scroll position
-                              const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                              window.scrollTo({ top: y, behavior: 'smooth' });
-                            }
-                          } else {
-                            navigate('/ecosystem', { state: { scrollTo: 'mentors' } });
-                          }
-                          closeNavbar();
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        Mentors
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/ecosystem#framework"
-                        onClick={e => {
-                          e.preventDefault();
-                          if (location.pathname === '/ecosystem') {
-                            const el = document.getElementById('framework');
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          } else {
-                            window.location.href = '/ecosystem#framework';
-                          }
-                          closeNavbar();
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        Framework
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li className="dropdown relative group">
-                <span className="rounded-md">
-                  <button
-                    className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  >
-                    About
-                    <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
-                  <ul className="py-1">
-                    <li>
-                      <NavLink
-                        to="/programs"
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        Programs
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink
-                        to="/events"
-                        className={({ isActive }) =>
-                          `flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors` +
-                          (isActive ? ' text-orange-600' : '')
-                        }
-                      >
-                        Events
-                      </NavLink>
-                    </li>
-                    <li>
-                      <Link
-                        to="/"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollToSection("newsletter");
-                        }}
-                        className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
-                      >
-                        Newsletter
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              {user && (
-                <li>
-                  <NavLink
-                    to={
-                      user.role === 'admin'
-                        ? '/admin'
-                        : user.role === 'entrepreneur'
-                          ? '/entrepreneur-dashboard'
-                          : '/dashboard'
-                    }
-                    className={({ isActive }) =>
-                      `inline-flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${isActive ? 'text-orange-600 font-bold' : (darkMode ? 'text-white' : 'text-trkblack')} hover:text-orange-600`
-                    }
-                  >
-                    Dashboard
-                  </NavLink>
+            {!hideNavLinks && (
+              <ul className="flex flex-row items-center justify-center font-medium p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
+                <li className="dropdown relative group">
+                  <span className="rounded-md">
+                    <button
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      type="button"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    >
+                      Home
+                      <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                    <ul className="py-1">
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection("objectives");
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Objectives
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection("team");
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          TARAKIs
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection("FAQs");
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          FAQ
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
                 </li>
-              )}
-            </ul>
+                <li className="dropdown relative group">
+                  <span className="rounded-md">
+                    <button
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      type="button"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    >
+                      Ecosystem
+                      <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                    <ul className="py-1">
+                      <li>
+                        <Link
+                          to="/ecosystem#tbi"                        onClick={e => {
+                            e.preventDefault();
+                            if (location.pathname === '/ecosystem') {
+                              const el = document.getElementById('tbi');
+                              if (el) {
+                                const yOffset = -100; // Adjust this value to control the scroll position
+                                const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                                window.scrollTo({ top: y, behavior: 'smooth' });
+                              }
+                            } else {
+                              navigate('/ecosystem', { state: { scrollTo: 'tbi' } });
+                            }
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          TBI
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/ecosystem#mentors"                        onClick={e => {
+                            e.preventDefault();
+                            if (location.pathname === '/ecosystem') {
+                              const el = document.getElementById('mentors');
+                              if (el) {
+                                const yOffset = -100; // Adjust this value to control the scroll position
+                                const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                                window.scrollTo({ top: y, behavior: 'smooth' });
+                              }
+                            } else {
+                              navigate('/ecosystem', { state: { scrollTo: 'mentors' } });
+                            }
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Mentors
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/ecosystem#framework"
+                          onClick={e => {
+                            e.preventDefault();
+                            if (location.pathname === '/ecosystem') {
+                              const el = document.getElementById('framework');
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            } else {
+                              window.location.href = '/ecosystem#framework';
+                            }
+                            closeNavbar();
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Framework
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+                <li className="dropdown relative group">
+                  <span className="rounded-md">
+                    <button
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      type="button"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    >
+                      About
+                      <svg className="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                    <ul className="py-1">
+                      <li>
+                        <NavLink
+                          to="/programs"
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Programs
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink
+                          to="/events"
+                          className={({ isActive }) =>
+                            `flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors` +
+                            (isActive ? ' text-orange-600' : '')
+                          }
+                        >
+                          Events
+                        </NavLink>
+                      </li>
+                      <li>
+                        <Link
+                          to="/"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection("newsletter");
+                          }}
+                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                        >
+                          Newsletter
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+                {user && (
+                  <li>
+                    <NavLink
+                      to={
+                        user.role === 'admin'
+                          ? '/admin'
+                          : user.role === 'entrepreneur'
+                            ? '/entrepreneur-dashboard'
+                            : '/dashboard'
+                      }
+                      className={({ isActive }) =>
+                        `inline-flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${isActive ? 'text-orange-600 font-bold' : (darkMode ? 'text-white' : 'text-trkblack')} hover:text-orange-600`
+                      }
+                    >
+                      Dashboard
+                    </NavLink>
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {user ? (
@@ -764,7 +773,10 @@ function Navbar() {
                       <span>Profile</span>
                     </Link>
                     <button
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/settings');
+                      }}
                       className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
                     >
                       <FaCog className="text-orange-500" />
