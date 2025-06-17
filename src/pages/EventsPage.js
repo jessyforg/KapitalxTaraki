@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
-import Navbar from "../components/Navbar";
+import { useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 import Calendar from "react-calendar";
 import 'react-calendar/dist/Calendar.css';
 import eventImg1 from '../components/imgs/rc1.webp';
 import eventImg2 from '../components/imgs/rc2.webp';
+import Navbar from '../components/Navbar';
 
 // Add this function after the mockEvents array
 const truncateText = (text, maxLength = 100) => {
+  if (!text) return "";
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+  return text.substring(0, maxLength) + "...";
 };
 
 const logo = (
@@ -16,6 +19,16 @@ const logo = (
 );
 
 function EventsPage() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.warn('Error accessing localStorage:', e);
+      return null;
+    }
+  });
   const [tab, setTab] = useState("upcoming");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [filter, setFilter] = useState("All Events");
@@ -25,6 +38,16 @@ function EventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleBack = () => {
+    if (user?.role === 'entrepreneur') {
+      navigate('/entrepreneur-dashboard');
+    } else if (user?.role === 'investor') {
+      navigate('/investor-dashboard');
+    } else {
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -84,102 +107,116 @@ function EventsPage() {
   const eventImages = {};
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 md:p-6">
-      <Navbar />
-      {/* Add spacing between navbar and events section */}
-      <div className="h-10 md:h-24 lg:h-28" />
-      {/* Main content */}
-      <div className="flex-1 w-full max-w-full mx-auto flex flex-col items-center">
-        <div className="w-full max-w-full bg-white rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100">
-          {/* Left: Filters, Tabs, Event List */}
-          <div className="flex-[1_1_0%] md:pr-12">
-            <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
-              <select
-                className="border border-gray-300 rounded px-3 py-2 text-black focus:outline-none bg-gray-50"
-                value={filter}
-                onChange={e => setFilter(e.target.value)}
-              >
-                <option>All Events</option>
-                {/* Optionally, dynamically generate tag options from events */}
-                {Array.from(new Set(events.flatMap(e => e.tags))).filter(Boolean).map(tag => (
-                  <option key={tag}>{tag}</option>
-                ))}
-              </select>
-              <button className="bg-[#ea580c] text-white px-4 py-2 rounded ml-0 sm:ml-2 font-semibold shadow hover:bg-orange-700 transition">Filter</button>
-              <div className="flex-1"></div>
-              <div className="flex gap-2 mt-2 sm:mt-0">
-                <button
-                  className={`px-4 py-2 rounded font-semibold transition ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
-                  onClick={() => setTab('upcoming')}
-                >
-                  Upcoming Events
-                </button>
-                <button
-                  className={`px-4 py-2 rounded font-semibold transition ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
-                  onClick={() => setTab('past')}
-                >
-                  Past Events
-                </button>
-              </div>
-            </div>
-            {/* Event List */}
-            <div>
-              {loading ? (
-                <div className="text-gray-500 text-center py-8">Loading events...</div>
-              ) : error ? (
-                <div className="text-red-500 text-center py-8">{error}</div>
-              ) : Object.keys(groupedEvents).length === 0 ? (
-                <div className="text-gray-500 text-center py-8">No events found.</div>
-              ) : (
-                Object.entries(groupedEvents).map(([date, events]) => (
-                  <div key={date} className="mb-10">
-                    <div className="uppercase text-xs font-bold text-[#ea580c] mb-2 border-b border-[#ea580c]/30 pb-1 tracking-wide">{date}</div>
-                    {events.map(event => (
-                      <button
-                        key={event.id}
-                        className="mb-8 pb-4 border-b border-gray-100 last:border-b-0 w-full text-left hover:bg-orange-50 rounded transition"
-                        onClick={() => { setSelectedEvent(event); setModalOpen(true); }}
-                      >
-                        <div className="mb-1">
-                          <span className="font-bold text-xl text-black leading-tight block">{event.title}</span>
-                          <span className="block text-gray-400 text-sm mt-1 flex items-center">
-                            <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            {event.date ? event.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ''}
-                            <span className="ml-2">{event.time}</span>
-                          </span>
-                        </div>
-                        <div className="text-gray-700 mb-2 text-base leading-snug">
-                          {truncateText(event.description)}
-                          {event.description && event.description.length > 100 && (
-                            <span className="text-[#ea580c] ml-1">Read more</span>
-                          )}
-                        </div>
-                        {event.venue && (
-                          <div className="flex items-center text-gray-500 text-sm mb-2">
-                            <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 10c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
-                            <span>{event.venue}</span>
-                          </div>
-                        )}
-                        <div className="flex gap-2 flex-wrap">
-                          {event.tags && event.tags.map(tag => (
-                            <span key={tag} className="bg-gray-200 text-xs px-2 py-1 rounded font-semibold text-gray-700">{tag}</span>
-                          ))}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ))
-              )}
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar hideNavLinks />
+      <div className="max-w-[95%] mx-auto pt-24">
+        <div className="w-full">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={handleBack}
+              className="flex items-center justify-center text-gray-400 hover:text-orange-500 transition-colors text-3xl rounded-full w-12 h-12 focus:outline-none focus:ring-2 focus:ring-orange-200"
+              aria-label="Back"
+            >
+              <FaArrowLeft />
+            </button>
+            <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-gray-800">
+              Events
+            </h1>
           </div>
-          {/* Right: Calendar */}
-          <div className="w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center">
-            <div className="bg-white rounded-lg shadow border border-[#ea580c]/30 p-4 w-full">
-              <Calendar
-                value={calendarDate}
-                onChange={setCalendarDate}
-                tileContent={tileContent}
-              />
+          {/* Main content */}
+          <div className="flex-1 w-full max-w-full mx-auto flex flex-col items-center">
+            <div className="w-full max-w-full bg-white rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100">
+              {/* Left: Filters, Tabs, Event List */}
+              <div className="flex-[1_1_0%] md:pr-12">
+                <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
+                  <select
+                    className="border border-gray-300 rounded px-3 py-2 text-black focus:outline-none bg-gray-50"
+                    value={filter}
+                    onChange={e => setFilter(e.target.value)}
+                  >
+                    <option>All Events</option>
+                    {/* Optionally, dynamically generate tag options from events */}
+                    {Array.from(new Set(events.flatMap(e => e.tags))).filter(Boolean).map(tag => (
+                      <option key={tag}>{tag}</option>
+                    ))}
+                  </select>
+                  <button className="bg-[#ea580c] text-white px-4 py-2 rounded ml-0 sm:ml-2 font-semibold shadow hover:bg-orange-700 transition">Filter</button>
+                  <div className="flex-1"></div>
+                  <div className="flex gap-2 mt-2 sm:mt-0">
+                    <button
+                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
+                      onClick={() => setTab('upcoming')}
+                    >
+                      Upcoming Events
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
+                      onClick={() => setTab('past')}
+                    >
+                      Past Events
+                    </button>
+                  </div>
+                </div>
+                {/* Event List */}
+                <div>
+                  {loading ? (
+                    <div className="text-gray-500 text-center py-8">Loading events...</div>
+                  ) : error ? (
+                    <div className="text-red-500 text-center py-8">{error}</div>
+                  ) : Object.keys(groupedEvents).length === 0 ? (
+                    <div className="text-gray-500 text-center py-8">No events found.</div>
+                  ) : (
+                    Object.entries(groupedEvents).map(([date, events]) => (
+                      <div key={date} className="mb-10">
+                        <div className="uppercase text-xs font-bold text-[#ea580c] mb-2 border-b border-[#ea580c]/30 pb-1 tracking-wide">{date}</div>
+                        {events.map(event => (
+                          <button
+                            key={event.id}
+                            className="mb-8 pb-4 border-b border-gray-100 last:border-b-0 w-full text-left hover:bg-orange-50 rounded transition"
+                            onClick={() => { setSelectedEvent(event); setModalOpen(true); }}
+                          >
+                            <div className="mb-1">
+                              <span className="font-bold text-xl text-black leading-tight block">{event.title}</span>
+                              <span className="block text-gray-400 text-sm mt-1 flex items-center">
+                                <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                {event.date ? event.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ''}
+                                <span className="ml-2">{event.time}</span>
+                              </span>
+                            </div>
+                            <div className="text-gray-700 mb-2 text-base leading-snug">
+                              {truncateText(event.description)}
+                              {event.description && event.description.length > 100 && (
+                                <span className="text-[#ea580c] ml-1">Read more</span>
+                              )}
+                            </div>
+                            {event.venue && (
+                              <div className="flex items-center text-gray-500 text-sm mb-2">
+                                <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 10c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+                                <span>{event.venue}</span>
+                              </div>
+                            )}
+                            <div className="flex gap-2 flex-wrap">
+                              {event.tags && event.tags.map(tag => (
+                                <span key={tag} className="bg-gray-200 text-xs px-2 py-1 rounded font-semibold text-gray-700">{tag}</span>
+                              ))}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              {/* Right: Calendar */}
+              <div className="w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center">
+                <div className="bg-white rounded-lg shadow border border-[#ea580c]/30 p-4 w-full">
+                  <Calendar
+                    value={calendarDate}
+                    onChange={setCalendarDate}
+                    tileContent={tileContent}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
