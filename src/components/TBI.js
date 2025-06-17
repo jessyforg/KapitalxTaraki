@@ -47,7 +47,7 @@ function TBI() {
 
   return (
     <>
-      <div className="font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
+      <div className="font-montserrat mt-4 laptop-s:mt-8 desktop-s:mt-10 desktop-m:mt-12">
         <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
           Technological Business Incubators
         </h1>
