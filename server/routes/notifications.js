@@ -13,6 +13,7 @@ module.exports = (pool) => {
   router.get('/', async (req, res) => {
     try {
       const userId = getUserId(req);
+      console.log('[DEBUG] /api/notifications userId:', userId);
       const [rows] = await pool.execute(
         `SELECT notification_id AS id, sender_id, type, message AS content, status, url, created_at, priority, is_deleted
          FROM notifications
@@ -21,9 +22,11 @@ module.exports = (pool) => {
          LIMIT 100`,
         [userId]
       );
+      console.log('[DEBUG] /api/notifications rows:', rows);
       const unread_count = rows.filter(n => n.status === 'unread').length;
       res.json({ notifications: rows, unread_count });
     } catch (err) {
+      console.error('Failed to fetch notifications', err);
       res.status(500).json({ error: 'Failed to fetch notifications' });
     }
   });

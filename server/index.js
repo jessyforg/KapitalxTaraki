@@ -1452,7 +1452,7 @@ const ticketsRouter = require('./routes/tickets')(pool);
 app.use('/api/tickets', ticketsRouter);
 
 const notificationsRouter = require('./routes/notifications')(pool);
-app.use('/api/notifications', notificationsRouter);
+app.use('/api/notifications', authenticateToken, notificationsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
