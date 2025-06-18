@@ -3,7 +3,7 @@ import { FaUser, FaBell, FaLock, FaPalette, FaGlobe, FaEnvelope, FaBuilding, FaC
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import FAQs from '../components/FAQ';
-import { updateProfile, changePassword, updateNotificationPrefs } from '../api/user';
+import { updateProfile, changePassword, updateNotificationPrefs, updateProfilePhoto, getNotificationPrefs, update2FA, getMessageSettings, updateMessageSettings } from '../api/user';
 import { submitTicket } from '../api/tickets';
 
 function Settings() {
@@ -30,22 +30,28 @@ function Settings() {
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
-    bio: user?.bio || ''
+    contact_number: user?.contact_number || '',
+    introduction: user?.introduction || ''
   });
   const [profileMessage, setProfileMessage] = useState('');
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [passwordMessage, setPasswordMessage] = useState('');
   const [notificationPrefs, setNotificationPrefs] = useState({
-    messages: true,
-    application_status: true,
-    investment_matches: true,
-    job_offers: true,
-    system_alerts: true
+    messages: { email_enabled: true, push_enabled: true, in_app_enabled: true, frequency: 'immediate' },
+    application_status: { email_enabled: true, push_enabled: true, in_app_enabled: true, frequency: 'immediate' },
+    investment_matches: { email_enabled: true, push_enabled: true, in_app_enabled: true, frequency: 'immediate' },
+    system_alerts: { email_enabled: true, push_enabled: true, in_app_enabled: true, frequency: 'immediate' }
   });
   const [notificationMessage, setNotificationMessage] = useState('');
   const [ticketForm, setTicketForm] = useState({ title: '', description: '', type: 'bug' });
   const [ticketMessage, setTicketMessage] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorMessage, setTwoFactorMessage] = useState('');
+  const [messageSettings, setMessageSettings] = useState({
+    allow_messages: true,
+    message_notifications: true
+  });
+  const [messageSettingsMessage, setMessageSettingsMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,6 +60,45 @@ function Settings() {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // Fetch notification preferences when component mounts
+  useEffect(() => {
+    const fetchNotificationPrefs = async () => {
+      try {
+        const prefs = await getNotificationPrefs();
+        // Convert array to object with notification_type as key
+        const prefsObj = prefs.reduce((acc, pref) => ({
+          ...acc,
+          [pref.notification_type]: {
+            email_enabled: pref.email_enabled,
+            push_enabled: pref.push_enabled,
+            in_app_enabled: pref.in_app_enabled,
+            frequency: pref.frequency
+          }
+        }), {});
+        setNotificationPrefs(prefsObj);
+      } catch (error) {
+        console.error('Error fetching notification preferences:', error);
+        setNotificationMessage('Failed to load notification preferences');
+      }
+    };
+
+    fetchNotificationPrefs();
+  }, []);
+
+  // Add useEffect to fetch message settings
+  useEffect(() => {
+    const fetchMessageSettings = async () => {
+      try {
+        const settings = await getMessageSettings();
+        setMessageSettings(settings);
+      } catch (error) {
+        console.error('Error fetching message settings:', error);
+      }
+    };
+
+    fetchMessageSettings();
+  }, []);
 
   // Sidebar links based on role
   let sidebarLinks = [];
@@ -87,30 +132,155 @@ function Settings() {
     { id: 'help', label: 'Help & Support', icon: <FaQuestionCircle /> },
   ];
 
+  // Add message components
+  const Message = ({ type, message }) => {
+    if (!message) return null;
+    return (
+      <div className={`mt-4 p-4 rounded-md ${
+        type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+      }`}>
+        {message}
+      </div>
+    );
+  };
+
+  const renderNotificationsTab = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">Email Notifications</h3>
+      <div className="space-y-4">
+        {Object.entries(notificationPrefs).map(([type, prefs]) => (
+          <div key={type} className="border rounded-lg p-4">
+            <h4 className="font-medium mb-3 capitalize">{type.replace(/_/g, ' ')}</h4>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span>Email Notifications</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={prefs.email_enabled}
+                    onChange={() => handleNotificationToggle(type, 'email_enabled')}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Push Notifications</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={prefs.push_enabled}
+                    onChange={() => handleNotificationToggle(type, 'push_enabled')}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>In-App Notifications</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={prefs.in_app_enabled}
+                    onChange={() => handleNotificationToggle(type, 'in_app_enabled')}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Notification Frequency</span>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={prefs.frequency}
+                  onChange={(e) => handleNotificationToggle(type, 'frequency', e.target.value)}
+                >
+                  <option value="immediate">Immediate</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Message type={notificationMessage.includes('successfully') ? 'success' : 'error'} message={notificationMessage} />
+    </div>
+  );
+
+  const renderAppearanceTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Theme</h3>
+        <div className="flex items-center justify-between">
+          <span>Dark Mode</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={darkMode}
+              onChange={() => {
+                setDarkMode(!darkMode);
+                localStorage.setItem("taraki-dark-mode", !darkMode);
+                // Apply dark mode class to body
+                if (!darkMode) {
+                  document.body.classList.add('dark');
+                } else {
+                  document.body.classList.remove('dark');
+                }
+              }}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMessagesTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Message Settings</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span>Allow messages from other users</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={messageSettings.allow_messages}
+                onChange={() => handleMessageSettingsChange('allow_messages')}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            </label>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Message notifications</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={messageSettings.message_notifications}
+                onChange={() => handleMessageSettingsChange('message_notifications')}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            </label>
+          </div>
+        </div>
+        <Message type={messageSettingsMessage.includes('successfully') ? 'success' : 'error'} message={messageSettingsMessage} />
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
         return (
           <div className="space-y-6">
-            <div className="flex items-center space-x-4">
-              {user?.profile_image ? (
-                <img
-                  src={user.profile_image}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover border-2 border-orange-500"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl">
-                  {user?.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
-                </div>
-              )}
-              <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
-                Change Photo
-              </button>
-            </div>
+            {renderProfilePhoto()}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">First Name</label>
+                <label className="block text-sm font-medium mb-2">First Name</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -120,7 +290,7 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Last Name</label>
+                <label className="block text-sm font-medium mb-2">Last Name</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -130,7 +300,7 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Email</label>
+                <label className="block text-sm font-medium mb-2">Email</label>
                 <input
                   type="email"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -140,60 +310,41 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Phone</label>
+                <label className="block text-sm font-medium mb-2">Contact Number</label>
                 <input
                   type="tel"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  name="phone"
-                  value={profileForm.phone}
+                  name="contact_number"
+                  value={profileForm.contact_number}
                   onChange={handleProfileChange}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Bio</label>
+              <label className="block text-sm font-medium mb-2">Introduction</label>
               <textarea
                 className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                 rows="4"
-                name="bio"
-                value={profileForm.bio}
+                name="introduction"
+                value={profileForm.introduction}
                 onChange={handleProfileChange}
               />
             </div>
+            <Message type={profileMessage.includes('successfully') ? 'success' : 'error'} message={profileMessage} />
           </div>
         );
 
       case 'notifications':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Email Notifications</h3>
-            <div className="space-y-4">
-              {['Messages', 'Application Status', 'Investment Matches', 'Job Offers', 'System Alerts'].map((item) => (
-                <div key={item} className="flex items-center justify-between">
-                  <span>{item}</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={notificationPrefs[item.toLowerCase().replace(' ', '_')]}
-                      onChange={() => handleNotificationToggle(item.toLowerCase().replace(' ', '_'))}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+        return renderNotificationsTab();
 
       case 'security':
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Change Password</h3>
+              <h3 className="text-lg font-semibold mb-4">Change Password</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Current Password</label>
+                  <label className="block text-sm font-medium mb-2">Current Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -203,7 +354,7 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">New Password</label>
+                  <label className="block text-sm font-medium mb-2">New Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -213,7 +364,7 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Confirm New Password</label>
+                  <label className="block text-sm font-medium mb-2">Confirm New Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -225,73 +376,40 @@ function Settings() {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Two-Factor Authentication</h3>
+              <h3 className="text-lg font-semibold mb-4">Two-Factor Authentication</h3>
               <div className="flex items-center justify-between">
                 <span>Enable 2FA</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'appearance':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Theme</h3>
-              <div className="flex items-center justify-between">
-                <span>Dark Mode</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={darkMode}
-                    onChange={() => setDarkMode(!darkMode)}
+                    checked={twoFactorEnabled}
+                    onChange={handle2FAToggle}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
               </div>
+              <Message type={twoFactorMessage.includes('successfully') ? 'success' : 'error'} message={twoFactorMessage} />
             </div>
+            <Message type={passwordMessage.includes('successfully') ? 'success' : 'error'} message={passwordMessage} />
           </div>
         );
 
+      case 'appearance':
+        return renderAppearanceTab();
+
       case 'messages':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Message Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>Allow messages from other users</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Message notifications</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return renderMessagesTab();
 
       case 'help':
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4 dark:text-white">Help & Support</h3>
+              <h3 className="text-lg font-semibold mb-4">Help & Support</h3>
               <div className="space-y-6">
                 <div className="bg-orange-50 p-6 rounded-lg">
                   <h4 className="text-lg font-medium text-orange-800 mb-2">Submit Ticket</h4>
-                  <p className=" text-white dark:text-gray-950 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
+                  <p className="text-gray-600 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
                   <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors" onClick={() => setShowTicketModal(true)}>
                     Submit Ticket
                   </button>
@@ -302,15 +420,15 @@ function Settings() {
                       <h3 className="text-lg font-semibold mb-4">Submit a Support Ticket</h3>
                       <form className="space-y-4" onSubmit={handleTicketSubmit}>
                         <div>
-                          <label className="block text-sm font-medium mb-1 dark:text-white">Title</label>
+                          <label className="block text-sm font-medium mb-1">Title</label>
                           <input type="text" name="title" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.title} onChange={handleTicketChange} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1 dark:text-white">Description</label>
+                          <label className="block text-sm font-medium mb-1">Description</label>
                           <textarea name="description" className="w-full border border-gray-300 rounded px-3 py-2" rows="4" value={ticketForm.description} onChange={handleTicketChange} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1 dark:text-white">Type</label>
+                          <label className="block text-sm font-medium mb-1">Type</label>
                           <select name="type" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.type} onChange={handleTicketChange}>
                             <option value="bug">Bug</option>
                             <option value="suggestion">Suggestion</option>
@@ -319,7 +437,7 @@ function Settings() {
                         </div>
                         <div className="flex justify-end gap-2">
                           <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowTicketModal(false)}>Cancel</button>
-                          <button type="submit" className="px-4 py-2 bg-orange-500 text-black dark:text-gray-950 rounded hover:bg-orange-600">Submit</button>
+                          <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Submit</button>
                         </div>
                       </form>
                     </div>
@@ -327,25 +445,26 @@ function Settings() {
                 )}
                 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-black dark:text-gray-950">Frequently Asked Questions</h4>
+                  <h4 className="text-lg font-medium text-gray-800">Frequently Asked Questions</h4>
                   <FAQs />
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-black dark:text-gray-950">Documentation</h4>
+                  <h4 className="text-lg font-medium text-gray-800">Documentation</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-black dark:text-gray-9500 mb-2">User Guide</h5>
-                      <p className="text-black dark:text-gray-950">Learn how to use all features of the platform</p>
+                      <h5 className="font-medium text-gray-800 mb-2">User Guide</h5>
+                      <p className="text-gray-600">Learn how to use all features of the platform</p>
                     </div>
                     <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-black dark:text-gray-950 mb-2">API Documentation</h5>
-                      <p className= "text-black dark:text-gray-950">Technical documentation for developers</p>
+                      <h5 className="font-medium text-gray-800 mb-2">API Documentation</h5>
+                      <p className="text-gray-600">Technical documentation for developers</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            <Message type={ticketMessage.includes('successfully') ? 'success' : 'error'} message={ticketMessage} />
           </div>
         );
 
@@ -362,8 +481,10 @@ function Settings() {
     try {
       await updateProfile(profileForm);
       setProfileMessage('Profile updated successfully!');
-    } catch {
-      setProfileMessage('Failed to update profile.');
+      // Update local user state
+      setUser(prev => ({ ...prev, ...profileForm }));
+    } catch (error) {
+      setProfileMessage(error.message || 'Failed to update profile.');
     }
   };
 
@@ -379,21 +500,38 @@ function Settings() {
     try {
       await changePassword({ current: passwordForm.current, new: passwordForm.new });
       setPasswordMessage('Password changed successfully!');
-    } catch {
-      setPasswordMessage('Failed to change password.');
+      // Clear password form
+      setPasswordForm({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      setPasswordMessage(error.message || 'Failed to change password.');
     }
   };
 
-  const handleNotificationToggle = (key) => {
-    setNotificationPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleNotificationToggle = (type, field, value) => {
+    setNotificationPrefs(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [field]: value !== undefined ? value : !prev[type][field]
+      }
+    }));
   };
 
   const handleNotificationSave = async () => {
     try {
-      await updateNotificationPrefs(notificationPrefs);
-      setNotificationMessage('Notification preferences updated!');
-    } catch {
-      setNotificationMessage('Failed to update notification preferences.');
+      // Update each notification type
+      const updates = Object.entries(notificationPrefs).map(([type, prefs]) => 
+        updateNotificationPrefs({
+          notification_type: type,
+          ...prefs
+        })
+      );
+      
+      await Promise.all(updates);
+      setNotificationMessage('Notification preferences updated successfully!');
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      setNotificationMessage(error.message || 'Failed to update notification preferences');
     }
   };
 
@@ -408,10 +546,125 @@ function Settings() {
       setTicketMessage('Ticket submitted successfully!');
       setTicketForm({ title: '', description: '', type: 'bug' });
       setShowTicketModal(false);
-    } catch {
-      setTicketMessage('Failed to submit ticket.');
+    } catch (error) {
+      setTicketMessage(error.message || 'Failed to submit ticket.');
     }
   };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setProfileMessage('Please upload a valid image file (JPEG, PNG, or GIF)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileMessage('File size should be less than 5MB');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await updateProfilePhoto(formData);
+      setProfileMessage('Profile photo updated successfully!');
+      
+      // Update local user state with new photo
+      setUser(prev => ({
+        ...prev,
+        profile_image: response.profile_image
+      }));
+    } catch (error) {
+      setProfileMessage(error.message || 'Failed to update profile photo.');
+    }
+  };
+
+  const renderProfilePhoto = () => (
+    <div className="flex items-center space-x-4">
+      {user?.profile_image ? (
+        <img
+          src={user.profile_image}
+          alt="Profile"
+          className="w-20 h-20 rounded-full object-cover border-2 border-orange-500"
+        />
+      ) : (
+        <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl">
+          {user?.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
+        </div>
+      )}
+      <div className="flex flex-col space-y-2">
+        <label className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors cursor-pointer text-center">
+          Change Photo
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handlePhotoChange}
+          />
+        </label>
+        <span className="text-sm text-gray-500">Max file size: 5MB</span>
+      </div>
+    </div>
+  );
+
+  const handle2FAToggle = async () => {
+    try {
+      await update2FA(!twoFactorEnabled);
+      setTwoFactorEnabled(!twoFactorEnabled);
+      setTwoFactorMessage(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      setTwoFactorMessage(error.message || 'Failed to update 2FA status');
+    }
+  };
+
+  const handleMessageSettingsChange = (field) => {
+    setMessageSettings(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const handleMessageSettingsSave = async () => {
+    try {
+      await updateMessageSettings(messageSettings);
+      setMessageSettingsMessage('Message settings updated successfully!');
+    } catch (error) {
+      setMessageSettingsMessage(error.message || 'Failed to update message settings');
+    }
+  };
+
+  const handleSaveChanges = () => {
+    switch (activeTab) {
+      case 'profile':
+        handleProfileSave();
+        break;
+      case 'security':
+        handlePasswordSave();
+        break;
+      case 'notifications':
+        handleNotificationSave();
+        break;
+      case 'messages':
+        handleMessageSettingsSave();
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Add useEffect to clear messages when switching tabs
+  useEffect(() => {
+    setProfileMessage('');
+    setPasswordMessage('');
+    setNotificationMessage('');
+    setTicketMessage('');
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -431,7 +684,7 @@ function Settings() {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : ''}</div>
+            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : ''}</div>
           </div>
           <nav className="flex flex-col gap-2 w-full px-6">
             {sidebarLinks.map(link => (
@@ -474,14 +727,19 @@ function Settings() {
               ))}
             </div>
             <div className="p-8">
-              <h2 className="text-2xl font-bold mb-8  text-black dark:text-gray-950 border-b border-gray-200 pb-4">
+              <h2 className="text-2xl font-bold mb-8 text-gray-800 border-b border-gray-200 pb-4">
                 {tabs.find(tab => tab.id === activeTab)?.label} Settings
               </h2>
               {renderTabContent()}
               <div className="mt-8 flex justify-end border-t border-gray-200 pt-6">
-                <button className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-md">
-                  Save Changes
-                </button>
+                {activeTab !== 'help' && (
+                  <button 
+                    onClick={handleSaveChanges}
+                    className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-md"
+                  >
+                    Save Changes
+                  </button>
+                )}
               </div>
             </div>
           </div>
