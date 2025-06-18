@@ -77,6 +77,10 @@ app.use('/api/messages', messagesRouter);
 const searchRouter = require('./routes/search')(pool);
 app.use('/api/search', searchRouter);
 
+// Add user routes
+const userRouter = require('./routes/users');
+app.use('/api/users', userRouter);
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -105,7 +109,7 @@ app.post('/api/upload-logo', authenticateToken, upload.single('logo'), (req, res
 });
 
 // Serve uploaded files statically
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Authentication Routes
 app.post('/api/auth/register', async (req, res) => {
