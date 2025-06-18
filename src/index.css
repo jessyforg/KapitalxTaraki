@@ -122,3 +122,28 @@ body, html {
   -webkit-text-decoration: none !important;
   border-bottom: none !important;
 }
+
+/* Calendar theme fix for EventsPage */
+.calendar-theme-fix .react-calendar {
+  background: #fff !important;
+  color: #222 !important;
+  border-radius: 0.5rem;
+}
+.calendar-theme-fix .react-calendar__tile {
+  color: #222 !important;
+}
+.calendar-theme-fix .react-calendar__tile--active {
+  background: #ea580c !important;
+  color: #fff !important;
+}
+body.dark .calendar-theme-fix .react-calendar {
+  background: #232526 !important;
+  color: #fff !important;
+}
+body.dark .calendar-theme-fix .react-calendar__tile {
+  color: #fff !important;
+}
+body.dark .calendar-theme-fix .react-calendar__tile--active {
+  background: #ea580c !important;
+  color: #fff !important;
+}

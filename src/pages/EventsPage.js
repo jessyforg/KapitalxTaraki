@@ -107,7 +107,7 @@ function EventsPage() {
   const eventImages = {};
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#18191a]">
       <Navbar hideNavLinks />
       <div className="max-w-[95%] mx-auto pt-24">
         <div className="w-full">
@@ -119,18 +119,18 @@ function EventsPage() {
             >
               <FaArrowLeft />
             </button>
-            <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-gray-800">
+            <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-gray-800 dark:text-white">
               Events
             </h1>
           </div>
           {/* Main content */}
           <div className="flex-1 w-full max-w-full mx-auto flex flex-col items-center">
-            <div className="w-full max-w-full bg-white rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100">
+            <div className="w-full max-w-full bg-white dark:bg-[#232526] rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100 dark:border-gray-700">
               {/* Left: Filters, Tabs, Event List */}
               <div className="flex-[1_1_0%] md:pr-12">
                 <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
                   <select
-                    className="border border-gray-300 rounded px-3 py-2 text-black focus:outline-none bg-gray-50"
+                    className="border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-black dark:text-white focus:outline-none bg-gray-50 dark:bg-[#18191a]"
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
                   >
@@ -144,13 +144,13 @@ function EventsPage() {
                   <div className="flex-1"></div>
                   <div className="flex gap-2 mt-2 sm:mt-0">
                     <button
-                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
+                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
                       onClick={() => setTab('upcoming')}
                     >
                       Upcoming Events
                     </button>
                     <button
-                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 text-black hover:bg-orange-50'}`}
+                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
                       onClick={() => setTab('past')}
                     >
                       Past Events
@@ -160,11 +160,11 @@ function EventsPage() {
                 {/* Event List */}
                 <div>
                   {loading ? (
-                    <div className="text-gray-500 text-center py-8">Loading events...</div>
+                    <div className="text-gray-500 dark:text-gray-300 text-center py-8">Loading events...</div>
                   ) : error ? (
-                    <div className="text-red-500 text-center py-8">{error}</div>
+                    <div className="text-red-500 dark:text-red-400 text-center py-8">{error}</div>
                   ) : Object.keys(groupedEvents).length === 0 ? (
-                    <div className="text-gray-500 text-center py-8">No events found.</div>
+                    <div className="text-gray-500 dark:text-gray-300 text-center py-8">No events found.</div>
                   ) : (
                     Object.entries(groupedEvents).map(([date, events]) => (
                       <div key={date} className="mb-10">
@@ -172,32 +172,32 @@ function EventsPage() {
                         {events.map(event => (
                           <button
                             key={event.id}
-                            className="mb-8 pb-4 border-b border-gray-100 last:border-b-0 w-full text-left hover:bg-orange-50 rounded transition"
+                            className="mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition"
                             onClick={() => { setSelectedEvent(event); setModalOpen(true); }}
                           >
                             <div className="mb-1">
-                              <span className="font-bold text-xl text-black leading-tight block">{event.title}</span>
-                              <span className="block text-gray-400 text-sm mt-1 flex items-center">
+                              <span className="font-bold text-xl text-black dark:text-white leading-tight block">{event.title}</span>
+                              <span className="block text-gray-400 dark:text-gray-300 text-sm mt-1 flex items-center">
                                 <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 {event.date ? event.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ''}
                                 <span className="ml-2">{event.time}</span>
                               </span>
                             </div>
-                            <div className="text-gray-700 mb-2 text-base leading-snug">
+                            <div className="text-gray-700 dark:text-gray-200 mb-2 text-base leading-snug">
                               {truncateText(event.description)}
                               {event.description && event.description.length > 100 && (
                                 <span className="text-[#ea580c] ml-1">Read more</span>
                               )}
                             </div>
                             {event.venue && (
-                              <div className="flex items-center text-gray-500 text-sm mb-2">
+                              <div className="flex items-center text-gray-500 dark:text-gray-300 text-sm mb-2">
                                 <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 10c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
                                 <span>{event.venue}</span>
                               </div>
                             )}
                             <div className="flex gap-2 flex-wrap">
                               {event.tags && event.tags.map(tag => (
-                                <span key={tag} className="bg-gray-200 text-xs px-2 py-1 rounded font-semibold text-gray-700">{tag}</span>
+                                <span key={tag} className="bg-gray-200 dark:bg-[#333] text-xs px-2 py-1 rounded font-semibold text-gray-700 dark:text-white">{tag}</span>
                               ))}
                             </div>
                           </button>
@@ -209,7 +209,7 @@ function EventsPage() {
               </div>
               {/* Right: Calendar */}
               <div className="w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center">
-                <div className="bg-white rounded-lg shadow border border-[#ea580c]/30 p-4 w-full">
+                <div className="bg-white dark:bg-[#232526] rounded-lg shadow border border-[#ea580c]/30 p-4 w-full calendar-theme-fix">
                   <Calendar
                     value={calendarDate}
                     onChange={setCalendarDate}
@@ -223,10 +223,10 @@ function EventsPage() {
       </div>
       {/* Event Details Modal */}
       {modalOpen && selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl shadow-lg max-w-6xl w-full p-6 relative animate-fadeIn flex flex-col md:flex-row gap-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-white dark:bg-[#232526] rounded-xl shadow-lg max-w-6xl w-full p-6 relative animate-fadeIn flex flex-col md:flex-row gap-6">
             <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-[#ea580c] text-2xl"
+              className="absolute top-2 right-2 text-gray-500 dark:text-gray-300 hover:text-[#ea580c] text-2xl"
               onClick={() => { setModalOpen(false); setGalleryIndex(0); }}
               aria-label="Close modal"
             >
@@ -234,24 +234,24 @@ function EventsPage() {
             </button>
             {/* Left side: Event Details */}
             <div className="flex-1 pr-4">
-              <h2 className="text-2xl font-bold mb-2 text-[#ea580c]">{selectedEvent.title}</h2>
-              <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm">
+              <h2 className="text-2xl font-bold mb-2 text-[#ea580c] dark:text-orange-300">{selectedEvent.title}</h2>
+              <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-300 text-sm">
                 <svg className="w-5 h-5 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span className="font-bold text-black mr-1">{selectedEvent.date ? selectedEvent.date.toLocaleDateString(undefined, { weekday: 'long' }) : ''}</span>
+                <span className="font-bold text-black dark:text-white mr-1">{selectedEvent.date ? selectedEvent.date.toLocaleDateString(undefined, { weekday: 'long' }) : ''}</span>
                 <span className="mr-1">{selectedEvent.date ? selectedEvent.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
                 <span className="mx-1">|</span>
                 <span>{selectedEvent.time}</span>
               </div>
-              <div className="text-gray-700 mb-3 text-base leading-snug whitespace-pre-line">{selectedEvent.description}</div>
+              <div className="text-gray-700 dark:text-gray-200 mb-3 text-base leading-snug whitespace-pre-line">{selectedEvent.description}</div>
               {selectedEvent.venue && (
-                <div className="flex items-center text-gray-500 text-sm mb-4">
+                <div className="flex items-center text-gray-500 dark:text-gray-300 text-sm mb-4">
                   <svg className="w-5 h-5 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 10c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
                   <span>{selectedEvent.venue}</span>
                 </div>
               )}
               <div className="flex gap-2 flex-wrap mb-4">
                 {selectedEvent.tags && selectedEvent.tags.map(tag => (
-                  <span key={tag} className="bg-gray-200 text-xs px-2 py-1 rounded font-semibold text-gray-700">{tag}</span>
+                  <span key={tag} className="bg-gray-200 dark:bg-[#333] text-xs px-2 py-1 rounded font-semibold text-gray-700 dark:text-white">{tag}</span>
                 ))}
               </div>
               {selectedEvent.rsvpLink && (
