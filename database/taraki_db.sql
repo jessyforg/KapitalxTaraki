@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 15, 2025 at 06:00 PM
+-- Generation Time: Jun 18, 2025 at 03:43 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -95,6 +95,13 @@ CREATE TABLE `conversation_requests` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `conversation_requests`
+--
+
+INSERT INTO `conversation_requests` (`request_id`, `sender_id`, `receiver_id`, `status`, `created_at`, `updated_at`) VALUES
+(2, 1, 2, 'approved', '2025-06-16 06:26:44', '2025-06-16 06:27:34');
+
 -- --------------------------------------------------------
 
 --
@@ -123,6 +130,16 @@ CREATE TABLE `entrepreneurs` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `entrepreneurs`
+--
+
+INSERT INTO `entrepreneurs` (`entrepreneur_id`, `created_at`, `updated_at`) VALUES
+(2, '2025-06-16 00:07:51', '2025-06-16 00:07:51'),
+(3, '2025-06-16 00:08:20', '2025-06-16 00:08:20'),
+(4, '2025-06-16 00:22:12', '2025-06-16 00:22:12'),
+(7, '2025-06-16 06:07:42', '2025-06-16 06:07:42');
+
 -- --------------------------------------------------------
 
 --
@@ -144,6 +161,14 @@ CREATE TABLE `events` (
   `tags` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `events`
+--
+
+INSERT INTO `events` (`id`, `title`, `description`, `event_date`, `location`, `organizer_id`, `status`, `created_at`, `updated_at`, `rsvp_link`, `time`, `tags`) VALUES
+(1, 'Angel Investing 101 Pre-Launch Dinner', 'An intimate gathering of visiounary investors and ecosystems leaders to introduce Angel Investing 101 - a foundational program designed to equip aspiring investors with the knowledge, tools, and connections to confidently invest in startups. This pre-launch dinner sets the stage for collaboration, insight-sharing, and early access to the program\'s opportunities.', '2025-06-26 17:00:00', 'Fullsuite Pod PH', 1, 'upcoming', '2025-06-16 00:42:19', '2025-06-16 00:42:19', 'https://example.com/rsvp-angel-investing', '17:00:00', 'Social Event'),
+(2, 'Sampple', '', '2025-06-16 14:00:00', 'Baguio City', 1, 'upcoming', '2025-06-16 06:23:19', '2025-06-16 06:23:19', '', '14:00:00', 'TARAKI');
+
 -- --------------------------------------------------------
 
 --
@@ -162,6 +187,14 @@ CREATE TABLE `investors` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `investors`
+--
+
+INSERT INTO `investors` (`investor_id`, `investment_range_min`, `investment_range_max`, `preferred_industries`, `preferred_locations`, `funding_stage_preferences`, `bio`, `created_at`, `updated_at`) VALUES
+(5, 0.00, 0.00, NULL, NULL, NULL, NULL, '2025-06-16 05:45:10', '2025-06-16 05:45:10'),
+(6, 0.00, 0.00, NULL, NULL, NULL, NULL, '2025-06-16 05:51:04', '2025-06-16 05:51:04');
+
 -- --------------------------------------------------------
 
 --
@@ -175,6 +208,13 @@ CREATE TABLE `matches` (
   `match_score` decimal(5,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `matches`
+--
+
+INSERT INTO `matches` (`match_id`, `startup_id`, `investor_id`, `match_score`, `created_at`) VALUES
+(2, 2, 6, 1.00, '2025-06-16 06:17:55');
 
 -- --------------------------------------------------------
 
@@ -192,6 +232,15 @@ CREATE TABLE `messages` (
   `request_status` enum('pending','approved','rejected') DEFAULT 'pending',
   `is_intro_message` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `messages`
+--
+
+INSERT INTO `messages` (`message_id`, `sender_id`, `receiver_id`, `content`, `status`, `sent_at`, `request_status`, `is_intro_message`) VALUES
+(2, 1, 2, 'hi', 'read', '2025-06-16 06:26:44', 'approved', 1),
+(3, 2, 1, 'hiuiiiii', 'read', '2025-06-16 06:27:43', 'approved', 0),
+(4, 2, 1, 'hiii', 'unread', '2025-06-17 05:29:46', 'approved', 0);
 
 -- --------------------------------------------------------
 
@@ -217,14 +266,103 @@ CREATE TABLE `notifications` (
   `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `sender_id` int(11) DEFAULT NULL,
-  `type` enum('message','application_status','investment_match','job_offer','system_alert','startup_status') NOT NULL,
+  `type` enum('match_received','profile_view','startup_status','program_status','event_reminder','investor_match','document_verification','startup_match','startup_update','investment_response','entrepreneur_view','investment_opportunity','investment_milestone','new_registration','startup_application','investment_offer','verification_request','content_moderation','system_maintenance','user_report','security_alert','backup_notification','user_feedback','account_security','password_change','email_verification','profile_completion','system_update','feature_announcement','newsletter','connection_request','message','account_activity') NOT NULL,
   `message` text NOT NULL,
   `status` enum('unread','read') DEFAULT 'unread',
   `job_id` int(11) DEFAULT NULL,
   `application_id` int(11) DEFAULT NULL,
   `match_id` int(11) DEFAULT NULL,
   `url` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `priority` enum('high','medium','low') DEFAULT 'medium',
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `delivery_methods` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`delivery_methods`)),
+  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
+  `is_deleted` tinyint(1) DEFAULT 0,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_delivery_logs`
+--
+
+CREATE TABLE `notification_delivery_logs` (
+  `id` int(11) NOT NULL,
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `delivery_method` enum('email','push','in_app') NOT NULL,
+  `status` enum('pending','sent','failed') DEFAULT 'pending',
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_preferences`
+--
+
+CREATE TABLE `notification_preferences` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `notification_type` varchar(50) NOT NULL,
+  `email_enabled` tinyint(1) DEFAULT 1,
+  `push_enabled` tinyint(1) DEFAULT 1,
+  `in_app_enabled` tinyint(1) DEFAULT 1,
+  `frequency` enum('immediate','daily','weekly') DEFAULT 'immediate',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_read_status`
+--
+
+CREATE TABLE `notification_read_status` (
+  `id` int(11) NOT NULL,
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_subscriptions`
+--
+
+CREATE TABLE `notification_subscriptions` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `subscription_type` varchar(50) NOT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_templates`
+--
+
+CREATE TABLE `notification_templates` (
+  `id` int(11) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `title_template` varchar(255) NOT NULL,
+  `message_template` text NOT NULL,
+  `email_subject_template` varchar(255) DEFAULT NULL,
+  `email_body_template` text DEFAULT NULL,
+  `push_template` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -274,6 +412,41 @@ CREATE TABLE `startups` (
   `startup_stage` enum('ideation','validation','mvp','growth','maturity') DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `startups`
+--
+
+INSERT INTO `startups` (`startup_id`, `entrepreneur_id`, `name`, `industry`, `description`, `location`, `funding_needed`, `pitch_deck_url`, `business_plan_url`, `approval_status`, `approved_by`, `approval_comment`, `logo_url`, `video_url`, `created_at`, `updated_at`, `funding_stage`, `website`, `startup_stage`) VALUES
+(1, 4, 'Kapital', 'Digital Marketing', '', 'Baguio City', 0.00, '', '', 'approved', 1, 'Approved by admin', '/uploads/1750034195962-622862146-kapital_logo_black.png', '', '2025-06-16 00:36:52', '2025-06-16 05:52:51', '', 'kapital-taraki.org', 'mvp'),
+(2, 7, 'Economystique', 'Digital Marketing', 'sample', 'Baguio City', 0.00, '', '', 'approved', 1, 'Approved by admin', '/uploads/1750054321072-896978314-eug.png', '', '2025-06-16 06:12:06', '2025-06-16 06:15:48', '', '', 'growth');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tickets`
+--
+
+CREATE TABLE `tickets` (
+  `ticket_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `type` enum('bug','suggestion','other') NOT NULL,
+  `status` enum('open','in_progress','resolved','closed') NOT NULL DEFAULT 'open',
+  `admin_notes` text DEFAULT NULL,
+  `admin_response` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tickets`
+--
+
+INSERT INTO `tickets` (`ticket_id`, `user_id`, `title`, `description`, `type`, `status`, `admin_notes`, `admin_response`, `created_at`, `updated_at`) VALUES
+(1, 1, 'asd', 'asd', 'bug', 'open', 'a', 'a', '2025-06-17 11:19:26', NULL),
+(2, 1, 'aasdcas', 'aacsda', 'bug', 'open', 'cadscsa', 'ascda', '2025-06-17 13:28:28', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -314,6 +487,18 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `full_name`, `status`, `email`, `password`, `profile_image`, `profile_picture_url`, `facebook_url`, `twitter_url`, `instagram_url`, `linkedin_url`, `role`, `is_verified`, `verification_token`, `verification_status`, `location`, `introduction`, `accomplishments`, `education`, `employment`, `gender`, `birthdate`, `contact_number`, `public_email`, `industry`, `show_in_search`, `show_in_messages`, `show_in_pages`, `created_at`, `updated_at`) VALUES
+(1, 'Admin', 'Demo', '', 'online', 'ADMINdemo@gmail.com', '$2a$10$6LoupEzHPKWLPrk/jJQOW.mTZExRxgSMR.z/.ykFOzLQdbhm.mevu', NULL, NULL, NULL, NULL, NULL, NULL, 'admin', 0, 'qjh9fch3by', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:02', '2025-06-16 00:07:02'),
+(2, 'Entrepreneur', 'Demo', '', 'online', 'ENTREPdemo@gmail.com', '$2a$10$H54jsH8FSRp28UXv0aDSrOAd9ov8.hYo80KWDUkVSZ2JgBO2qMr4C', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'kqiid0mr7qd', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:51', '2025-06-17 02:23:17'),
+(4, 'Jester', 'Perez', '', 'online', 'jes@gmail.com', '$2a$10$0Arv13X8MGCYD.UOfpZnyO5wL0HxLVs2DCq0UV2k8efb1JNlnT/HO', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, '0m61z4ztvlpr', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:22:12', '2025-06-16 00:22:45'),
+(5, 'Eugene Jherico', 'Naval', '', 'online', 'eug@gmail.com', '$2a$10$yl4EqoD1X4k0ni1CVWUtgeTWTbI58Aj2xHItANmuk2hxq1VKisU.u', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'yre9zh3ldz', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:45:10', '2025-06-16 05:49:42'),
+(6, 'Investor', 'Demo', '', 'online', 'INVESTdemo@gmail.com', '$2a$10$m4rBdG2PmG02qHR0EzmMU.kXooc3IF7oyi7Z/eJgNQLBO6XiswN76', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'fnyn1ga6h0t', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:51:04', '2025-06-16 05:51:33'),
+(7, 'Entrepreneur1', 'Demo', '', 'online', 'ENTREPdemo1@gmail.com', '$2a$10$7c/Rr2xyIHbNnbkN/CfFb.iwyDHd6HWFYMYcFLphVQ7c8ZZJNLfrO', '', NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'zzua1r2y7yh', 'verified', '', '', NULL, NULL, NULL, '', '0000-00-00', '', NULL, '', 1, 1, 1, '2025-06-16 06:07:42', '2025-06-16 06:10:22');
 
 -- --------------------------------------------------------
 
@@ -363,6 +548,13 @@ CREATE TABLE `user_conversations` (
   `category_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `user_conversations`
+--
+
+INSERT INTO `user_conversations` (`user_id`, `other_user_id`, `muted`, `archived`, `blocked`, `category_id`) VALUES
+(1, 2, 0, 0, 0, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -379,6 +571,14 @@ CREATE TABLE `user_preferences` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_preferences`
+--
+
+INSERT INTO `user_preferences` (`id`, `user_id`, `position_desired`, `preferred_industries`, `preferred_startup_stage`, `preferred_location`, `created_at`, `updated_at`) VALUES
+(1, 7, 'Developer', '[\"Information Technology\"]', 'mvp', 'Baguio City', '2025-06-16 06:08:46', '2025-06-16 06:08:46'),
+(2, 2, 'technical_co-founder', '[\"Technology\"]', 'mvp', NULL, '2025-06-17 02:22:47', '2025-06-17 02:23:17');
 
 -- --------------------------------------------------------
 
@@ -408,6 +608,14 @@ CREATE TABLE `user_skills` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `user_skills`
+--
+
+INSERT INTO `user_skills` (`id`, `user_id`, `skill_name`, `skill_level`, `created_at`) VALUES
+(1, 7, 'React', 'intermediate', '2025-06-16 06:08:46'),
+(2, 7, 'Node.js', 'intermediate', '2025-06-16 06:08:46');
+
 -- --------------------------------------------------------
 
 --
@@ -426,6 +634,14 @@ CREATE TABLE `user_social_links` (
   `whatsapp_url` varchar(255) DEFAULT NULL,
   `telegram_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_social_links`
+--
+
+INSERT INTO `user_social_links` (`user_id`, `facebook_url`, `twitter_url`, `instagram_url`, `linkedin_url`, `created_at`, `updated_at`, `microsoft_url`, `whatsapp_url`, `telegram_url`) VALUES
+(2, NULL, NULL, NULL, NULL, '2025-06-17 02:22:47', '2025-06-17 02:22:47', NULL, NULL, NULL),
+(7, NULL, NULL, NULL, NULL, '2025-06-16 06:08:46', '2025-06-16 06:08:46', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -452,26 +668,16 @@ CREATE TABLE `verification_documents` (
   `reviewed_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `tickets`
+-- Dumping data for table `verification_documents`
 --
 
-CREATE TABLE `tickets` (
-  `ticket_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text NOT NULL,
-  `type` enum('bug','suggestion','other') NOT NULL,
-  `status` enum('open','in_progress','resolved','closed') NOT NULL DEFAULT 'open',
-  `admin_notes` text DEFAULT NULL,
-  `admin_response` text DEFAULT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`ticket_id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `verification_documents` (`document_id`, `user_id`, `document_type`, `document_number`, `issue_date`, `expiry_date`, `issuing_authority`, `file_name`, `file_path`, `file_type`, `file_size`, `status`, `rejection_reason`, `uploaded_at`, `reviewed_at`, `reviewed_by`) VALUES
+(1, 2, 'drivers_license', '', NULL, NULL, '', '1750032977492_2.jpg', 'uploads\\verification_documents\\1750032977492_2.jpg', 'image/jpeg', 246414, 'approved', NULL, '2025-06-16 00:16:17', '2025-06-16 00:20:37', 1),
+(3, 4, 'drivers_license', '', NULL, NULL, '', '1750033354218_4.jpg', 'uploads\\verification_documents\\1750033354218_4.jpg', 'image/jpeg', 68338, 'approved', NULL, '2025-06-16 00:22:34', '2025-06-16 00:22:45', 1),
+(4, 5, 'drivers_license', '', NULL, NULL, '', '1750052960881_5.jpg', 'uploads\\verification_documents\\1750052960881_5.jpg', 'image/jpeg', 409664, 'approved', NULL, '2025-06-16 05:49:20', '2025-06-16 05:49:42', 1),
+(5, 6, 'passport', 'a', NULL, NULL, '', '1750053078729_6.png', 'uploads\\verification_documents\\1750053078729_6.png', 'image/png', 42227, 'approved', NULL, '2025-06-16 05:51:18', '2025-06-16 05:51:33', 1),
+(6, 7, 'drivers_license', 'adda', NULL, NULL, '', '1750054166213_7.jpg', 'uploads\\verification_documents\\1750054166213_7.jpg', 'image/jpeg', 235113, 'approved', NULL, '2025-06-16 06:09:26', '2025-06-16 06:10:22', 1);
 
 --
 -- Indexes for dumped tables
@@ -574,6 +780,43 @@ ALTER TABLE `notifications`
   ADD KEY `sender_id` (`sender_id`);
 
 --
+-- Indexes for table `notification_delivery_logs`
+--
+ALTER TABLE `notification_delivery_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `notification_id` (`notification_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_notification_type` (`user_id`,`notification_type`);
+
+--
+-- Indexes for table `notification_read_status`
+--
+ALTER TABLE `notification_read_status`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `notification_user` (`notification_id`,`user_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `notification_subscriptions`
+--
+ALTER TABLE `notification_subscriptions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_subscription` (`user_id`,`subscription_type`);
+
+--
+-- Indexes for table `notification_templates`
+--
+ALTER TABLE `notification_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `type` (`type`);
+
+--
 -- Indexes for table `social_connections`
 --
 ALTER TABLE `social_connections`
@@ -587,6 +830,13 @@ ALTER TABLE `social_connections`
 ALTER TABLE `startups`
   ADD PRIMARY KEY (`startup_id`),
   ADD KEY `entrepreneur_id` (`entrepreneur_id`);
+
+--
+-- Indexes for table `tickets`
+--
+ALTER TABLE `tickets`
+  ADD PRIMARY KEY (`ticket_id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `users`
@@ -668,7 +918,7 @@ ALTER TABLE `chat_category_assignments`
 -- AUTO_INCREMENT for table `conversation_requests`
 --
 ALTER TABLE `conversation_requests`
-  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employment`
@@ -680,31 +930,31 @@ ALTER TABLE `employment`
 -- AUTO_INCREMENT for table `entrepreneurs`
 --
 ALTER TABLE `entrepreneurs`
-  MODIFY `entrepreneur_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `entrepreneur_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `investors`
 --
 ALTER TABLE `investors`
-  MODIFY `investor_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `investor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `matches`
 --
 ALTER TABLE `matches`
-  MODIFY `match_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `match_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `message_files`
@@ -719,6 +969,36 @@ ALTER TABLE `notifications`
   MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `notification_delivery_logs`
+--
+ALTER TABLE `notification_delivery_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notification_read_status`
+--
+ALTER TABLE `notification_read_status`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notification_subscriptions`
+--
+ALTER TABLE `notification_subscriptions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notification_templates`
+--
+ALTER TABLE `notification_templates`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `social_connections`
 --
 ALTER TABLE `social_connections`
@@ -728,19 +1008,25 @@ ALTER TABLE `social_connections`
 -- AUTO_INCREMENT for table `startups`
 --
 ALTER TABLE `startups`
-  MODIFY `startup_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `startup_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `tickets`
+--
+ALTER TABLE `tickets`
+  MODIFY `ticket_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `user_preferences`
 --
 ALTER TABLE `user_preferences`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `user_privacy_settings`
@@ -752,13 +1038,13 @@ ALTER TABLE `user_privacy_settings`
 -- AUTO_INCREMENT for table `user_skills`
 --
 ALTER TABLE `user_skills`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `verification_documents`
 --
 ALTER TABLE `verification_documents`
-  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Constraints for dumped tables
@@ -842,6 +1128,32 @@ ALTER TABLE `message_files`
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `notification_delivery_logs`
+--
+ALTER TABLE `notification_delivery_logs`
+  ADD CONSTRAINT `notification_delivery_logs_ibfk_1` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`notification_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `notification_delivery_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  ADD CONSTRAINT `notification_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notification_read_status`
+--
+ALTER TABLE `notification_read_status`
+  ADD CONSTRAINT `notification_read_status_ibfk_1` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`notification_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `notification_read_status_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notification_subscriptions`
+--
+ALTER TABLE `notification_subscriptions`
+  ADD CONSTRAINT `notification_subscriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `social_connections`
