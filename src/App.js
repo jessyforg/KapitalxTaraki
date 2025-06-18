@@ -28,6 +28,7 @@ import StartupDetails from './pages/StartupDetails';
 import VerifyAccount from './pages/VerifyAccount';
 import Settings from './pages/Settings';
 import ProtectedRoute from "./components/ProtectedRoute";
+import Notifications from './pages/Notifications';
 
 function MainPage() {
   return (
@@ -70,6 +71,7 @@ function App() {
         <Route path="/edit-startup/:id" element={<ProtectedRoute allowedRoles={['entrepreneur']}><EditStartup /></ProtectedRoute>} />
         <Route path="/verify-account" element={<ProtectedRoute><VerifyAccount /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
