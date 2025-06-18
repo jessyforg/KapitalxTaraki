@@ -971,14 +971,16 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               <>
                 <div className="relative" ref={notificationRef}>
                   <button
-                    className="relative flex items-center justify-center"
+                    className="relative flex items-center justify-center group"
                     aria-label="Notifications"
                     onClick={() => {
                       setShowNotifications(v => !v);
                       if (!showNotifications) fetchNotifications();
                     }}
                   >
-                    <FaBell size={22} className="text-orange-500" />
+                    <FaBell size={22} className={
+                      `transition-colors duration-200 ${showNotifications ? 'text-orange-500' : 'text-gray-400'} group-hover:text-orange-500`
+                    } />
                     {unreadNotifications > 0 && (
                       <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
                         {unreadNotifications}
@@ -1004,7 +1006,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                   onMouseLeave={handleMsgDropdownClose}
                 >
                   <button
-                    className="relative flex items-center justify-center"
+                    className="relative flex items-center justify-center group"
                     aria-label="Messages"
                     onClick={e => {
                       e.preventDefault();
@@ -1012,11 +1014,12 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                       if (!msgDropdownOpen) fetchMsgPreview();
                     }}
                   >
-                    <FaEnvelope size={22} className="text-orange-500" />
-                    <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
-                      {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ?
-                        msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
-                    </span>
+                    <FaEnvelope size={22} className={`transition-colors duration-200 ${msgDropdownOpen ? 'text-orange-500' : 'text-gray-400'} group-hover:text-orange-500`} />
+                    {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 && (
+                      <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
+                        {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0)}
+                      </span>
+                    )}
                   </button>
                   {msgDropdownOpen && (
                     <div
