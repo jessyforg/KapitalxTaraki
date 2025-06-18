@@ -1,3 +1,7 @@
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
 export const getTickets = async () => {
   const token = localStorage.getItem('token');
   const response = await fetch('/api/tickets', {
@@ -11,17 +15,17 @@ export const getTickets = async () => {
 };
 
 export const submitTicket = async (ticketData) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch('/api/tickets', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(ticketData)
-  });
-  if (!response.ok) throw new Error('Failed to submit ticket');
-  return await response.json();
+  try {
+    const response = await axios.post(`${API_URL}/tickets`, ticketData, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to submit ticket');
+  }
 };
 
 export const updateTicket = async (ticketId, data) => {
