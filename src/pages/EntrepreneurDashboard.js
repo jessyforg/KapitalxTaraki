@@ -408,7 +408,7 @@ const EntrepreneurDashboard = () => {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : 'Demo Testing'}</div>
+            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : 'Demo Testing'}</div>
           </div>
           <nav className="flex flex-col gap-2 w-full px-6">
             {sidebarLinks.map(link => (
@@ -453,12 +453,13 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'startups' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Startups</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Startups</h1>
               {/* Filters and Create Startup button in a single row */}
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div className="flex flex-wrap gap-4 flex-grow">
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
+                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.industry}
                     onChange={e => setFilters(f => ({ ...f, industry: e.target.value }))}
                   >
@@ -472,7 +473,8 @@ const EntrepreneurDashboard = () => {
                     ))}
                   </select>
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
+                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.location}
                     onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
                   >
@@ -486,7 +488,8 @@ const EntrepreneurDashboard = () => {
                     ))}
                   </select>
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2"
+                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.startup_stage}
                     onChange={e => setFilters(f => ({ ...f, startup_stage: e.target.value }))}
                   >
@@ -576,11 +579,12 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'cofounders' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Co-Founders</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Co-Founders</h1>
               {/* Filters for Co-Founders */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <select
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                  style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                   value={coFounderFilters.industry}
                   onChange={e => setCoFounderFilters(f => ({ ...f, industry: e.target.value }))}
                 >
@@ -594,7 +598,8 @@ const EntrepreneurDashboard = () => {
                   ))}
                 </select>
                 <select
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                  style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                   value={coFounderFilters.location}
                   onChange={e => setCoFounderFilters(f => ({ ...f, location: e.target.value }))}
                 >
@@ -615,11 +620,12 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'investors' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Investors</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Investors</h1>
               {/* Filters for Investors */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <select
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                  style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                   value={investorFilters.industry}
                   onChange={e => setInvestorFilters(f => ({ ...f, industry: e.target.value }))}
                 >
@@ -633,7 +639,8 @@ const EntrepreneurDashboard = () => {
                   ))}
                 </select>
                 <select
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                  style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                   value={investorFilters.location}
                   onChange={e => setInvestorFilters(f => ({ ...f, location: e.target.value }))}
                 >
@@ -658,4 +665,4 @@ const EntrepreneurDashboard = () => {
   );
 };
 
-export default EntrepreneurDashboard; 
+export default EntrepreneurDashboard;

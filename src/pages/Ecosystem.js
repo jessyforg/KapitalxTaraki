@@ -45,7 +45,7 @@ function Ecosystem() {
                 >
                   <FaArrowLeft />
                 </button>
-                <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-gray-800">
+                <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-black dark:text-gray-950">
                   Ecosystem
                 </h1>
               </div>

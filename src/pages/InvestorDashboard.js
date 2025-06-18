@@ -495,7 +495,7 @@ const InvestorDashboard = () => {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}</div>
+            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}</div>
           </div>
           <nav className="flex flex-col gap-2 w-full px-6">
             {sidebarLinks.map(link => (
@@ -540,7 +540,7 @@ const InvestorDashboard = () => {
           )}
           {activeSection === 'startups' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Available Startups</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Available Startups</h1>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {renderStartups(filteredAvailableStartups)}
               </div>
@@ -548,7 +548,7 @@ const InvestorDashboard = () => {
           )}
           {activeSection === 'matches' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Matched Startups</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Matched Startups</h1>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {renderStartups(filteredMatchedStartups)}
               </div>
@@ -556,7 +556,7 @@ const InvestorDashboard = () => {
           )}
           {activeSection === 'entrepreneurs' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Entrepreneurs</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Entrepreneurs</h1>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {renderEntrepreneurs()}
               </div>
@@ -564,7 +564,7 @@ const InvestorDashboard = () => {
           )}
           {activeSection === 'investors' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-6">Investors</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Investors</h1>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {renderInvestors()}
               </div>

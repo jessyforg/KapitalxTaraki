@@ -95,10 +95,10 @@ function FAQs() {
         {items.map((item, idx) => (
           <div
             key={idx}
-            className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300"
+            className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 mb-6"
           >
             <button
-              className="w-full text-left px-8 py-5 focus:outline-none flex items-center justify-between text-gray-800 text-lg font-medium transition-colors duration-300 hover:bg-gray-50"
+              className="w-full text-left px-8 py-5  text-black dark:text-gray-950 text-lg font-medium hover:bg-gray-100 focus:outline-none"
               onClick={() => toggleFAQ(idx)}
             >
               {item.question}
@@ -129,7 +129,7 @@ function FAQs() {
                   : "max-h-0 opacity-0"
               }`}
             >
-              <div className="px-8 pb-6 text-gray-600 text-base leading-relaxed">
+              <div className="px-8 pb-6 text-black dark:text-gray-950 text-base leading-relaxed">
                 {item.answer}
               </div>
             </div>

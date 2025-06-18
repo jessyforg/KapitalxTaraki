@@ -62,7 +62,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">InTTO</h2>
-                <p className="text-gray-600 text-center">
+                <p className="text-black dark:text-gray-950 text-center">
                   The Innovation and Technology Transfer Office (InTTO) fosters
                   innovation by offering business and technology transfer
                   opportunities to faculty, students, alumni, and the community
@@ -83,7 +83,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">SILBI</h2>
-                <p className="text-gray-600 text-center">
+                <p className="text-black dark:text-gray-950 text-center">
                   Silbi, meaning "service" in Filipino, reflects UP Baguio's
                   dedication to community service. The SILBI Center drives
                   transformation in Cordillera and Northern Luzon through research
@@ -104,7 +104,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ConRes</h2>
-                <p className="text-gray-600 text-center">
+                <p className="text-black dark:text-gray-950 text-center">
                   Established in 2017 with CHED funding, the SIRIB Center created
                   a Technology Hub and Co-Working Space. It launched
                   "Technopreneurship 101" to integrate entrepreneurship into
@@ -125,7 +125,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ATBI / IC</h2>
-                <p className="text-gray-600 text-center">
+                <p className="text-black dark:text-gray-950 text-center">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,
@@ -146,7 +146,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">IFSU IPTBM</h2>
-                <p className="text-gray-600 text-center">
+                <p className="text-black dark:text-gray-950 text-center">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,

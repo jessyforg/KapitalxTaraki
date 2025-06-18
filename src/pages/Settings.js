@@ -110,7 +110,7 @@ function Settings() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">First Name</label>
+                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">First Name</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -120,7 +120,7 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Last Name</label>
+                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Last Name</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -130,7 +130,7 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Email</label>
                 <input
                   type="email"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -140,7 +140,7 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Phone</label>
+                <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Phone</label>
                 <input
                   type="tel"
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -151,7 +151,7 @@ function Settings() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Bio</label>
+              <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Bio</label>
               <textarea
                 className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                 rows="4"
@@ -166,7 +166,7 @@ function Settings() {
       case 'notifications':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold mb-4">Email Notifications</h3>
+            <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Email Notifications</h3>
             <div className="space-y-4">
               {['Messages', 'Application Status', 'Investment Matches', 'Job Offers', 'System Alerts'].map((item) => (
                 <div key={item} className="flex items-center justify-between">
@@ -190,10 +190,10 @@ function Settings() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Change Password</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Current Password</label>
+                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Current Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -203,7 +203,7 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">New Password</label>
+                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">New Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -213,7 +213,7 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                  <label className="block text-sm font-medium mb-2 text-black dark:text-gray-950">Confirm New Password</label>
                   <input
                     type="password"
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -225,7 +225,7 @@ function Settings() {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Two-Factor Authentication</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Two-Factor Authentication</h3>
               <div className="flex items-center justify-between">
                 <span>Enable 2FA</span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -241,7 +241,7 @@ function Settings() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Theme</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Theme</h3>
               <div className="flex items-center justify-between">
                 <span>Dark Mode</span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -262,7 +262,7 @@ function Settings() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Message Settings</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black dark:text-gray-950">Message Settings</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>Allow messages from other users</span>
@@ -287,11 +287,11 @@ function Settings() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Help & Support</h3>
+              <h3 className="text-lg font-semibold mb-4 dark:text-white">Help & Support</h3>
               <div className="space-y-6">
                 <div className="bg-orange-50 p-6 rounded-lg">
                   <h4 className="text-lg font-medium text-orange-800 mb-2">Submit Ticket</h4>
-                  <p className="text-gray-600 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
+                  <p className=" text-white dark:text-gray-950 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
                   <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors" onClick={() => setShowTicketModal(true)}>
                     Submit Ticket
                   </button>
@@ -302,15 +302,15 @@ function Settings() {
                       <h3 className="text-lg font-semibold mb-4">Submit a Support Ticket</h3>
                       <form className="space-y-4" onSubmit={handleTicketSubmit}>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Title</label>
+                          <label className="block text-sm font-medium mb-1 dark:text-white">Title</label>
                           <input type="text" name="title" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.title} onChange={handleTicketChange} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Description</label>
+                          <label className="block text-sm font-medium mb-1 dark:text-white">Description</label>
                           <textarea name="description" className="w-full border border-gray-300 rounded px-3 py-2" rows="4" value={ticketForm.description} onChange={handleTicketChange} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Type</label>
+                          <label className="block text-sm font-medium mb-1 dark:text-white">Type</label>
                           <select name="type" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.type} onChange={handleTicketChange}>
                             <option value="bug">Bug</option>
                             <option value="suggestion">Suggestion</option>
@@ -319,7 +319,7 @@ function Settings() {
                         </div>
                         <div className="flex justify-end gap-2">
                           <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowTicketModal(false)}>Cancel</button>
-                          <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Submit</button>
+                          <button type="submit" className="px-4 py-2 bg-orange-500 text-black dark:text-gray-950 rounded hover:bg-orange-600">Submit</button>
                         </div>
                       </form>
                     </div>
@@ -327,20 +327,20 @@ function Settings() {
                 )}
                 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-800">Frequently Asked Questions</h4>
+                  <h4 className="text-lg font-medium text-black dark:text-gray-950">Frequently Asked Questions</h4>
                   <FAQs />
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-800">Documentation</h4>
+                  <h4 className="text-lg font-medium text-black dark:text-gray-950">Documentation</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-gray-800 mb-2">User Guide</h5>
-                      <p className="text-gray-600">Learn how to use all features of the platform</p>
+                      <h5 className="font-medium text-black dark:text-gray-9500 mb-2">User Guide</h5>
+                      <p className="text-black dark:text-gray-950">Learn how to use all features of the platform</p>
                     </div>
                     <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-gray-800 mb-2">API Documentation</h5>
-                      <p className="text-gray-600">Technical documentation for developers</p>
+                      <h5 className="font-medium text-black dark:text-gray-950 mb-2">API Documentation</h5>
+                      <p className= "text-black dark:text-gray-950">Technical documentation for developers</p>
                     </div>
                   </div>
                 </div>
@@ -431,7 +431,7 @@ function Settings() {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : ''}</div>
+            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : ''}</div>
           </div>
           <nav className="flex flex-col gap-2 w-full px-6">
             {sidebarLinks.map(link => (
@@ -474,7 +474,7 @@ function Settings() {
               ))}
             </div>
             <div className="p-8">
-              <h2 className="text-2xl font-bold mb-8 text-gray-800 border-b border-gray-200 pb-4">
+              <h2 className="text-2xl font-bold mb-8  text-black dark:text-gray-950 border-b border-gray-200 pb-4">
                 {tabs.find(tab => tab.id === activeTab)?.label} Settings
               </h2>
               {renderTabContent()}
