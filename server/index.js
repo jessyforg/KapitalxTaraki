@@ -74,7 +74,7 @@ const messagesRouter = require('./routes/messages')(pool);
 app.use('/api/messages', messagesRouter);
 
 // Add search route
-const searchRouter = require('./routes/search');
+const searchRouter = require('./routes/search')(pool);
 app.use('/api/search', searchRouter);
 
 // Ensure uploads directory exists
@@ -820,19 +820,53 @@ app.get('/api/users/role/investor', authenticateToken, async (req, res) => {
 });
 
 // Create a match between investor and startup
-app.post('/api/match', authenticateToken, async (req, res) => {
+app.post('/api/investor/match', authenticateToken, async (req, res) => {
   try {
     const investor_id = req.user.id;
     const { startup_id, match_score } = req.body;
-    if (!startup_id) {
-      return res.status(400).json({ error: 'startup_id is required' });
+    // Prevent duplicate matches
+    const [existing] = await pool.query(
+      'SELECT * FROM matches WHERE investor_id = ? AND startup_id = ?',
+      [investor_id, startup_id]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Already matched' });
     }
     // Insert match
     const [result] = await pool.query(
       'INSERT INTO matches (startup_id, investor_id, match_score) VALUES (?, ?, ?)',
       [startup_id, investor_id, match_score || 0]
     );
-    res.status(201).json({ message: 'Match created', match_id: result.insertId });
+    // Get entrepreneur_id and names for notification
+    const [[startup]] = await pool.query(
+      'SELECT entrepreneur_id, name FROM startups WHERE startup_id = ?',
+      [startup_id]
+    );
+    const [[investor]] = await pool.query(
+      'SELECT full_name FROM users WHERE id = ?',
+      [investor_id]
+    );
+    // Notify entrepreneur
+    await pool.query(
+      `INSERT INTO notifications (user_id, sender_id, type, message, status, created_at)
+       VALUES (?, ?, 'investor_match', ?, 'unread', NOW())`,
+      [
+        startup.entrepreneur_id,
+        investor_id,
+        `Investor ${investor.full_name} matched with your startup "${startup.name}".`
+      ]
+    );
+    // Notify investor
+    await pool.query(
+      `INSERT INTO notifications (user_id, sender_id, type, message, status, created_at)
+       VALUES (?, ?, 'startup_match', ?, 'unread', NOW())`,
+      [
+        investor_id,
+        startup.entrepreneur_id,
+        `You matched with the startup "${startup.name}".`
+      ]
+    );
+    res.status(201).json({ message: 'Match created and notifications sent', match_id: result.insertId });
   } catch (error) {
     console.error('Error creating match:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -900,31 +934,6 @@ app.get('/api/investor/available-startups', authenticateToken, async (req, res) 
     res.json(rows);
   } catch (error) {
     console.error('Error fetching available startups:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Match a startup (investor matches with a startup)
-app.post('/api/investor/match', authenticateToken, async (req, res) => {
-  try {
-    const investor_id = req.user.id;
-    const { startup_id, match_score } = req.body;
-    // Prevent duplicate matches
-    const [existing] = await pool.query(
-      'SELECT * FROM matches WHERE investor_id = ? AND startup_id = ?',
-      [investor_id, startup_id]
-    );
-    if (existing.length > 0) {
-      return res.status(400).json({ error: 'Already matched' });
-    }
-    // Insert match
-    const [result] = await pool.query(
-      'INSERT INTO matches (startup_id, investor_id, match_score) VALUES (?, ?, ?)',
-      [startup_id, investor_id, match_score || 0]
-    );
-    res.status(201).json({ message: 'Match created', match_id: result.insertId });
-  } catch (error) {
-    console.error('Error creating match:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1441,6 +1450,9 @@ app.get('/api/users/role/entrepreneur', authenticateToken, async (req, res) => {
 
 const ticketsRouter = require('./routes/tickets')(pool);
 app.use('/api/tickets', ticketsRouter);
+
+const notificationsRouter = require('./routes/notifications')(pool);
+app.use('/api/notifications', notificationsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
