@@ -37,7 +37,7 @@ export default function InTTOTBI() {
           className="laptop-s:w-52 phone:w-24 relative left-2/4 -translate-x-1/2 laptop-m:w-32 desktop-m:w-40"
         />
 
-        <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center py-10">
+        <h1 className="font-montserrat font-semibold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center py-10">
           InTTO Startups
         </h1>
       </section>

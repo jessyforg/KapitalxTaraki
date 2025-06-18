@@ -38,7 +38,6 @@ function MainPage() {
       <Objective />
       <Team />
       <FAQ />
-      <Contact />
       <Footer />
     </>
   );
