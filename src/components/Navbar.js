@@ -5,10 +5,12 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./styles.css";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope, FaSearch } from "react-icons/fa";
+import { FaUserCircle, FaCog, FaSignOutAlt, FaUser, FaMoon, FaSun, FaBell, FaEnvelope, FaSearch, FaHandshake, FaEye, FaClipboardCheck, FaCalendarAlt, FaUserPlus } from "react-icons/fa";
 import userProfileAPI from '../api/userProfile';
 import axios from 'axios';
 import { debounce } from 'lodash';
+import { getNotifications, markNotificationAsRead, getUnreadNotificationCount } from '../api/notifications';
+import NotificationDropdown from './NotificationDropdown';
 
 function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
   const form = useRef();
@@ -227,12 +229,18 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-  // Close profile dropdown when clicking outside
+  // Close profile dropdown when clicking outside avatar or dropdown
   useEffect(() => {
     if (!isProfileOpen) return;
     function handleClickOutside(event) {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
         setIsProfileOpen(false);
       }
     }
@@ -468,6 +476,152 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
       navigate(`/profile/${result.id}`);
     } else if (result.type === 'startup') {
       navigate(`/startup/${result.id}`);
+    }
+  };
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
+
+  // Function to fetch notifications based on user role
+  const fetchNotifications = async () => {
+    if (!user) return;
+    
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications);
+      setUnreadNotifications(data.unread_count);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Function to mark notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, is_read: true }
+            : notif
+        )
+      );
+      setUnreadNotifications(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Effect to fetch notifications periodically
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // Fetch every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Effect to fetch unread count periodically
+  useEffect(() => {
+    if (user) {
+      const fetchUnreadCount = async () => {
+        try {
+          const data = await getUnreadNotificationCount();
+          setUnreadNotifications(data.count);
+        } catch (error) {
+          console.error('Error fetching unread count:', error);
+        }
+      };
+
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Click outside handler for notification dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Function to get notification icon based on type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'match_received':
+      case 'investor_match':
+      case 'startup_match':
+        return <FaHandshake className="text-green-500" />;
+      case 'profile_view':
+        return <FaEye className="text-blue-500" />;
+      case 'startup_status':
+      case 'program_status':
+        return <FaClipboardCheck className="text-purple-500" />;
+      case 'event_reminder':
+        return <FaCalendarAlt className="text-orange-500" />;
+      case 'message':
+        return <FaEnvelope className="text-blue-500" />;
+      case 'connection_request':
+        return <FaUserPlus className="text-green-500" />;
+      default:
+        return <FaBell className="text-gray-500" />;
+    }
+  };
+
+  // Function to format notification time
+  const formatNotificationTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Function to handle notification click
+  const handleNotificationClick = async (notification) => {
+    if (!notification.is_read) {
+      await handleMarkAsRead(notification.id);
+    }
+    
+    // Handle navigation based on notification type
+    switch (notification.type) {
+      case 'match_received':
+      case 'investor_match':
+      case 'startup_match':
+        navigate('/matches');
+        break;
+      case 'profile_view':
+        navigate(`/profile/${notification.sender_id}`);
+        break;
+      case 'startup_status':
+      case 'program_status':
+        navigate('/dashboard');
+        break;
+      case 'event_reminder':
+        navigate(`/events/${notification.event_id}`);
+        break;
+      case 'message':
+        navigate(`/messages?chat_with=${notification.sender_id}`);
+        break;
+      case 'connection_request':
+        navigate('/connections');
+        break;
+      default:
+        // For other notification types, just close the dropdown
+        setShowNotifications(false);
     }
   };
 
@@ -815,13 +969,34 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <button className="relative flex items-center justify-center" aria-label="Notifications">
-                  <FaBell size={22} className="text-orange-500" />
-                  <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
-                    {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ? 
-                      msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
-                  </span>
-                </button>
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    className="relative flex items-center justify-center"
+                    aria-label="Notifications"
+                    onClick={() => {
+                      setShowNotifications(v => !v);
+                      if (!showNotifications) fetchNotifications();
+                    }}
+                  >
+                    <FaBell size={22} className="text-orange-500" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
+                        {unreadNotifications}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifications && (
+                    <NotificationDropdown
+                      notifications={notifications}
+                      onNotificationClick={handleNotificationClick}
+                      onViewAll={() => {
+                        setShowNotifications(false);
+                        navigate('/notifications');
+                      }}
+                      formatTime={formatNotificationTime}
+                    />
+                  )}
+                </div>
                 <div
                   className="relative"
                   ref={msgDropdownRef}
@@ -839,7 +1014,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                   >
                     <FaEnvelope size={22} className="text-orange-500" />
                     <span className="absolute -top-1 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border-2 border-white dark:border-[#181818] shadow-sm">
-                      {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ? 
+                      {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 ?
                         msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) : ''}
                     </span>
                   </button>
@@ -849,7 +1024,6 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                     >
                       <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
                       <div className="max-h-96 overflow-y-auto">
-                        {console.log('msgPreview to render:', msgPreview)}
                         {loadingPreview ? (
                           <div className="p-4 text-center text-gray-500">Loading...</div>
                         ) : msgPreview.length === 0 ? (
@@ -907,6 +1081,81 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                     </div>
                   )}
                 </div>
+                <div className="relative" ref={profileRef}>
+                  <button
+                    className="flex items-center space-x-2 focus:outline-none"
+                    onClick={() => setIsProfileOpen((prev) => !prev)}
+                    aria-haspopup="true"
+                    aria-expanded={isProfileOpen}
+                  >
+                    {user.profile_image ? (
+                      <img
+                        src={user.profile_image}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                        {user.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
+                      </div>
+                    )}
+                  </button>
+                  {isProfileOpen && (
+                    <div
+                      ref={dropdownRef}
+                      className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}
+                      tabIndex={-1}
+                    >
+                      <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                        <div>
+                          <div className="font-semibold text-lg">{user.first_name} {user.last_name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || ''}</div>
+                        </div>
+                      </div>
+                      <Link
+                        to="/profile"
+                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <FaUserCircle className="text-orange-500" />
+                        <span>Profile</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate('/settings');
+                        }}
+                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                      >
+                        <FaCog className="text-orange-500" />
+                        <span>Settings</span>
+                      </button>
+                      <button
+                        onClick={() => setDarkMode(prev => !prev)}
+                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+                      >
+                        {darkMode ? (
+                          <>
+                            <FaSun className="text-orange-500" />
+                            <span>Light Mode</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaMoon className="text-orange-500" />
+                            <span>Dark Mode</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      >
+                        <FaSignOutAlt />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <button
@@ -916,79 +1165,6 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               >
                 <span>GET STARTED</span>
               </button>
-            )}
-            {user && (
-              <div className="relative" ref={profileRef}>
-                <button
-                  className="flex items-center space-x-2 focus:outline-none"
-                  onClick={() => setIsProfileOpen((prev) => !prev)}
-                  aria-haspopup="true"
-                  aria-expanded={isProfileOpen}
-                >
-                  {user.profile_image ? (
-                    <img
-                      src={user.profile_image}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
-                    </div>
-                  )}
-                </button>
-                {isProfileOpen && (
-                  <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}>
-                    <div className="p-4 border-b border-gray-200 dark:border-white/10">
-                      <div>
-                        <div className="font-semibold text-lg">{user.first_name} {user.last_name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || ''}</div>
-                      </div>
-                    </div>
-                    <Link
-                      to="/profile"
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <FaUserCircle className="text-orange-500" />
-                      <span>Profile</span>
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        navigate('/settings');
-                      }}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                    >
-                      <FaCog className="text-orange-500" />
-                      <span>Settings</span>
-                    </button>
-                    <button
-                      onClick={() => setDarkMode(prev => !prev)}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                    >
-                      {darkMode ? (
-                        <>
-                          <FaSun className="text-orange-500" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaMoon className="text-orange-500" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                    >
-                      <FaSignOutAlt />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
             )}
           </div>
         </div>
