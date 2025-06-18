@@ -306,15 +306,18 @@ CREATE TABLE `notification_delivery_logs` (
 --
 
 CREATE TABLE `notification_preferences` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `notification_type` varchar(50) NOT NULL,
-  `email_enabled` tinyint(1) DEFAULT 1,
-  `push_enabled` tinyint(1) DEFAULT 1,
-  `in_app_enabled` tinyint(1) DEFAULT 1,
-  `frequency` enum('immediate','daily','weekly') DEFAULT 'immediate',
+  `email_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `push_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `in_app_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `frequency` varchar(20) NOT NULL DEFAULT 'immediate',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_notification_type` (`user_id`, `notification_type`),
+  CONSTRAINT `notification_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -485,20 +488,22 @@ CREATE TABLE `users` (
   `show_in_messages` tinyint(1) DEFAULT 1,
   `show_in_pages` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `allow_messages` BOOLEAN DEFAULT TRUE,
+  `message_notifications` BOOLEAN DEFAULT TRUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `first_name`, `last_name`, `full_name`, `status`, `email`, `password`, `profile_image`, `profile_picture_url`, `facebook_url`, `twitter_url`, `instagram_url`, `linkedin_url`, `role`, `is_verified`, `verification_token`, `verification_status`, `location`, `introduction`, `accomplishments`, `education`, `employment`, `gender`, `birthdate`, `contact_number`, `public_email`, `industry`, `show_in_search`, `show_in_messages`, `show_in_pages`, `created_at`, `updated_at`) VALUES
-(1, 'Admin', 'Demo', '', 'online', 'ADMINdemo@gmail.com', '$2a$10$6LoupEzHPKWLPrk/jJQOW.mTZExRxgSMR.z/.ykFOzLQdbhm.mevu', NULL, NULL, NULL, NULL, NULL, NULL, 'admin', 0, 'qjh9fch3by', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:02', '2025-06-16 00:07:02'),
-(2, 'Entrepreneur', 'Demo', '', 'online', 'ENTREPdemo@gmail.com', '$2a$10$H54jsH8FSRp28UXv0aDSrOAd9ov8.hYo80KWDUkVSZ2JgBO2qMr4C', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'kqiid0mr7qd', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:51', '2025-06-17 02:23:17'),
-(4, 'Jester', 'Perez', '', 'online', 'jes@gmail.com', '$2a$10$0Arv13X8MGCYD.UOfpZnyO5wL0HxLVs2DCq0UV2k8efb1JNlnT/HO', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, '0m61z4ztvlpr', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:22:12', '2025-06-16 00:22:45'),
-(5, 'Eugene Jherico', 'Naval', '', 'online', 'eug@gmail.com', '$2a$10$yl4EqoD1X4k0ni1CVWUtgeTWTbI58Aj2xHItANmuk2hxq1VKisU.u', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'yre9zh3ldz', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:45:10', '2025-06-16 05:49:42'),
-(6, 'Investor', 'Demo', '', 'online', 'INVESTdemo@gmail.com', '$2a$10$m4rBdG2PmG02qHR0EzmMU.kXooc3IF7oyi7Z/eJgNQLBO6XiswN76', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'fnyn1ga6h0t', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:51:04', '2025-06-16 05:51:33'),
-(7, 'Entrepreneur1', 'Demo', '', 'online', 'ENTREPdemo1@gmail.com', '$2a$10$7c/Rr2xyIHbNnbkN/CfFb.iwyDHd6HWFYMYcFLphVQ7c8ZZJNLfrO', '', NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'zzua1r2y7yh', 'verified', '', '', NULL, NULL, NULL, '', '0000-00-00', '', NULL, '', 1, 1, 1, '2025-06-16 06:07:42', '2025-06-16 06:10:22');
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `full_name`, `status`, `email`, `password`, `profile_image`, `profile_picture_url`, `facebook_url`, `twitter_url`, `instagram_url`, `linkedin_url`, `role`, `is_verified`, `verification_token`, `verification_status`, `location`, `introduction`, `accomplishments`, `education`, `employment`, `gender`, `birthdate`, `contact_number`, `public_email`, `industry`, `show_in_search`, `show_in_messages`, `show_in_pages`, `created_at`, `updated_at`, `allow_messages`, `message_notifications`) VALUES
+(1, 'Admin', 'Demo', '', 'online', 'ADMINdemo@gmail.com', '$2a$10$6LoupEzHPKWLPrk/jJQOW.mTZExRxgSMR.z/.ykFOzLQdbhm.mevu', NULL, NULL, NULL, NULL, NULL, NULL, 'admin', 0, 'qjh9fch3by', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:02', '2025-06-16 00:07:02', TRUE, TRUE),
+(2, 'Entrepreneur', 'Demo', '', 'online', 'ENTREPdemo@gmail.com', '$2a$10$H54jsH8FSRp28UXv0aDSrOAd9ov8.hYo80KWDUkVSZ2JgBO2qMr4C', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'kqiid0mr7qd', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:07:51', '2025-06-17 02:23:17', TRUE, TRUE),
+(4, 'Jester', 'Perez', '', 'online', 'jes@gmail.com', '$2a$10$0Arv13X8MGCYD.UOfpZnyO5wL0HxLVs2DCq0UV2k8efb1JNlnT/HO', NULL, NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, '0m61z4ztvlpr', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 00:22:12', '2025-06-16 00:22:45', TRUE, TRUE),
+(5, 'Eugene Jherico', 'Naval', '', 'online', 'eug@gmail.com', '$2a$10$yl4EqoD1X4k0ni1CVWUtgeTWTbI58Aj2xHItANmuk2hxq1VKisU.u', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'yre9zh3ldz', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:45:10', '2025-06-16 05:49:42', TRUE, TRUE),
+(6, 'Investor', 'Demo', '', 'online', 'INVESTdemo@gmail.com', '$2a$10$m4rBdG2PmG02qHR0EzmMU.kXooc3IF7oyi7Z/eJgNQLBO6XiswN76', NULL, NULL, NULL, NULL, NULL, NULL, 'investor', 0, 'fnyn1ga6h0t', 'verified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2025-06-16 05:51:04', '2025-06-16 05:51:33', TRUE, TRUE),
+(7, 'Entrepreneur1', 'Demo', '', 'online', 'ENTREPdemo1@gmail.com', '$2a$10$7c/Rr2xyIHbNnbkN/CfFb.iwyDHd6HWFYMYcFLphVQ7c8ZZJNLfrO', '', NULL, NULL, NULL, NULL, NULL, 'entrepreneur', 0, 'zzua1r2y7yh', 'verified', '', '', NULL, NULL, NULL, '', '0000-00-00', '', NULL, '', 1, 1, 1, '2025-06-16 06:07:42', '2025-06-16 06:10:22', TRUE, TRUE);
 
 -- --------------------------------------------------------
 
@@ -1208,3 +1213,6 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE;
