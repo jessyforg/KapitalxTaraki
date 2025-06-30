@@ -63,16 +63,16 @@ function Notifications() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar hideNavLinks />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-            <div className="flex items-center gap-4">
-              <div className="relative">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 pt-28 pb-4 sm:pt-24 sm:pb-8">
+        <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Notifications</h1>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="relative w-full sm:w-auto">
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full sm:w-auto"
                 >
                   <option value="all">All</option>
                   <option value="unread">Unread</option>
@@ -82,7 +82,7 @@ function Notifications() {
               </div>
               <button
                 onClick={handleMarkAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors w-full sm:w-auto"
               >
                 <FaCheck />
                 <span>Mark all as read</span>
@@ -101,21 +101,21 @@ function Notifications() {
               <p className="text-gray-500">No notifications found</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               {filteredNotifications.map(notification => (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg border ${
+                  className={`p-3 sm:p-4 rounded-lg border w-full ${
                     notification.is_read ? 'bg-white' : 'bg-orange-50'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{notification.title}</h3>
-                      <p className="text-gray-600 mt-1">{notification.content}</p>
-                      <p className="text-sm text-gray-400 mt-2">{formatTime(notification.created_at)}</p>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex-1 w-full">
+                      <h3 className="font-semibold text-gray-900 text-base sm:text-lg">{notification.title}</h3>
+                      <p className="text-gray-600 mt-1 text-sm sm:text-base">{notification.content}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-2">{formatTime(notification.created_at)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
                       {!notification.is_read && (
                         <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">
                           New

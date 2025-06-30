@@ -29,7 +29,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-right"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-right">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-right">
             Establishment of a 5-yr Regional Startup Development Plan and Roadmaps
           </p> 
         </div>
@@ -41,7 +41,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-down"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-down">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-down">
             Increasing Awareness about the Consortium
           </p>
         </div>
@@ -53,7 +53,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-left"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-left">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-left">
             Upskilling and Upscaling Activities
           </p>
         </div>
@@ -65,7 +65,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-right"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-right">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-right">
             Establishment of Local Investor Network
           </p>
         </div>
@@ -77,7 +77,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-up"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-up">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-up">
             Cross Pollination Undertakings Among Stakeholders
           </p>
         </div>
@@ -89,7 +89,7 @@ function Objective() {
             className="w-28 h-28 mb-4 aos-init"
             data-aos="fade-left"
           />
-          <p className="text-center text-black font-montserrat aos-init" data-aos="fade-left">
+          <p className="text-center text-black dark:text-white font-montserrat aos-init" data-aos="fade-left">
             Activating startup activity hubs in lesser active provinces in the regions
           </p>
         </div>

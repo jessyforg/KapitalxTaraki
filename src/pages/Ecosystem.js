@@ -45,7 +45,7 @@ function Ecosystem() {
                 >
                   <FaArrowLeft />
                 </button>
-                <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-black dark:text-gray-950">
+                <h1 className="font-bold text-2xl laptop-s:text-3xl desktop-s:text-4xl text-black dark:text-white">
                   Ecosystem
                 </h1>
               </div>
@@ -59,10 +59,10 @@ function Ecosystem() {
           {/* Framework Section */}
           <section id="framework">
             <Framework />
-            <Footer /> {/* Footer is now only after Framework, inside the section */}
           </section>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

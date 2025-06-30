@@ -12,11 +12,15 @@ import { debounce } from 'lodash';
 import { getNotifications, markNotificationAsRead, getUnreadNotificationCount } from '../api/notifications';
 import NotificationDropdown from './NotificationDropdown';
 
-function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
+function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActiveTab, setAdminActiveTab }) {
   const form = useRef();
   const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState(null);
+  const [activeDashboardSection, setActiveDashboardSection] = useState('startups');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const sendEmail = (e) => {
     e.preventDefault();
@@ -79,28 +83,8 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     };
   }, [isModalOpen]);
 
-  const menuButtonRef = useRef(null);
-  const navbarStickyRef = useRef(null);
-
-  useEffect(() => {
-    const handleMenuButtonClick = () => {
-      if (navbarStickyRef.current.classList.contains("hidden")) {
-        navbarStickyRef.current.classList.remove("hidden");
-      } else {
-        navbarStickyRef.current.classList.add("hidden");
-      }
-    };
-
-    const menuButton = menuButtonRef.current;
-    menuButton.addEventListener("click", handleMenuButtonClick);
-
-    return () => {
-      menuButton.removeEventListener("click", handleMenuButtonClick);
-    };
-  }, []);
-
   const closeNavbar = () => {
-    navbarStickyRef.current.classList.add("hidden");
+    setIsMobileMenuOpen(false);
   };
 
   // Dark mode state
@@ -219,6 +203,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     try {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      // Force light mode on logout
+      setDarkMode(false);
+      localStorage.setItem('taraki-dark-mode', 'false');
+      document.documentElement.classList.remove('dark');
     } catch (e) {
       console.warn('Error accessing localStorage:', e);
     }
@@ -625,6 +613,77 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
     }
   };
 
+  const navLinks = [
+    {
+      title: 'Home',
+      subLinks: [
+        { title: 'Objectives', sectionId: 'objectives' },
+        { title: 'TARAKIs', sectionId: 'team' },
+        { title: 'FAQ', sectionId: 'FAQs' },
+      ],
+    },
+    {
+      title: 'Ecosystem',
+      subLinks: [
+        { title: 'TBI', path: '/ecosystem', scrollTo: 'tbi' },
+        { title: 'Mentors', path: '/ecosystem', scrollTo: 'mentors' },
+        { title: 'Framework', path: '/ecosystem', scrollTo: 'framework' },
+      ],
+    },
+    {
+      title: 'About',
+      subLinks: [
+        { title: 'Programs', path: '/programs' },
+        { title: 'Events', path: '/events' },
+        { title: 'Newsletter', sectionId: 'newsletter' },
+      ],
+    },
+  ];
+
+  const handleMobileNavClick = (link) => {
+    if (link.sectionId) {
+      scrollToSection(link.sectionId);
+    } else if (link.path) {
+      if (location.pathname === link.path && link.scrollTo) {
+        const el = document.getElementById(link.scrollTo);
+        if (el) {
+          const yOffset = -100;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      } else {
+        navigate(link.path, { state: { scrollTo: link.scrollTo } });
+      }
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  // Get active section from URL or localStorage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const section = urlParams.get('section') || localStorage.getItem('activeDashboardSection') || 'startups';
+    setActiveDashboardSection(section);
+  }, [location.search]);
+
+  // Handle dashboard section change
+  const handleDashboardSectionChange = (section) => {
+    setActiveDashboardSection(section);
+    localStorage.setItem('activeDashboardSection', section);
+    
+    // Update URL with section parameter
+    const currentPath = location.pathname;
+    const newUrl = `${currentPath}?section=${section}`;
+    navigate(newUrl, { replace: true });
+    
+    setIsMobileMenuOpen(false);
+  };
+
+  // Handle external navigation (ecosystem, events, settings)
+  const handleExternalNavigation = (path) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
@@ -635,15 +694,36 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               scrollToSection("home");
             }}
             className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
+            style={{ minWidth: 0 }}
           >
             <img
               src={darkMode ? require("./imgs/TARAKI 10X WHITE.png") : require("./imgs/taraki-logo-black2.png")}
-              className="h-8 transition-all duration-300"
+              className="h-8 sm:h-10 w-auto max-w-[140px] sm:max-w-[180px] md:max-w-[220px] object-contain transition-all duration-300"
               alt="Taraki Logo"
-              style={{ filter: darkMode ? "invert(0)" : "invert(0)" }}
+              style={{ filter: darkMode ? "invert(0)" : "invert(0)", minWidth: 0 }}
             />
           </Link>
-          <div className="relative flex-1 max-w-xl mx-4" ref={searchRef}>
+          {/* Admin Dashboard Navigation Tabs (inline in navbar) */}
+          {adminTabs && adminActiveTab && setAdminActiveTab && (
+            <div className="hidden md:flex gap-2 ml-8">
+              {adminTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors text-base ${
+                    adminActiveTab === tab.id
+                      ? (darkMode ? 'bg-orange-900 text-orange-400' : 'bg-orange-50 text-orange-600')
+                      : (darkMode ? 'hover-bg-orange-900-30 hover-text-orange-400 text-gray-300' : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700')
+                  }`}
+                  onClick={() => setAdminActiveTab(tab.id)}
+                >
+                  <span className="text-xl">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Desktop search bar */}
+          <div className="relative flex-1 min-w-0 w-full max-w-xs sm:max-w-md md:max-w-xl mx-2 sm:mx-4 hidden phone:hidden tablet-m:block" ref={searchRef}>
             <div className="relative">
               <input
                 type="text"
@@ -651,11 +731,11 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                 onChange={handleSearchChange}
                 onFocus={() => setShowSearchResults(true)}
                 placeholder="Search users and startups..."
-                className={`w-full px-4 py-2 pl-10 rounded-lg border ${
+                className={`w-full block min-w-0 max-w-xs sm:max-w-md md:max-w-xl rounded-lg border ${
                   darkMode 
                     ? 'bg-[#181818] border-white/20 text-white placeholder-gray-400' 
                     : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:border-orange-500 transition-colors`}
+                } focus:outline-none focus:border-orange-500 transition-colors px-4 py-2 pl-10`}
               />
               <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
                 darkMode ? 'text-gray-400' : 'text-gray-500'
@@ -726,41 +806,43 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
               </div>
             )}
           </div>
-          <div className="flex space-x-3 tablet-m:space-x-0 rtl:space-x-reverse">
-            <button
-              data-collapse-toggle="navbar-cta"
-              type="button"
-              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-800 rounded-lg tablet-m:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
-              aria-controls="navbar-cta"
-              aria-expanded="false"
-              id="mobile-menu-button"
-              ref={menuButtonRef}
+          {/* Mobile search icon */}
+          <button className="block tablet-m:hidden p-2" onClick={() => setShowMobileSearch(true)} aria-label="Open search">
+            <FaSearch className={darkMode ? 'text-gray-400' : 'text-gray-500'} size={22} />
+          </button>
+          {/* Mobile menu (hamburger) icon - scooted to the right */}
+          <button
+            data-collapse-toggle="navbar-cta"
+            type="button"
+            className={`inline-flex items-center p-2 w-10 h-10 justify-center text-sm rounded-lg tablet-m:hidden focus:outline-none focus:ring-2 focus:ring-gray-200 ml-auto ${darkMode ? 'text-white' : 'text-black'}`}
+            aria-controls="navbar-cta"
+            aria-expanded={isMobileMenuOpen}
+            id="mobile-menu-button"
+            onClick={() => setIsMobileMenuOpen(prev => !prev)}
+          >
+            <span className="sr-only">Open main menu</span>
+            <svg
+              className="w-5 h-5"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/1600/svg"
+              fill="none"
+              viewBox="0 0 17 14"
             >
-              <span className="sr-only">Open main menu</span>
-              <svg
-                className="w-5 h-5"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/1600/svg"
-                fill="none"
-                viewBox="0 0 17 14"
-              >
-                <path
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M1 1h15M1 7h15M1 13h15"
-                />
-              </svg>
-            </button>
-          </div>
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M1 1h15M1 7h15M1 13h15"
+              />
+            </svg>
+          </button>
           <div
             className="items-center justify-center hidden w-full tablet-m:flex tablet-m:w-auto mx-auto laptop-s:flex-1"
             id="navbar-cta"
-            ref={navbarStickyRef}
           >
             {!hideNavLinks && (
-              <ul className="flex flex-row items-center justify-center font-semibold p-4 tablet-m:p-0 mt-4 rounded-lg tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
+              <ul className="flex flex-row items-center justify-center font-semibold tablet-m:p-0 mt-4 tablet-m:space-x-8 rtl:space-x-reverse tablet-m:flex-row tablet-m:mt-0 laptop-m:text-[1rem] w-full">
                 <li className="dropdown relative group">
                   <span className="rounded-md">
                     <button
@@ -987,16 +1069,36 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                       </span>
                     )}
                   </button>
+                  {/* Desktop dropdown */}
+                  <div className="hidden tablet-m:block">
+                    {showNotifications && (
+                      <NotificationDropdown
+                        notifications={notifications}
+                        onNotificationClick={handleNotificationClick}
+                        onViewAll={() => {
+                          setShowNotifications(false);
+                          navigate('/notifications');
+                        }}
+                        formatTime={formatNotificationTime}
+                      />
+                    )}
+                  </div>
+                  {/* Mobile modal overlay */}
                   {showNotifications && (
-                    <NotificationDropdown
-                      notifications={notifications}
-                      onNotificationClick={handleNotificationClick}
-                      onViewAll={() => {
-                        setShowNotifications(false);
-                        navigate('/notifications');
-                      }}
-                      formatTime={formatNotificationTime}
-                    />
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
+                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg relative animate-fadeIn`}>
+                        <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setShowNotifications(false)} aria-label="Close notifications">&times;</button>
+                        <NotificationDropdown
+                          notifications={notifications}
+                          onNotificationClick={handleNotificationClick}
+                          onViewAll={() => {
+                            setShowNotifications(false);
+                            navigate('/notifications');
+                          }}
+                          formatTime={formatNotificationTime}
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div
@@ -1021,65 +1123,132 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
                       </span>
                     )}
                   </button>
-                  {msgDropdownOpen && (
-                    <div
-                      className="absolute right-0 mt-2 w-96 max-w-[90vw] rounded-xl shadow-2xl z-50 bg-white border border-gray-200"
-                    >
-                      <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
-                      <div className="max-h-96 overflow-y-auto">
-                        {loadingPreview ? (
-                          <div className="p-4 text-center text-gray-500">Loading...</div>
-                        ) : msgPreview.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">No messages</div>
-                        ) : (
-                          msgPreview.map(msg => {
-                            const isSent = msg.sender_id === user.id;
-                            const otherUserId = isSent ? msg.receiver_id : msg.sender_id;
-                            const otherName = isSent ? msg.receiver_name : msg.sender_name;
-                            const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
-                            const unreadCount = msg.unread_count || 0;
-                            return (
-                              <button
-                                key={msg.message_id}
-                                className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${unreadCount > 0 ? 'bg-orange-50/50 dark:bg-orange-900/20' : ''}`}
-                                onClick={() => {
-                                  setMsgDropdownOpen(false);
-                                  navigate(`/messages?chat_with=${otherUserId}`);
-                                }}
-                              >
-                                {otherAvatar ? (
-                                  <img src={otherAvatar} alt={otherName} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
-                                ) : (
-                                  <FaUserCircle className="w-10 h-10 text-orange-500" />
-                                )}
-                                <div className="flex-1 text-left">
-                                  <div className="font-semibold text-sm truncate">{otherName}</div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                    {isSent ? <span className="text-orange-500 font-bold mr-1">Sent:</span> : <span className="text-green-600 font-bold mr-1">Received:</span>}
-                                    {msg.content.slice(0, 50)}{msg.content.length > 50 ? '…' : ''}
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                  <div className="text-xs text-gray-400 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                  {unreadCount > 0 && (
-                                    <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
-                                      {unreadCount}
-                                    </span>
+                  {/* Desktop dropdown */}
+                  <div className="hidden tablet-m:block">
+                    {msgDropdownOpen && (
+                      <div
+                        className="absolute right-0 mt-2 w-96 max-w-xs sm:max-w-sm md:max-w-md rounded-xl shadow-2xl z-50 bg-white border border-gray-200"
+                      >
+                        <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
+                        <div className="max-h-96 overflow-y-auto">
+                          {loadingPreview ? (
+                            <div className="p-4 text-center text-gray-500">Loading...</div>
+                          ) : msgPreview.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">No messages</div>
+                          ) : (
+                            msgPreview.map(msg => {
+                              const isSent = msg.sender_id === user.id;
+                              const otherUserId = isSent ? msg.receiver_id : msg.sender_id;
+                              const otherName = isSent ? msg.receiver_name : msg.sender_name;
+                              const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
+                              const unreadCount = msg.unread_count || 0;
+                              return (
+                                <button
+                                  key={msg.message_id}
+                                  className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${unreadCount > 0 ? 'bg-orange-50/50 dark:bg-orange-900/20' : ''}`}
+                                  onClick={() => {
+                                    setMsgDropdownOpen(false);
+                                    navigate(`/messages?chat_with=${otherUserId}`);
+                                  }}
+                                >
+                                  {otherAvatar ? (
+                                    <img src={otherAvatar} alt={otherName} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
+                                  ) : (
+                                    <FaUserCircle className="w-10 h-10 text-orange-500" />
                                   )}
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
+                                  <div className="flex-1 text-left">
+                                    <div className="font-semibold text-sm truncate">{otherName}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                      {isSent ? <span className="text-orange-500 font-bold mr-1">Sent:</span> : <span className="text-green-600 font-bold mr-1">Received:</span>}
+                                      {msg.content.slice(0, 50)}{msg.content.length > 50 ? '…' : ''}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <div className="text-xs text-gray-400 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    {unreadCount > 0 && (
+                                      <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
+                                        {unreadCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                        <div className="border-t border-gray-200 p-2 text-center">
+                          <button
+                            className="text-orange-600 hover:underline text-sm font-medium"
+                            onClick={() => {
+                              setMsgDropdownOpen(false);
+                              navigate('/messages');
+                            }}
+                          >View all messages</button>
+                        </div>
                       </div>
-                      <div className="border-t border-gray-200 p-2 text-center">
-                        <button
-                          className="text-orange-600 hover:underline text-sm font-medium"
-                          onClick={() => {
-                            setMsgDropdownOpen(false);
-                            navigate('/messages');
-                          }}
-                        >View all messages</button>
+                    )}
+                  </div>
+                  {/* Mobile modal overlay */}
+                  {msgDropdownOpen && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
+                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg relative animate-fadeIn mt-20`}>
+                        <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setMsgDropdownOpen(false)} aria-label="Close messages">&times;</button>
+                        <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
+                        <div className="max-h-96 overflow-y-auto">
+                          {loadingPreview ? (
+                            <div className="p-4 text-center text-gray-500">Loading...</div>
+                          ) : msgPreview.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">No messages</div>
+                          ) : (
+                            msgPreview.map(msg => {
+                              const isSent = msg.sender_id === user.id;
+                              const otherUserId = isSent ? msg.receiver_id : msg.sender_id;
+                              const otherName = isSent ? msg.receiver_name : msg.sender_name;
+                              const otherAvatar = isSent ? msg.receiver_avatar : msg.sender_avatar;
+                              const unreadCount = msg.unread_count || 0;
+                              return (
+                                <button
+                                  key={msg.message_id}
+                                  className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${unreadCount > 0 ? 'bg-orange-50/50 dark:bg-orange-900/20' : ''}`}
+                                  onClick={() => {
+                                    setMsgDropdownOpen(false);
+                                    navigate(`/messages?chat_with=${otherUserId}`);
+                                  }}
+                                >
+                                  {otherAvatar ? (
+                                    <img src={otherAvatar} alt={otherName} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
+                                  ) : (
+                                    <FaUserCircle className="w-10 h-10 text-orange-500" />
+                                  )}
+                                  <div className="flex-1 text-left">
+                                    <div className="font-semibold text-sm truncate">{otherName}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                      {isSent ? <span className="text-orange-500 font-bold mr-1">Sent:</span> : <span className="text-green-600 font-bold mr-1">Received:</span>}
+                                      {msg.content.slice(0, 50)}{msg.content.length > 50 ? '…' : ''}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <div className="text-xs text-gray-400 whitespace-nowrap">{new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    {unreadCount > 0 && (
+                                      <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
+                                        {unreadCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                        <div className="border-t border-gray-200 p-2 text-center">
+                          <button
+                            className="text-orange-600 hover:underline text-sm font-medium"
+                            onClick={() => {
+                              setMsgDropdownOpen(false);
+                              navigate('/messages');
+                            }}
+                          >View all messages</button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1211,6 +1380,335 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false }) {
           </div>
         </div>
       )}
+      {/* Mobile search modal */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-[999] bg-black bg-opacity-70 flex flex-col items-center justify-start pt-24 px-4 animate-fadeIn">
+          <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg p-4 relative pt-10`}>
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setShowMobileSearch(false)} aria-label="Close search">&times;</button>
+            <div className="relative w-full z-10">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                autoFocus
+                placeholder="Search users and startups..."
+                className={`w-full rounded-lg border ${darkMode ? 'bg-[#181818] border-white/20 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'} focus:outline-none focus:border-orange-500 transition-colors px-4 py-3 pl-10 text-lg`}
+              />
+              <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            </div>
+            <div className="mt-4 z-10">
+              {isSearching ? (
+                <div className="p-4 text-center text-gray-500">Searching...</div>
+              ) : searchResults.length === 0 && searchQuery.trim() ? (
+                <div className="p-4 text-center text-gray-500">No results found</div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <button
+                      key={`${result.type}-${result.id}`}
+                      onClick={() => { handleResultClick(result); setShowMobileSearch(false); }}
+                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      {result.type === 'user' ? (
+                        <>
+                          {result.profile_image ? (
+                            <img src={result.profile_image} alt={result.name} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">{result.name.charAt(0).toUpperCase()}</div>
+                          )}
+                          <div className="flex-1 text-left">
+                            <div className="font-semibold">{result.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{result.role}</div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {result.logo ? (
+                            <img src={result.logo} alt={result.name} className="w-10 h-10 rounded-lg object-cover border-2 border-orange-500" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white">{result.name.charAt(0).toUpperCase()}</div>
+                          )}
+                          <div className="flex-1 text-left">
+                            <div className="font-semibold">{result.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{result.industry}</div>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* New Full-screen Mobile Menu */}
+      <div
+        className={`fixed inset-0 z-40 bg-white dark:bg-trkblack transition-transform duration-300 ease-in-out tablet-m:hidden ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header with close button */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-trkblack">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Menu</h2>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 text-gray-500 hover:text-orange-600 transition-colors"
+            >
+              <i className="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              {/* Admin Tabs in Mobile Menu */}
+              {adminTabs && adminActiveTab && setAdminActiveTab && (
+                <div className="flex flex-col gap-2 mb-6">
+                  {adminTabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-colors text-base text-left w-full ${
+                        adminActiveTab === tab.id
+                          ? (darkMode ? 'bg-orange-900 text-orange-400' : 'bg-orange-50 text-orange-600')
+                          : (darkMode ? 'hover-bg-orange-900-30 hover-text-orange-400 text-gray-300' : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700')
+                      }`}
+                      onClick={() => { setAdminActiveTab(tab.id); setIsMobileMenuOpen(false); }}
+                    >
+                      <span className="text-xl">{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* User Profile Section - Show when user is logged in */}
+              {user && (
+                <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  {user.profile_image ? (
+                    <img
+                      src={user.profile_image}
+                      alt="Profile"
+                      className="w-16 h-16 rounded-full object-cover border-4 border-orange-500"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-4xl text-white font-bold">
+                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-bold text-lg text-gray-800 dark:text-white">
+                      {user.first_name + ' ' + user.last_name}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">{user.role}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dashboard Navigation - Show when user is on dashboard pages */}
+              {user && (location.pathname.includes('dashboard') || location.pathname.includes('admin')) && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-bold text-orange-600 mb-4">Dashboard</h3>
+                  <ul className="space-y-2">
+                    {user.role === 'entrepreneur' && (
+                      <>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('startups')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'startups'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-building text-xl"></i>
+                            <span>Startups</span>
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('cofounders')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'cofounders'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-users text-xl"></i>
+                            <span>Co-Founders</span>
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('investors')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'investors'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-hand-holding-usd text-xl"></i>
+                            <span>Investors</span>
+                          </button>
+                        </li>
+                      </>
+                    )}
+                    {user.role === 'investor' && (
+                      <>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('startups')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'startups'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-building text-xl"></i>
+                            <span>Startups</span>
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('matches')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'matches'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-star text-xl"></i>
+                            <span>Matches</span>
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('entrepreneurs')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'entrepreneurs'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-users text-xl"></i>
+                            <span>Entrepreneurs</span>
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => handleDashboardSectionChange('investors')}
+                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
+                              activeDashboardSection === 'investors'
+                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            <i className="fas fa-hand-holding-usd text-xl"></i>
+                            <span>Investors</span>
+                          </button>
+                        </li>
+                      </>
+                    )}
+                    {/* Common dashboard links */}
+                    <li>
+                      <button
+                        onClick={() => handleExternalNavigation('/ecosystem')}
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                      >
+                        <i className="fas fa-globe text-xl"></i>
+                        <span>Ecosystem</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => handleExternalNavigation('/events')}
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                      >
+                        <i className="fas fa-calendar text-xl"></i>
+                        <span>Events</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => handleExternalNavigation('/settings')}
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                      >
+                        <i className="fas fa-cog text-xl"></i>
+                        <span>Settings</span>
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+
+              {/* General Navigation Links */}
+              <ul className="flex flex-col space-y-2">
+                {navLinks.map((link, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={() => setOpenAccordion(openAccordion === index ? null : index)}
+                      className="flex items-center justify-between w-full py-3 text-lg font-semibold text-trkblack dark:text-white"
+                    >
+                      <span>{link.title}</span>
+                      <svg
+                        className={`w-5 h-5 transition-transform duration-200 ${openAccordion === index ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openAccordion === index && (
+                      <ul className="pl-4 mt-2 space-y-2 border-l-2 border-orange-500">
+                        {link.subLinks.map((subLink, subIndex) => (
+                          <li key={subIndex}>
+                            <button
+                              onClick={() => handleMobileNavClick(subLink)}
+                              className="block py-2 text-md text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
+                            >
+                              {subLink.title}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+                 {user ? (
+                  <li>
+                    <NavLink
+                      to={
+                        user.role === 'admin'
+                          ? '/admin'
+                          : user.role === 'entrepreneur'
+                            ? '/entrepreneur-dashboard'
+                            : '/investor-dashboard'
+                      }
+                      className="w-full block py-3 text-lg font-semibold text-trkblack dark:text-white"
+                      onClick={() => handleDashboardSectionChange(activeDashboardSection)}
+                    >
+                      Dashboard
+                    </NavLink>
+                  </li>
+                ) : (
+                  <li>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        openModal();
+                      }}
+                      className="w-full mt-4 py-3 px-6 text-lg font-bold text-white bg-orange-500 rounded-lg shadow-md hover:bg-orange-600 transition-colors"
+                    >
+                      Get Started
+                    </button>
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }

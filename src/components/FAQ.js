@@ -95,10 +95,10 @@ function FAQs() {
         {items.map((item, idx) => (
           <div
             key={idx}
-            className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 mb-6"
+            className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-[#232526] shadow-sm hover:shadow-md transition-all duration-300 mb-6"
           >
             <button
-              className="w-full text-left px-8 py-5  text-black dark:text-gray-950 text-lg font-medium hover:bg-gray-100 focus:outline-none"
+              className="w-full text-left px-8 py-5 text-gray-800 dark:text-white text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
               onClick={() => toggleFAQ(idx)}
             >
               {item.question}
@@ -112,7 +112,7 @@ function FAQs() {
                   height="20"
                   fill="currentColor"
                   viewBox="0 0 20 20"
-                  className="text-gray-500"
+                  className="text-gray-500 dark:text-gray-400"
                 >
                   <path
                     fillRule="evenodd"
@@ -129,7 +129,7 @@ function FAQs() {
                   : "max-h-0 opacity-0"
               }`}
             >
-              <div className="px-8 pb-6 text-black dark:text-gray-950 text-base leading-relaxed">
+              <div className="px-8 pb-6 text-gray-700 dark:text-gray-300 text-base leading-relaxed">
                 {item.answer}
               </div>
             </div>
@@ -140,7 +140,7 @@ function FAQs() {
   );
 
   return (
-    <div id="FAQs" className="py-20 px-4 tablet:px-16 bg-white">
+    <div id="FAQs" className="py-20 px-4 tablet:px-16 bg-white dark:bg-[#18191a]">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-4xl font-bold mb-16 text-orange-600 text-center">
           Frequently Asked Questions

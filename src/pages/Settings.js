@@ -26,6 +26,7 @@ function Settings() {
     }
   });
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -145,15 +146,15 @@ function Settings() {
   };
 
   const renderNotificationsTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <h3 className="text-lg font-semibold mb-4">Email Notifications</h3>
       <div className="space-y-4">
         {Object.entries(notificationPrefs).map(([type, prefs]) => (
-          <div key={type} className="border rounded-lg p-4">
-            <h4 className="font-medium mb-3 capitalize">{type.replace(/_/g, ' ')}</h4>
+          <div key={type} className="border rounded-lg p-3 sm:p-4 dark:bg-[#232526] dark:border-gray-700">
+            <h4 className="font-medium mb-3 capitalize text-gray-800 dark:text-white text-sm sm:text-base">{type.replace(/_/g, ' ')}</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span>Email Notifications</span>
+                <span className="dark:text-gray-200 text-sm sm:text-base">Email Notifications</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -161,11 +162,11 @@ function Settings() {
                     checked={prefs.email_enabled}
                     onChange={() => handleNotificationToggle(type, 'email_enabled')}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span>Push Notifications</span>
+                <span className="dark:text-gray-200 text-sm sm:text-base">Push Notifications</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -173,11 +174,11 @@ function Settings() {
                     checked={prefs.push_enabled}
                     onChange={() => handleNotificationToggle(type, 'push_enabled')}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span>In-App Notifications</span>
+                <span className="dark:text-gray-200 text-sm sm:text-base">In-App Notifications</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -185,13 +186,13 @@ function Settings() {
                     checked={prefs.in_app_enabled}
                     onChange={() => handleNotificationToggle(type, 'in_app_enabled')}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span>Notification Frequency</span>
+                <span className="dark:text-gray-200 text-sm sm:text-base">Notification Frequency</span>
                 <select
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 bg-white dark:bg-[#232526] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:focus:border-orange-400 text-sm sm:text-base"
                   value={prefs.frequency}
                   onChange={(e) => handleNotificationToggle(type, 'frequency', e.target.value)}
                 >
@@ -209,11 +210,11 @@ function Settings() {
   );
 
   const renderAppearanceTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Theme</h3>
         <div className="flex items-center justify-between">
-          <span>Dark Mode</span>
+          <span className="dark:text-gray-200 text-sm sm:text-base">Dark Mode</span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -222,7 +223,6 @@ function Settings() {
               onChange={() => {
                 setDarkMode(!darkMode);
                 localStorage.setItem("taraki-dark-mode", !darkMode);
-                // Apply dark mode class to body
                 if (!darkMode) {
                   document.body.classList.add('dark');
                 } else {
@@ -230,7 +230,7 @@ function Settings() {
                 }
               }}
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            <div className="w-11 h-6 bg-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
           </label>
         </div>
       </div>
@@ -238,12 +238,12 @@ function Settings() {
   );
 
   const renderMessagesTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Message Settings</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span>Allow messages from other users</span>
+            <span className="dark:text-gray-200 text-sm sm:text-base">Allow messages from other users</span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -251,11 +251,11 @@ function Settings() {
                 checked={messageSettings.allow_messages}
                 onChange={() => handleMessageSettingsChange('allow_messages')}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
             </label>
           </div>
           <div className="flex items-center justify-between">
-            <span>Message notifications</span>
+            <span className="dark:text-gray-200 text-sm sm:text-base">Message notifications</span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -263,7 +263,7 @@ function Settings() {
                 checked={messageSettings.message_notifications}
                 onChange={() => handleMessageSettingsChange('message_notifications')}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
             </label>
           </div>
         </div>
@@ -276,14 +276,14 @@ function Settings() {
     switch (activeTab) {
       case 'profile':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {renderProfilePhoto()}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">First Name</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                   name="first_name"
                   value={profileForm.first_name}
                   onChange={handleProfileChange}
@@ -293,7 +293,7 @@ function Settings() {
                 <label className="block text-sm font-medium mb-2">Last Name</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                   name="last_name"
                   value={profileForm.last_name}
                   onChange={handleProfileChange}
@@ -303,7 +303,7 @@ function Settings() {
                 <label className="block text-sm font-medium mb-2">Email</label>
                 <input
                   type="email"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                   name="email"
                   value={profileForm.email}
                   onChange={handleProfileChange}
@@ -313,7 +313,7 @@ function Settings() {
                 <label className="block text-sm font-medium mb-2">Contact Number</label>
                 <input
                   type="tel"
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                   name="contact_number"
                   value={profileForm.contact_number}
                   onChange={handleProfileChange}
@@ -323,7 +323,7 @@ function Settings() {
             <div>
               <label className="block text-sm font-medium mb-2">Introduction</label>
               <textarea
-                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                 rows="4"
                 name="introduction"
                 value={profileForm.introduction}
@@ -339,7 +339,7 @@ function Settings() {
 
       case 'security':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-4">Change Password</h3>
               <div className="space-y-4">
@@ -347,7 +347,7 @@ function Settings() {
                   <label className="block text-sm font-medium mb-2">Current Password</label>
                   <input
                     type="password"
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                     name="current"
                     value={passwordForm.current}
                     onChange={handlePasswordChange}
@@ -357,7 +357,7 @@ function Settings() {
                   <label className="block text-sm font-medium mb-2">New Password</label>
                   <input
                     type="password"
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                     name="new"
                     value={passwordForm.new}
                     onChange={handlePasswordChange}
@@ -367,7 +367,7 @@ function Settings() {
                   <label className="block text-sm font-medium mb-2">Confirm New Password</label>
                   <input
                     type="password"
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    className="w-full px-3 sm:px-4 py-2 rounded-md border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm sm:text-base"
                     name="confirm"
                     value={passwordForm.confirm}
                     onChange={handlePasswordChange}
@@ -378,7 +378,7 @@ function Settings() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Two-Factor Authentication</h3>
               <div className="flex items-center justify-between">
-                <span>Enable 2FA</span>
+                <span className="text-sm sm:text-base">Enable 2FA</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -386,7 +386,7 @@ function Settings() {
                     checked={twoFactorEnabled}
                     onChange={handle2FAToggle}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 dark:peer-checked:bg-orange-600"></div>
                 </label>
               </div>
               <Message type={twoFactorMessage.includes('successfully') ? 'success' : 'error'} message={twoFactorMessage} />
@@ -403,41 +403,41 @@ function Settings() {
 
       case 'help':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-4">Help & Support</h3>
-              <div className="space-y-6">
-                <div className="bg-orange-50 p-6 rounded-lg">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="bg-orange-50 p-4 sm:p-6 rounded-lg">
                   <h4 className="text-lg font-medium text-orange-800 mb-2">Submit Ticket</h4>
-                  <p className="text-gray-600 mb-4">Need help? Submit a ticket and our support team will assist you.</p>
-                  <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors" onClick={() => setShowTicketModal(true)}>
+                  <p className="text-gray-600 mb-4 text-sm sm:text-base">Need help? Submit a ticket and our support team will assist you.</p>
+                  <button className="w-full sm:w-auto px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-sm sm:text-base" onClick={() => setShowTicketModal(true)}>
                     Submit Ticket
                   </button>
                 </div>
                 {showTicketModal && (
-                  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                    <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-lg">
+                  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
+                    <div className="bg-white rounded-lg p-4 sm:p-8 w-full max-w-md shadow-lg max-h-[90vh] overflow-y-auto">
                       <h3 className="text-lg font-semibold mb-4">Submit a Support Ticket</h3>
                       <form className="space-y-4" onSubmit={handleTicketSubmit}>
                         <div>
                           <label className="block text-sm font-medium mb-1">Title</label>
-                          <input type="text" name="title" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.title} onChange={handleTicketChange} />
+                          <input type="text" name="title" className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm sm:text-base bg-white dark:bg-[#232526] text-gray-900 dark:text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:focus:border-orange-400" value={ticketForm.title} onChange={handleTicketChange} />
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Description</label>
-                          <textarea name="description" className="w-full border border-gray-300 rounded px-3 py-2" rows="4" value={ticketForm.description} onChange={handleTicketChange} />
+                          <textarea name="description" className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm sm:text-base bg-white dark:bg-[#232526] text-gray-900 dark:text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:focus:border-orange-400" rows="4" value={ticketForm.description} onChange={handleTicketChange} />
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Type</label>
-                          <select name="type" className="w-full border border-gray-300 rounded px-3 py-2" value={ticketForm.type} onChange={handleTicketChange}>
+                          <select name="type" className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-[#232526] text-gray-900 dark:text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:focus:border-orange-400 text-sm sm:text-base" value={ticketForm.type} onChange={handleTicketChange}>
                             <option value="bug">Bug</option>
                             <option value="suggestion">Suggestion</option>
                             <option value="other">Other</option>
                           </select>
                         </div>
-                        <div className="flex justify-end gap-2">
-                          <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowTicketModal(false)}>Cancel</button>
-                          <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Submit</button>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2">
+                          <button type="button" className="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm sm:text-base hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" onClick={() => setShowTicketModal(false)}>Cancel</button>
+                          <button type="submit" className="w-full sm:w-auto px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm sm:text-base">Submit</button>
                         </div>
                       </form>
                     </div>
@@ -445,20 +445,20 @@ function Settings() {
                 )}
                 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-800">Frequently Asked Questions</h4>
+                  <h4 className="text-lg font-medium text-gray-800 dark:text-white">Frequently Asked Questions</h4>
                   <FAQs />
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-800">Documentation</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-gray-800 mb-2">User Guide</h5>
-                      <p className="text-gray-600">Learn how to use all features of the platform</p>
+                  <h4 className="text-lg font-medium text-gray-800 dark:text-white">Documentation</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-orange-500 transition-colors cursor-pointer bg-white dark:bg-[#232526]">
+                      <h5 className="font-medium text-gray-800 dark:text-white mb-2 text-sm sm:text-base">User Guide</h5>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Learn how to use all features of the platform</p>
                     </div>
-                    <div className="p-4 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors cursor-pointer">
-                      <h5 className="font-medium text-gray-800 mb-2">API Documentation</h5>
-                      <p className="text-gray-600">Technical documentation for developers</p>
+                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-orange-500 transition-colors cursor-pointer bg-white dark:bg-[#232526]">
+                      <h5 className="font-medium text-gray-800 dark:text-white mb-2 text-sm sm:text-base">API Documentation</h5>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Technical documentation for developers</p>
                     </div>
                   </div>
                 </div>
@@ -586,7 +586,7 @@ function Settings() {
   };
 
   const renderProfilePhoto = () => (
-    <div className="flex items-center space-x-4">
+    <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
       {user?.profile_image ? (
         <img
           src={user.profile_image}
@@ -598,8 +598,8 @@ function Settings() {
           {user?.first_name ? user.first_name.charAt(0).toUpperCase() : ''}
         </div>
       )}
-      <div className="flex flex-col space-y-2">
-        <label className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors cursor-pointer text-center">
+      <div className="flex flex-col space-y-2 w-full sm:w-auto">
+        <label className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors cursor-pointer text-center text-sm sm:text-base">
           Change Photo
           <input
             type="file"
@@ -608,7 +608,7 @@ function Settings() {
             onChange={handlePhotoChange}
           />
         </label>
-        <span className="text-sm text-gray-500">Max file size: 5MB</span>
+        <span className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">Max file size: 5MB</span>
       </div>
     </div>
   );
@@ -669,9 +669,22 @@ function Settings() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Navbar hideNavLinks />
-      <div className="flex">
+      <div className="flex min-h-screen">
+        {/* Mobile top bar */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-40 flex items-center justify-between px-4 h-16">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-600 focus:outline-none">
+            <i className="fas fa-bars text-xl"></i>
+          </button>
+          <div className="font-bold text-lg text-orange-600">Settings</div>
+          {/* Placeholder for notifications or other icons */}
+          <div></div>
+        </div>
         {/* Sidebar - fixed, like dashboards */}
-        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white flex flex-col items-center py-8 border border-gray-200 rounded-2xl shadow-xl">
+        <aside 
+          className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white flex flex-col items-center py-8 border-r border-gray-200 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:left-8 lg:top-24 lg:bottom-8 lg:rounded-2xl
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          }
+        >
           <div className="flex flex-col items-center mb-8">
             {user && user.profile_image ? (
               <img
@@ -686,14 +699,14 @@ function Settings() {
             )}
             <div className="font-semibold text-lg text-gray-800">{user ? user.first_name + ' ' + user.last_name : ''}</div>
           </div>
-          <nav className="flex flex-col gap-2 w-full px-6">
+          <nav className="flex flex-col gap-0.5 w-full px-6">
             {sidebarLinks.map(link => (
               <button
                 key={link.key}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors text-base font-medium ${
                   (link.key === 'settings' && location.pathname === '/settings')
-                    ? 'bg-orange-50 text-orange-600'
-                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700'
+                    ? 'bg-orange-100 text-orange-600'
+                    : 'hover:bg-orange-100 hover:text-orange-600 text-gray-700'
                 }`}
                 onClick={() => {
                   if (link.key !== 'settings') navigate(link.path);
@@ -707,18 +720,18 @@ function Settings() {
           </nav>
         </aside>
         {/* Main Content - with left and top padding */}
-        <main className="flex-1 pl-72 pt-24 p-8">
+        <main className="flex-1 lg:pl-72 pt-16 lg:pt-24 p-2 sm:p-4 lg:p-8">
           <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg">
             {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 bg-white px-2 pt-2 z-10 relative overflow-x-auto whitespace-nowrap" style={{ overflowY: 'hidden' }}>
+            <div className="flex flex-wrap border-b border-gray-200 bg-white px-1 py-1 z-10 relative">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1 px-2 py-1 -mb-px border-b-2 font-medium transition-colors text-xs sm:text-sm ${
+                  className={`flex items-center gap-2 m-1 px-3 py-2 rounded-md border-b-4 font-medium transition-colors text-xs sm:text-sm flex-shrink-0 ${
                     activeTab === tab.id
                       ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-200'
                   }`}
                 >
                   {tab.icon}
@@ -726,16 +739,16 @@ function Settings() {
                 </button>
               ))}
             </div>
-            <div className="p-8">
-              <h2 className="text-2xl font-bold mb-8 text-gray-800 border-b border-gray-200 pb-4">
+            <div className="p-4 sm:p-6 lg:p-8">
+              <h2 className="text-xl sm:text-2xl font-bold mb-6 lg:mb-8 bg-white dark:bg-[#232526] text-gray-800 dark:text-white rounded-xl px-4 sm:px-6 py-3 sm:py-4">
                 {tabs.find(tab => tab.id === activeTab)?.label} Settings
               </h2>
               {renderTabContent()}
-              <div className="mt-8 flex justify-end border-t border-gray-200 pt-6">
+              <div className="mt-6 lg:mt-8 flex justify-end border-t border-gray-200 pt-4 lg:pt-6">
                 {activeTab !== 'help' && (
                   <button 
                     onClick={handleSaveChanges}
-                    className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-md"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-md text-sm sm:text-base"
                   >
                     Save Changes
                   </button>
@@ -749,4 +762,4 @@ function Settings() {
   );
 }
 
-export default Settings; 
+export default Settings;

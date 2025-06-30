@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { calculateMatchScore } from '../utils/matchmaking';
@@ -69,6 +69,7 @@ const InvestorDashboard = () => {
     }
   });
   const navigate = useNavigate();
+  const location = useLocation();
   const [filters, setFilters] = useState({ industry: '', location: '', startup_stage: '' });
   const [startupStageOptions] = useState([
     { value: '', label: 'All Stages' },
@@ -82,9 +83,26 @@ const InvestorDashboard = () => {
   const [investorFilters, setInvestorFilters] = useState({ industry: '', location: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Add a helper for verification
   const isUserVerified = user && user.verification_status === 'verified';
+
+  // Read active section from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const section = urlParams.get('section');
+    if (section && ['startups', 'matches', 'entrepreneurs', 'investors'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [location.search]);
+
+  // Update URL when activeSection changes (for sidebar navigation)
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    const newUrl = `/investor-dashboard?section=${section}`;
+    navigate(newUrl, { replace: true });
+  };
 
   useEffect(() => {
     // Fetch available startups with match scores
@@ -317,21 +335,21 @@ const InvestorDashboard = () => {
               {matchedIds.has(startup.startup_id) ? (
                 <button
                   onClick={() => handleUnmatchStartup(startup.startup_id)}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                 >
                   Unmatch
                 </button>
               ) : (
                 <button
                   onClick={() => handleMatchStartup(startup.startup_id)}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                 >
                   Match
                 </button>
               )}
               <button
                 onClick={() => handleViewStartup(startup.startup_id)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-full transition-colors text-sm"
               >
                 View Details
               </button>
@@ -394,13 +412,13 @@ const InvestorDashboard = () => {
             <div className="flex w-full gap-2 mt-auto">
               <button
                 onClick={() => handleViewProfile(entrepreneur.id)}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
               >
                 View Profile
               </button>
               <button
                 onClick={() => handleMessage(entrepreneur.id)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
               >
                 Message
               </button>
@@ -460,13 +478,13 @@ const InvestorDashboard = () => {
             <div className="flex w-full gap-2 mt-auto">
               <button
                 onClick={() => handleViewProfile(investor.id)}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
               >
                 View Profile
               </button>
               <button
                 onClick={() => handleMessage(investor.id)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
               >
                 Message
               </button>
@@ -480,9 +498,13 @@ const InvestorDashboard = () => {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72">
+      <div className="flex min-h-screen bg-gray-50 text-gray-800 lg:pl-72">
         {/* Sidebar */}
-        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white flex flex-col items-center py-8 border border-gray-200 rounded-2xl shadow-xl">
+        <aside 
+          className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white flex flex-col items-center py-8 border-r border-gray-200 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:left-8 lg:top-28 lg:bottom-2 lg:rounded-2xl
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          }
+        >
           <div className="flex flex-col items-center mb-8">
             {user && user.profile_image ? (
               <img
@@ -497,21 +519,22 @@ const InvestorDashboard = () => {
             )}
             <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}</div>
           </div>
-          <nav className="flex flex-col gap-2 w-full px-6">
+          <nav className="flex flex-col gap-0.5 w-full px-6">
             {sidebarLinks.map(link => (
               <button
                 key={link.key}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors text-base font-medium ${
                   activeSection === link.key
-                    ? 'bg-orange-50 text-orange-600'
-                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700'
+                    ? 'bg-orange-100 text-orange-600'
+                    : 'hover:bg-orange-100 hover:text-orange-600 text-gray-700'
                 }`}
                 onClick={() => {
                   if (['ecosystem', 'events', 'settings'].includes(link.key)) {
                     navigate(`/${link.key}`);
                   } else {
-                    setActiveSection(link.key);
+                    handleSectionChange(link.key);
                   }
+                  setIsSidebarOpen(false);
                 }}
               >
                 <i className={`fas ${link.icon}`}></i>
@@ -521,11 +544,19 @@ const InvestorDashboard = () => {
           </nav>
         </aside>
 
+        {/* Overlay for mobile when sidebar is open */}
+        {isSidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black opacity-50 z-40"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
         {/* Main Content */}
-        <main className="flex-1 p-10 mt-24">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10 mt-16 lg:mt-24">
           {/* Verification Banner */}
           {user && user.verification_status !== 'verified' && (
-            <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
+            <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-6 sm:p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-orange-400 text-3xl"><i className="fas fa-exclamation-triangle"></i></span>
                 <span className="text-xl font-bold text-orange-700">Account Verification Required</span>
@@ -575,5 +606,4 @@ const InvestorDashboard = () => {
     </>
   );
 };
-
 export default InvestorDashboard; 
