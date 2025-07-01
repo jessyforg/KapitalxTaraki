@@ -11,7 +11,7 @@ function Home() {
   });
 
   const fetchStats = () => {
-    fetch('http://localhost/KapitalXTaraki/KapitalxTaraki/src/api/get_stats.php')
+    fetch('http://localhost/Taraki(2025)/KapitalxTaraki/src/api/get_stats.php')
       .then(response => response.json())
       .then(data => {
         if (!data.error) {
