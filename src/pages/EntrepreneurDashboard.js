@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { calculateMatchScore } from '../utils/matchmaking';
@@ -67,6 +67,7 @@ const EntrepreneurDashboard = () => {
     }
   });
   const navigate = useNavigate();
+  const location = useLocation();
   const [filters, setFilters] = useState({ industry: '', location: '', startup_stage: '' });
   const [startupStageOptions] = useState([
     { value: '', label: 'All Stages' },
@@ -80,9 +81,26 @@ const EntrepreneurDashboard = () => {
   const [investorFilters, setInvestorFilters] = useState({ industry: '', location: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Add a helper for verification
   const isUserVerified = user && user.verification_status === 'verified';
+
+  // Read active section from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const section = urlParams.get('section');
+    if (section && ['startups', 'cofounders', 'investors'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [location.search]);
+
+  // Update URL when activeSection changes (for sidebar navigation)
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    const newUrl = `/entrepreneur-dashboard?section=${section}`;
+    navigate(newUrl, { replace: true });
+  };
 
   useEffect(() => {
     // Redirect based on role
@@ -297,14 +315,14 @@ const EntrepreneurDashboard = () => {
               <div className="flex w-full gap-2 mt-auto">
                 <button
                   onClick={() => handleViewProfile(coFounder.id)}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                   disabled={!isUserVerified}
                 >
                   View Profile
                 </button>
                 <button
                   onClick={() => handleMessage(coFounder.id)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                   disabled={!isUserVerified}
                 >
                   Message
@@ -371,14 +389,14 @@ const EntrepreneurDashboard = () => {
               <div className="flex w-full gap-2 mt-auto">
                 <button
                   onClick={() => handleViewProfile(investor.id)}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                   disabled={!isUserVerified}
                 >
                   View Profile
                 </button>
                 <button
                   onClick={() => handleMessage(investor.id)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                   disabled={!isUserVerified}
                 >
                   Message
@@ -393,9 +411,13 @@ const EntrepreneurDashboard = () => {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72">
+      <div className="flex min-h-screen bg-gray-50 text-gray-800 lg:pl-72">
         {/* Sidebar */}
-        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white flex flex-col items-center py-8 border border-gray-200 rounded-2xl shadow-xl">
+        <aside 
+          className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white flex flex-col items-center py-8 border-r border-gray-200 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:left-8 lg:top-28 lg:bottom-2 lg:rounded-2xl
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          }
+        >
           <div className="flex flex-col items-center mb-8">
             {user && user.profile_image ? (
               <img
@@ -408,23 +430,32 @@ const EntrepreneurDashboard = () => {
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : 'Demo Testing'}</div>
+            <div
+              className="font-semibold text-lg text-gray-800 dark:text-white"
+            >
+              {user ? user.first_name + ' ' + user.last_name : 'Entrepreneur Demo'}
+            </div>
+            <style>{`
+              html.light .sidebar-user-text { color: #1a202c !important; }
+              html.dark .sidebar-user-text { color: #FFFFFF !important; }
+            `}</style>
           </div>
-          <nav className="flex flex-col gap-2 w-full px-6">
+          <nav className="flex flex-col gap-0.5 w-full px-6">
             {sidebarLinks.map(link => (
               <button
                 key={link.key}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors text-base font-medium ${
                   activeSection === link.key
-                    ? 'bg-orange-50 text-orange-600'
-                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700'
+                    ? 'bg-orange-100 text-orange-600'
+                    : 'hover:bg-orange-100 hover:text-orange-600 text-gray-700'
                 }`}
                 onClick={() => {
                   if (['ecosystem', 'events', 'settings'].includes(link.key)) {
                     navigate(`/${link.key}`);
                   } else {
-                    setActiveSection(link.key);
+                    handleSectionChange(link.key);
                   }
+                  setIsSidebarOpen(false);
                 }}
               >
                 <i className={`fas ${link.icon}`}></i>
@@ -435,7 +466,7 @@ const EntrepreneurDashboard = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-10 mt-24">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10 mt-16 lg:mt-24">
           {/* Verification Banner */}
           {user && user.verification_status !== 'verified' && (
             <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
@@ -453,12 +484,15 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'startups' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Startups</h1>
+              <h1 className="dashboard-section-header text-3xl font-bold mb-2">Startups</h1>
+              <div className="mb-4">
+
+              </div>
               {/* Filters and Create Startup button in a single row */}
-              <div className="flex items-center justify-between gap-4 mb-6">
-                <div className="flex flex-wrap gap-4 flex-grow">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                <div className="flex flex-wrap gap-4 w-full md:flex-grow">
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    className="w-full md:w-auto border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
                     style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.industry}
                     onChange={e => setFilters(f => ({ ...f, industry: e.target.value }))}
@@ -473,7 +507,7 @@ const EntrepreneurDashboard = () => {
                     ))}
                   </select>
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    className="w-full md:w-auto border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
                     style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.location}
                     onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
@@ -488,7 +522,7 @@ const EntrepreneurDashboard = () => {
                     ))}
                   </select>
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
+                    className="w-full md:w-auto border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder-gray-400 appearance-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-sm dark:bg-[#232526] dark:text-white"
                     style={{ backgroundColor: '#fff', color: '#1a202c', borderColor: '#d1d5db' }}
                     value={filters.startup_stage}
                     onChange={e => setFilters(f => ({ ...f, startup_stage: e.target.value }))}
@@ -500,7 +534,7 @@ const EntrepreneurDashboard = () => {
                 </div>
                 <button
                   onClick={handleCreateStartup}
-                  className="flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full md:w-auto flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={user && user.verification_status !== 'verified'}
                 >
                   <i className="fas fa-plus mr-2"></i>
@@ -523,48 +557,54 @@ const EntrepreneurDashboard = () => {
                     {startups.map((startup) => (
                       <div
                         key={startup.startup_id}
-                        className="rounded-xl border border-gray-300 bg-gray-100 flex flex-col overflow-hidden"
-                        style={{ minHeight: '340px', maxWidth: '260px' }}
+                        className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+                        style={{ minWidth: '260px' }}
                       >
                         {/* Logo or placeholder */}
-                        <div className="flex-1 flex items-center justify-center bg-white" style={{ minHeight: '150px' }}>
+                        <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
                           {startup.logo_url ? (
                             <img src={startup.logo_url} alt={startup.name} className="object-contain h-24" />
                           ) : (
                             <div className="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center">
-                              <i className="fas fa-user text-white text-4xl"></i>
+                              <i className="fas fa-building text-white text-4xl"></i>
                             </div>
                           )}
                         </div>
                         {/* Info section */}
-                        <div className="bg-gray-100 p-4 flex flex-col gap-1 border-t border-gray-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
-                              <i className="fas fa-user text-white text-lg"></i>
-                            </div>
-                            <span className="font-bold text-base text-black">{startup.name}</span>
+                        <div className="w-full px-5 py-4 flex flex-col items-start">
+                          <div className="font-bold text-lg text-gray-900 mb-1">{startup.name}</div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Industry:</span>{' '}
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                              {startup.industry}
+                            </span>
                           </div>
-                          <div className="text-sm text-black font-semibold">
-                            <span className="font-bold">Industry:</span> {startup.industry}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Location:</span>{' '}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              {startup.location}
+                            </span>
                           </div>
-                          <div className="text-sm text-black">
-                            <span className="font-bold">Description:</span> {startup.description && startup.description.length > 80 ? `${startup.description.slice(0, 80)}...` : startup.description}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Description:</span>{' '}
+                            {startup.description && startup.description.length > 80 ? `${startup.description.slice(0, 80)}...` : startup.description}
                           </div>
-                          <div className="text-sm text-black">
-                            <span className="font-bold">Status:</span> {renderStatusBadge(startup.approval_status)}
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-semibold">Status:</span>{' '}
+                            {renderStatusBadge(startup.approval_status)}
                           </div>
-                          <div className="flex flex-col gap-2 mt-3">
+                          <div className="flex w-full gap-2 mt-auto">
                             {startup.entrepreneur_id === user?.id && (
                               <button
                                 onClick={() => handleEditStartup(startup.startup_id ?? startup.id)}
-                                className="w-full bg-white border border-gray-400 text-gray-800 font-semibold py-2 rounded-lg transition-colors hover:bg-gray-200"
+                                className="flex-1 bg-white border border-gray-400 text-gray-800 dark:bg-gray-800 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 text-sm"
                               >
                                 Edit
                               </button>
                             )}
                             <button
                               onClick={() => handleViewStartup(startup.startup_id ?? startup.id)}
-                              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
                             >
                               View Details
                             </button>
@@ -579,7 +619,7 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'cofounders' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Co-Founders</h1>
+              <h1 className="dashboard-section-header text-3xl font-bold mb-6">Co-Founders</h1>
               {/* Filters for Co-Founders */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <select
@@ -620,7 +660,7 @@ const EntrepreneurDashboard = () => {
           )}
           {activeSection === 'investors' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Investors</h1>
+              <h1 className="dashboard-section-header text-3xl font-bold mb-6">Investors</h1>
               {/* Filters for Investors */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <select
@@ -661,6 +701,13 @@ const EntrepreneurDashboard = () => {
           )}
         </main>
       </div>
+      {/* Add style for section headers for light/dark mode */}
+      <style>{`
+        html.light .dashboard-section-header { color: #1a202c !important; }
+        html.dark .dashboard-section-header { color: #fff !important; }
+        html.light .dashboard-section-text { color: #1a202c !important; }
+        html.dark .dashboard-section-text { color: #fff !important; }
+      `}</style>
     </>
   );
 };

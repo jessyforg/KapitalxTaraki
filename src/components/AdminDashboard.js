@@ -678,24 +678,24 @@ function AdminDashboard() {
                   <div className="mb-6"></div>
                   {/* Stat Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Investors</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_investors}</span>
+                      <span className='text-3xl font-bold mt-2 text-black dark:text-white'>{dashboardStats.total_investors}</span>
                       <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
-                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Startups</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_startups}</span>
+                      <span className='text-3xl font-bold mt  text-black dark:text-white'>{dashboardStats.total_startups}</span>
                       <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
-                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Active Entrepreneurs</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_entrepreneurs}</span>
+                      <span className='text-3xl font-bold mt-2  text-black dark:text-white'>{dashboardStats.total_entrepreneurs}</span>
                       <span className={`text-xs rounded px-2 py-1 mt-2 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'}`}></span>
                     </div>
-                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                    <div className={`rounded-xl shadow p-6 flex flex-col items-start border-t-4 border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Upcoming Events</span>
-                      <span className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>{dashboardStats.total_upcoming_events}</span>
+                      <span className='text-3xl font-bold mt-2 text-black dark:text-white'>{dashboardStats.total_upcoming_events}</span>
                       <div className="mt-2 w-full">
                         {dashboardStats.total_upcoming_events === 0 && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events.</span>}
                         {upcomingEvents.map((event, idx) => (
@@ -721,7 +721,7 @@ function AdminDashboard() {
                     </div>
                   </div>
                   {/* Chart Placeholder */}
-                  <div className={`rounded-xl shadow p-6 mt-4 min-h-[300px] flex flex-col border-t-4 border-orange-600 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
+                  <div className={`rounded-xl shadow p-6 mt-4 min-h-[300px] flex flex-col border-t-4 border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white border border-orange-200'}`}>
                     <span className={`font-semibold text-lg mb-2 text-center ${darkMode ? 'text-white' : 'text-orange-700'}`}>Website Traffic</span>
                     <div className={`flex-1 flex items-center justify-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       <span>Chart coming soon...</span>
@@ -738,7 +738,7 @@ function AdminDashboard() {
                   {/* Calendar Section */}
                   <div className="flex-1 min-w-0">
                     {/* Calendar Header */}
-                    <div className="flex items-center justify-between p-4 md:p-6 border-b border-orange-100">
+                    <div className="flex items-center justify-between p-4 md:p-6 border-b border-orange-700">
                       <div className="flex items-center gap-4">
                         <button
                           onClick={prevMonth}
@@ -776,7 +776,7 @@ function AdminDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className={`text-xs md:text-sm ${day && day.getMonth() === calendarDate.getMonth() ? 'text-orange-700' : 'text-gray-400'}`}>{day ? day.getDate() : ''}</span>
                                   </div>
-                                  <div className="flex-1 flex flex-col gap-1 mt-1 justify-end items-center">
+                                  <div className="flex-1 flex flex-col gap-1 mt-1 justiffy-end items-center">
                                     {day && getEventsForDate(day.toISOString().split('T')[0]).length > 0 && (
                                       <span className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white mt-2 block"></span>
                                     )}
@@ -800,7 +800,7 @@ function AdminDashboard() {
                   </div>
                   {/* Events Sidebar */}
                   <div className="w-full md:w-96 mt-4 md:mt-0">
-                    <div className="bg-white border border-orange-100 rounded-xl shadow-lg flex flex-col max-h-[700px]">
+                    <div className="bg-white dark:bg-[#232323] border border-orange-100 dark:border-orange-700 rounded-2xl shadow-xl flex flex-col max-h-[700px]">
                       <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-orange-100">
                         <span className="text-orange-700 text-lg md:text-xl font-semibold">Events</span>
                         <button
@@ -816,22 +816,22 @@ function AdminDashboard() {
                           <div className="text-gray-400 text-center mt-8">No events yet.</div>
                         ) : (
                           events.map(event => (
-                            <div key={event.id} className="bg-orange-50 rounded-lg p-4 mb-4 flex flex-col gap-1 border border-orange-100">
+                            <div key={event.id} className="bg-orange-50 dark:bg-[#2a2a2a] rounded-lg p-4 mb-4 flex flex-col gap-1 border border-orange-100 dark:border-orange-700">
                               <div className="flex items-center justify-between">
-                                <span className="text-orange-700 font-semibold">{event.title}</span>
+                                <span className="text-orange-700 dark:text-orange-400 font-semibold">{event.title}</span>
                                 <button className="text-orange-400 hover:text-orange-600" onClick={() => handleEditEvent(event)} title="Edit Event">
                                   <FiEdit2 size={16} />
                                 </button>
                               </div>
-                              <span className="text-xs text-gray-500">{event.event_date ? new Date(event.event_date).toLocaleString() : ''}</span>
-                              {event.location && <span className="text-xs text-gray-500">{event.location}</span>}
+                              <span className="text-xs text-gray-500 dark:text-gray-300">{event.event_date ? new Date(event.event_date).toLocaleString() : ''}</span>
+                              {event.location && <span className="text-xs text-gray-500 dark:text-gray-300">{event.location}</span>}
                               {event.rsvp_link && <a href={event.rsvp_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">RSVP</a>}
                               {event.tags && (
-                                <span className="text-xs text-orange-600 font-semibold">{event.tags.split(',').map(tag => tag.trim()).filter(Boolean).map((tag, idx) => (
-                                  <span key={idx} className="inline-block bg-orange-200 text-orange-800 rounded-full px-2 py-0.5 mr-1">{tag}</span>
+                                <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold">{event.tags.split(',').map(tag => tag.trim()).filter(Boolean).map((tag, idx) => (
+                                  <span key={idx} className="inline-block bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-300 rounded-full px-2 py-0.5 mr-1">{tag}</span>
                                 ))}</span>
                               )}
-                              {event.description && <span className="text-xs text-gray-600">{event.description}</span>}
+                              {event.description && <span className="text-xs text-gray-600 dark:text-gray-400">{event.description}</span>}
                             </div>
                           ))
                         )}
@@ -845,7 +845,7 @@ function AdminDashboard() {
                           <h2 className="text-xl font-bold mb-4 text-orange-700">Create Event</h2>
                           <div className="flex flex-col gap-4">
                             <input
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               type="text"
                               placeholder="Event name"
                               value={newEvent.title}
@@ -853,34 +853,34 @@ function AdminDashboard() {
                             />
                             <div className="flex gap-2">
                               <input
-                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                                 type="date"
                                 value={newEvent.date}
                                 onChange={e => setNewEvent(ev => ({ ...ev, date: e.target.value }))}
                               />
                               <input
-                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                                className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                                 type="time"
                                 value={newEvent.time}
                                 onChange={e => setNewEvent(ev => ({ ...ev, time: e.target.value }))}
                               />
                             </div>
                             <input
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               type="text"
                               placeholder="Location"
                               value={newEvent.location}
                               onChange={e => setNewEvent(ev => ({ ...ev, location: e.target.value }))}
                             />
                             <input
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               type="text"
                               placeholder="RSVP Link (optional)"
                               value={newEvent.rsvp_link || ''}
                               onChange={e => setNewEvent(ev => ({ ...ev, rsvp_link: e.target.value }))}
                             />
                             <select
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               value={newEvent.status || 'upcoming'}
                               onChange={e => setNewEvent(ev => ({ ...ev, status: e.target.value }))}
                             >
@@ -889,14 +889,14 @@ function AdminDashboard() {
                               <option value="completed">Completed</option>
                             </select>
                             <input
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               type="text"
                               placeholder="Tags (comma separated, e.g. workshop,networking)"
                               value={newEvent.tags || ''}
                               onChange={e => setNewEvent(ev => ({ ...ev, tags: e.target.value }))}
                             />
                             <textarea
-                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                               placeholder="Description (optional)"
                               value={newEvent.description || ''}
                               onChange={e => setNewEvent(ev => ({ ...ev, description: e.target.value }))}
@@ -923,8 +923,10 @@ function AdminDashboard() {
               // Use the filteredUsers variable from the top-level scope
               return (
                 <div className="flex flex-col gap-6">
-                  <h1 className="text-3xl font-bold text-gray-800 mb-6">User Management</h1>
-                  <div className="bg-white p-8 rounded-xl border border-orange-100 shadow-sm">
+                  {activeTab === 'users' && (
+                    <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Users Management</h1>
+                  )}
+                  <div className="bg-white p-8 rounded-xl border border-orange-700 shadow-sm">
                     {/* Search and Roles */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3 relative">
                       <input
@@ -932,13 +934,17 @@ function AdminDashboard() {
                         placeholder="Search"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none bg-orange-50 border border-orange-300 text-black"
+                        className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
+                      bg-white text-black border-orange-700 
+                     dark:bg-[#232323] dark:text-white dark:border-orange-700"
                       />
                       <select
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
-                        className="rounded-lg px-4 py-2 focus:outline-none bg-orange-50 border border-orange-300 text-black"
-                      >
+                        className="rounded-lg px-4 py-2 focus:outline-none border 
+                       bg-white text-black border-orange-700 
+                       dark:bg-[#232323] dark:text-white dark:border-orange-700"
+                        >
                         <option value="all">All Roles</option>
                         <option value="admin">Administrator</option>
                         <option value="entrepreneur">Entrepreneur</option>
@@ -966,26 +972,28 @@ function AdminDashboard() {
                           </thead>
                           <tbody>
                             {filteredUsers.map((user) => (
-                              <tr key={user.id} className="border-b border-orange-100 hover:bg-orange-50 transition">
-                                <td className="px-4 py-3">
-                                  {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
-                                   user.full_name ||
-                                   user.email}
-                                </td>
-                                <td className="px-4 py-3">{user.email}</td>
-                                <td className="px-4 py-3">
-                                  {roleLabels[user.role] || user.role}
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <button
-                                    onClick={() => handleEditUser(user)}
-                                    className="p-2 rounded-lg hover:bg-orange-100"
-                                    title="Edit User"
-                                  >
-                                    <FiEdit2 className="inline-block text-orange-500" />
-                                  </button>
-                                </td>
-                              </tr>
+                          <tr key={user.id} className="group border-b border-orange-100 hover:bg-orange-50 transition duration-300">
+                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
+                          {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
+                          user.full_name || user.email}
+                          </td>
+                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
+                          {user.email}
+                          </td>
+                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
+                          {roleLabels[user.role] || user.role}
+                          </td>
+                          <td className="px-4 py-3 text-center text-white">
+                          <button
+                          onClick={() => handleEditUser(user)}
+                          className="p-2 rounded-lg hover:bg-orange-100"
+                          title="Edit User"
+                          >
+                          <FiEdit2 className="inline-block text-orange-600" />
+                              </button>
+                            </td>
+                          </tr>
+
                             ))}
                           </tbody>
                         </table>
@@ -1006,153 +1014,136 @@ function AdminDashboard() {
                   <span className="font-semibold text-lg mb-2">Settings</span>
                 </div>
               );
-            case 'sitePerformance':
-              return (
-                <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323] border-orange-700' : 'bg-white border-orange-400'}`}>
-                  <div className="flex gap-2 mb-4">
-                    <select value={reportType} onChange={e => setReportType(e.target.value)} className="border rounded px-2 py-1">
-                      <option value="startups">Startups</option>
-                      <option value="users">Users</option>
-                    </select>
-                    <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="border rounded px-2 py-1">
-                      <option value="">All Industries</option>
-                      {allIndustries.map(ind => (
-                        <option key={ind} value={ind}>{ind}</option>
-                      ))}
-                    </select>
-                    <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="border rounded px-2 py-1">
-                      <option value="">All Locations</option>
-                      {allLocations.map(loc => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
-                    {reportType === 'users' && (
-                      <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="border rounded px-2 py-1">
-                        <option value="">All Roles</option>
-                        <option value="admin">Admin</option>
-                        <option value="entrepreneur">Entrepreneur</option>
-                        <option value="investor">Investor</option>
-                      </select>
+case 'sitePerformance':
+  return (
+    <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
+      {/* Filters */}
+      <div className="flex gap-2 mb-4">
+        <select value={reportType} onChange={e => setReportType(e.target.value)} className="border rounded px-2 py-1">
+          <option value="startups">Startups</option>
+          <option value="users">Users</option>
+        </select>
+        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="border rounded px-2 py-1">
+          <option value="">All Industries</option>
+          {allIndustries.map(ind => (
+            <option key={ind} value={ind}>{ind}</option>
+          ))}
+        </select>
+        <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="border rounded px-2 py-1">
+          <option value="">All Locations</option>
+          {allLocations.map(loc => (
+            <option key={loc} value={loc}>{loc}</option>
+          ))}
+        </select>
+        {reportType === 'users' && (
+          <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="border rounded px-2 py-1">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="entrepreneur">Entrepreneur</option>
+            <option value="investor">Investor</option>
+          </select>
+        )}
+      </div>
+
+      {/* Export Buttons */}
+      <div className="flex gap-2 mb-4">
+        <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
+          const data = reportType === 'startups' ? filteredStartups : filteredUsers;
+          exportToExcel(data, `${reportType}-report`);
+        }}>Export to Excel</button>
+
+        <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
+          const data = reportType === 'startups' ? filteredStartups : filteredUsers;
+          const columns = reportType === 'startups'
+            ? ['startup_id', 'name', 'industry', 'location', 'description']
+            : ['id', 'first_name', 'last_name', 'email', 'role', 'industry', 'location'];
+          exportToPDF(data, columns, `${reportType}-report`);
+        }}>Export to PDF</button>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg">
+        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
+          <thead>
+            <tr className="bg-orange-100">
+              <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
+              <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
+              <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
+              <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
+              <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
+              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
+              <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
+            {(reportType === 'startups' ? filteredStartups : filteredUsers).length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-lg">
+                  No results found.
+                </td>
+              </tr>
+            ) : (
+              (reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
+                <tr key={item.startup_id || item.id} className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer">
+                  {/* Name */}
+                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.name}</div>
+                  </td>
+
+                  {/* Industry */}
+                  <td className="px-4 py-3 w-[140px] truncate">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.industry}</div>
+                  </td>
+
+                  {/* Founder */}
+                  <td className="px-4 py-3 w-[140px] truncate">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.entrepreneur_name}</div>
+                  </td>
+
+                  {/* Location */}
+                  <td className="px-4 py-3 w-[140px] truncate">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.location}</div>
+                  </td>
+
+                  {/* Stage */}
+                  <td className="px-4 py-3 w-[140px] truncate">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.startup_stage}</div>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3 w-[100px] truncate">
+                    {renderStatusBadge(item.approval_status)}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-3 w-[100px] truncate text-center" onClick={e => e.stopPropagation()}>
+                    {item.approval_status === 'pending' ? (
+                      <>
+                        <button
+                          onClick={() => handleAcceptStartup(item.startup_id)}
+                          className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
+                        >Approve</button>
+                        <button
+                          onClick={() => handleDeclineStartup(item.startup_id)}
+                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                        >Reject</button>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">—</span>
                     )}
-                  </div>
-                  <div className="flex gap-2 mb-4">
-                    <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
-                      const data = reportType === 'startups' ? filteredStartups : filteredUsers;
-                      exportToExcel(data, `${reportType}-report`);
-                    }}>Export to Excel</button>
-                    <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" onClick={() => {
-                      const data = reportType === 'startups' ? filteredStartups : filteredUsers;
-                      const columns = reportType === 'startups'
-                        ? ['startup_id', 'name', 'industry', 'location', 'description']
-                        : ['id', 'first_name', 'last_name', 'email', 'role', 'industry', 'location'];
-                      exportToPDF(data, columns, `${reportType}-report`);
-                    }}>Export to PDF</button>
-                  </div>
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
-                      <thead>
-                        <tr className="bg-orange-100">
-                          <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
-                          <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
-                          <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
-                          <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
-                          <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
-                          <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
-                          <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-orange-100">
-                        {(reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
-                          <tr key={item.startup_id || item.id} className="border-b border-orange-100 hover:bg-orange-50 transition">
-                            {reportType === 'startups' ? (
-                              <>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="flex flex-col">
-                                    <div className="text-sm font-medium text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.name}</div>
-                                    <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{item.industry}</div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.industry}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.entrepreneur_name}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.location}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(item.startup_stage)}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
-                                  {renderStatusBadge(item.approval_status)}
-                                </td>
-                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
-                                  {item.approval_status === 'pending' ? (
-                                    <>
-                                      <button
-                                        onClick={() => handleAcceptStartup(item.startup_id)}
-                                        className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
-                                      >Approve</button>
-                                      <button
-                                        onClick={() => handleDeclineStartup(item.startup_id)}
-                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                                      >Reject</button>
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-300">—</span>
-                                  )}
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.first_name} {item.last_name}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.email}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{roleLabels[item.role] || item.role}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{item.location}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                  <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(item.startup_stage)}</div>
-                                </td>
-                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
-                                  {renderStatusBadge(item.approval_status)}
-                                </td>
-                                <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
-                                  {item.approval_status === 'pending' ? (
-                                    <>
-                                      <button
-                                        onClick={() => handleAcceptStartup(item.startup_id)}
-                                        className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
-                                      >Approve</button>
-                                      <button
-                                        onClick={() => handleDeclineStartup(item.startup_id)}
-                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                                      >Reject</button>
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-300">—</span>
-                                  )}
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
             case 'startup':
               return (
-                <div className="flex flex-col gap-6 w-full">
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Startup Management</h1>
+                <div className={`flex flex-col gap-6 w-full border border-orange-100 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
+                  <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Startup Management</h1>
                   {/* Tab Buttons */}
                   <div className="flex gap-2 mb-4">
                     <button
@@ -1169,7 +1160,7 @@ function AdminDashboard() {
                     </button>
                   </div>
                   {/* Table */}
-                  <div className="bg-white p-4 md:p-8 rounded-xl border border-orange-100 shadow-sm w-full">
+                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {startupLoading ? (
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -1181,7 +1172,7 @@ function AdminDashboard() {
                         <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
                           <thead>
                             <tr className="bg-orange-100">
-                              <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
+                              <th className="px-4 py-3 font-semibold w-[140px] ">Name</th>
                               <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
                               <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
                               <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
@@ -1190,7 +1181,7 @@ function AdminDashboard() {
                               <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-orange-100">
+                          <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
                             {startups.filter(startup => startup.approval_status === startupTab).length === 0 ? (
                               <tr>
                                 <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-lg">No {startupTab === 'pending' ? 'pending' : 'approved'} startups found.</td>
@@ -1199,26 +1190,26 @@ function AdminDashboard() {
                               startups.filter(startup => startup.approval_status === startupTab).map((startup) => (
                                 <tr
                                   key={startup.startup_id}
-                                  className="hover:bg-orange-50 transition cursor-pointer"
+                                  className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer"
                                   onClick={() => { setSelectedStartupModal(startup); setStartupModalOpen(true); }}
                                 >
                                   <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="flex flex-col">
-                                      <div className="text-sm font-medium text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.name}</div>
+                                      <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.name}</div>
                                       <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.industry}</div>
                                   </td>
                                   <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.entrepreneur_name}</div>
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.entrepreneur_name}</div>
                                   </td>
                                   <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{startup.location}</div>
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.location}</div>
                                   </td>
                                   <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 truncate overflow-hidden whitespace-nowrap">{formatStartupStage(startup.startup_stage)}</div>
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(startup.startup_stage)}</div>
                                   </td>
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
                                     {renderStatusBadge(startup.approval_status)}
@@ -1236,7 +1227,7 @@ function AdminDashboard() {
                                         >Reject</button>
                                       </>
                                     ) : (
-                                      <span className="text-gray-300">—</span>
+                                      <span className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">—</span>
                                     )}
                                   </td>
                                 </tr>
@@ -1252,8 +1243,10 @@ function AdminDashboard() {
             case 'tickets':
               return (
                 <div className="flex flex-col gap-6">
-                  <h1 className="text-3xl font-bold text-gray-800 mb-6">Support Tickets</h1>
-                  <div className="bg-white p-8 rounded-xl border border-orange-100 shadow-sm">
+                  {activeTab === 'tickets' && (
+                    <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Support Tickets</h1>
+                  )}
+                  <div className="bg-white dark:bg-[#232323] p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm">
                     {ticketsLoading ? (
                       <div className="flex-1 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -1281,7 +1274,7 @@ function AdminDashboard() {
                           <tbody>
                             {tickets.map(ticket => (
                               <React.Fragment key={ticket.ticket_id}>
-                                <tr className="border-b border-orange-100 hover:bg-orange-50 transition">
+                                <tr className="border-b border-orange-100 text-white hover:bg-orange-50 hover:text-orange-600 transition">
                                   <td className="px-4 py-3">{ticket.ticket_id}</td>
                                   <td className="px-4 py-3">{ticket.title}</td>
                                   <td className="px-4 py-3">{ticket.type}</td>
@@ -1379,10 +1372,8 @@ function AdminDashboard() {
       <Navbar />
       <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72 pr-80">
         {/* Floating Sidebar */}
-        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white flex flex-col items-center py-8 border border-orange-100 rounded-2xl shadow-xl">
-          <div className="flex flex-col items-center mb-8">
-            <img src={require('./imgs/taraki-logo-black2.png')} alt="Logo" className="h-10 w-auto object-contain mb-8" />
-          </div>
+        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white dark:bg-[#232323] flex flex-col items-center py-8 border border-orange-100 dark:border-orange-700 rounded-2xl shadow-xl">
+          {/* TARAKI logo removed from sidebar */}
           <nav className="flex flex-col gap-2 w-full px-6">
             {tabs.map(tab => (
               <button
@@ -1406,34 +1397,42 @@ function AdminDashboard() {
         </main>
         {/* Floating Pending Requests Card */}
         {activeTab === 'users' && (
-          <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white rounded-2xl shadow-xl border border-orange-100 flex flex-col p-6">
-            <h2 className="text-lg font-bold mb-4 text-orange-700 border-b border-orange-100 pb-2">Pending Verification Applications</h2>
-            <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
-              {pendingLoading ? (
-                <div className="text-gray-500">Loading...</div>
-              ) : pendingError ? (
-                <div className="text-red-500">{pendingError}</div>
-              ) : pendingRequests.length === 0 ? (
-                <span className="text-gray-500">No pending verification applications.</span>
-              ) : (
-                pendingRequests.map(req => (
-                  <div key={req.document_id} className="rounded-lg p-3 border border-orange-100 bg-orange-50 flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-black">{req.first_name} {req.last_name}</span>
-                      <span className="block text-xs text-gray-700">{req.email}</span>
-                      <span className="block text-xs text-gray-600">{req.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                    </div>
-                    <button className="ml-2 p-2 rounded-full hover:bg-orange-200 flex items-center justify-center" title="View Details" onClick={() => handleOpenModal(req.document_id)}>
-                      <svg width="22" height="22" viewBox="0 0 24 24">
-                        <circle cx="12" cy="5" r="1.5" fill="#fb923c" />
-                        <circle cx="12" cy="12" r="1.5" fill="#fb923c" />
-                        <circle cx="12" cy="19" r="1.5" fill="#fb923c" />
-                      </svg>
-                    </button>
-                  </div>
-                ))
-              )}
+        <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white dark:bg-[#232323] rounded-2xl shadow-xl border border-orange-100 dark:border-orange-700 flex flex-col p-6">
+        <h2 className="text-lg font-bold mb-4 text-orange-700 dark:text-orange-400 border-b border-orange-100 dark:border-orange-700 pb-2">
+         Pending Verification Applications
+        </h2>
+        <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
+      {pendingLoading ? (
+      <div className="text-gray-500 dark:text-gray-300">Loading...</div>
+     ) : pendingError ? (
+      <div className="text-red-500">{pendingError}</div>
+      ) : pendingRequests.length === 0 ? (
+      <span className="text-gray-500 dark:text-gray-300">No pending verification applications.</span>
+       ) : (
+        pendingRequests.map(req => (
+          <div key={req.document_id} className="rounded-lg p-3 border border-orange-100 dark:border-orange-700 bg-orange-50 dark:bg-[#2a2a2a] flex items-center justify-between">
+            <div>
+            <span className="font-semibold text-black dark:text-white">{req.first_name} {req.last_name}</span>
+            <span className="block text-xs text-gray-700 dark:text-gray-300">{req.email}</span>
+            <span className="block text-xs text-gray-600 dark:text-gray-400">
+              {req.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+               </span>
+             </div>
+             <button
+             className="ml-2 p-2 rounded-full hover:bg-orange-200 dark:hover:bg-orange-300 flex items-center justify-center"
+             title="View Details"
+              onClick={() => handleOpenModal(req.document_id)}
+             >
+            <svg width="22" height="22" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="1.5" fill="#fb923c" />
+              <circle cx="12" cy="12" r="1.5" fill="#fb923c" />
+              <circle cx="12" cy="19" r="1.5" fill="#fb923c" />
+               </svg>
+             </button>
             </div>
+             ))
+            )}
+        </div>
             {/* Modal for document details and approve/reject */}
             {modalOpen && selectedRequest && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -1484,7 +1483,7 @@ function AdminDashboard() {
             <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setStartupModalOpen(false)}>&times;</button>
             <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Startup Details</h3>
             <div className="mb-4 w-full">
-              <div className="font-semibold text-lg text-black mb-1">{selectedStartupModal.name}</div>
+              <div className="font-semibold text-lg text-black dark:text-white mb-1">{selectedStartupModal.name}</div>
               <div className="text-sm text-gray-700 mb-1">Industry: {selectedStartupModal.industry}</div>
               <div className="text-sm text-gray-700 mb-1">Founder: {selectedStartupModal.entrepreneur_name} ({selectedStartupModal.entrepreneur_email})</div>
               <div className="text-sm text-gray-700 mb-1">Location: {selectedStartupModal.location}</div>

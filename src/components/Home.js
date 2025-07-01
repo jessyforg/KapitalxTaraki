@@ -34,63 +34,80 @@ function Home() {
     return () => clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    // Save original overflow
+    const originalHtmlOverflow = document.documentElement.style.overflowX;
+    const originalBodyOverflow = document.body.style.overflowX;
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    return () => {
+      document.documentElement.style.overflowX = originalHtmlOverflow;
+      document.body.style.overflowX = originalBodyOverflow;
+    };
+  }, []);
+
   return (
-    <div className="font-montserrat overflow-x-hidden min-h-screen w-full flex flex-col items-center justify-center bg-trkblack">
-      <section id="home" className="relative flex flex-col items-center justify-center w-full h-screen">
-        {/* Video background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover z-0"
-          loading="lazy"
-          style={{ minHeight: '100vh', minWidth: '100vw' }}
-        >
-          <source src={video} type="video/webm" />
-          Your browser does not support the video tag.
-        </video>
-        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-30 z-10"></div>
-        <div className="relative z-20 flex flex-col items-center justify-center w-full h-full">
-          <img
-            src={tarakiLogo}
-            alt="TARAKI LOGO"
-            className="w-[60rem] tablet:w-[60rem] laptop-s:w-[60rem] desktop-m:w-[60rem] mx-auto"
-            style={{ filter: "invert(0)" }}
-          />
-        </div>
-      </section>
+    <div style={{ width: '100vw', overflowX: 'hidden' }}>
+      <div
+        className="font-montserrat overflow-x-hidden min-h-screen w-full max-w-full flex flex-col items-center justify-center bg-trkblack"
+        style={{ overflowX: 'hidden' }}
+      >
+        <section id="home" className="relative flex flex-col items-center justify-center w-full max-w-full h-screen">
+          {/* Video background */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-cover z-0"
+            loading="lazy"
+            style={{ minHeight: '100vh', width: '100%', minWidth: 0 }}
+          >
+            <source src={video} type="video/webm" />
+            Your browser does not support the video tag.
+          </video>
+          <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-10 z-10"></div>
+          <div className="relative z-20 flex flex-col items-center justify-center w-full h-full">
+            <img
+              src={tarakiLogo}
+              alt="TARAKI LOGO"
+              className="w-full max-w-[20rem] sm:max-w-md md:max-w-lg lg:max-w-2xl"
+              style={{ filter: "invert(0)" }}
+            />
+          </div>
+        </section>
 
-      {/* Analytics Section */}
-      <section className="w-full py-20 px-4 bg-trkblack">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Active Startups Card */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
-              <div className="text-center">
-                <h3 className="text-4xl font-bold text-white mb-2">{stats.total_startups}</h3>
-                <p className="text-gray-300 text-lg">Active Startups</p>
+        {/* Analytics Section */}
+        <section className="w-full max-w-full py-12 sm:py-20 px-4 bg-trkblack">
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full max-w-full">
+              {/* Active Startups Card */}
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
+                <div className="text-center">
+                  <h3 className="text-3xl sm:text-4xl font-bold text-white mb-2">{stats.total_startups}</h3>
+                  <p className="text-gray-300 text-base sm:text-lg">Active Startups</p>
+                </div>
               </div>
-            </div>
 
-            {/* Active Entrepreneurs Card */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
-              <div className="text-center">
-                <h3 className="text-4xl font-bold text-white mb-2">{stats.total_entrepreneurs}</h3>
-                <p className="text-gray-300 text-lg">Active Entrepreneurs</p>
+              {/* Active Entrepreneurs Card */}
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
+                <div className="text-center">
+                  <h3 className="text-3xl sm:text-4xl font-bold text-white mb-2">{stats.total_entrepreneurs}</h3>
+                  <p className="text-gray-300 text-base sm:text-lg">Active Entrepreneurs</p>
+                </div>
               </div>
-            </div>
 
-            {/* Active Investors Card */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
-              <div className="text-center">
-                <h3 className="text-4xl font-bold text-white mb-2">{stats.total_investors}</h3>
-                <p className="text-gray-300 text-lg">Active Investors</p>
+              {/* Active Investors Card */}
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
+                <div className="text-center">
+                  <h3 className="text-3xl sm:text-4xl font-bold text-white mb-2">{stats.total_investors}</h3>
+                  <p className="text-gray-300 text-base sm:text-lg">Active Investors</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

@@ -62,7 +62,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">InTTO</h2>
-                <p className="text-black dark:text-gray-950 text-center">
+                <p className="text-black dark:text-white text-center">
                   The Innovation and Technology Transfer Office (InTTO) fosters
                   innovation by offering business and technology transfer
                   opportunities to faculty, students, alumni, and the community
@@ -83,7 +83,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">SILBI</h2>
-                <p className="text-black dark:text-gray-950 text-center">
+                <p className="text-black dark:text-white text-center">
                   Silbi, meaning "service" in Filipino, reflects UP Baguio's
                   dedication to community service. The SILBI Center drives
                   transformation in Cordillera and Northern Luzon through research
@@ -104,7 +104,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ConRes</h2>
-                <p className="text-black dark:text-gray-950 text-center">
+                <p className="text-black dark:text-white text-center">
                   Established in 2017 with CHED funding, the SIRIB Center created
                   a Technology Hub and Co-Working Space. It launched
                   "Technopreneurship 101" to integrate entrepreneurship into
@@ -125,7 +125,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ATBI / IC</h2>
-                <p className="text-black dark:text-gray-950 text-center">
+                <p className="text-black dark:text-white text-center">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,
@@ -146,7 +146,7 @@ function TBI() {
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">IFSU IPTBM</h2>
-                <p className="text-black dark:text-gray-950 text-center">
+                <p className="text-black dark:text-white text-center">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,
@@ -157,7 +157,7 @@ function TBI() {
           </div>
         </div>
         <section id="mentors" className="my-16">
-          <h1 className="font-bold text-2xl md:text-3xl text-center mb-12 text-gray-800 dark:text-white">
+          <h1 className="font-bold text-2xl md:text-3xl text-center mb-12 text-black dark:text-white">
             Our Mentors
           </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 px-4 md:px-8 max-w-7xl mx-auto">
@@ -172,8 +172,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Henry James Banayat</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Director of Business Development at Bitshares Labs, Inc.</p>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Henry James Banayat</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">Director of Business Development at Bitshares Labs, Inc.</p>
             </div>
             {/* Jaydee */}
             <div className="flex flex-col items-center">
@@ -186,8 +186,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Jaydee Rebadulla</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Director at Lycaon Creatives; Chairman & CEO at Errand Doers PH; Owner and Founder at El Lote PH</p>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Jaydee Rebadulla</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">Director at Lycaon Creatives; Chairman & CEO at Errand Doers PH; Owner and Founder at El Lote PH</p>
             </div>
             {/* Wilson */}
             <div className="flex flex-col items-center">
@@ -200,8 +200,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Wilson Capuyan</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Wilson Capuyan</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Elmer */}
             <div className="flex flex-col items-center">
@@ -214,8 +214,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Elmer Macalingay</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Elmer Macalingay</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">Founder & General Manager at Pixels & Metrics Head of Growth at the Neutral and Space for the startups in the region</p>
             </div>
             {/* Benjie */}
             <div className="flex flex-col items-center">
@@ -228,8 +228,8 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Hon. Benjamin Magalong</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">City Mayor of Baguio</p>            </div>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Hon. Benjamin Magalong</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">City Mayor of Baguio</p>            </div>
             {/* Angelo */}
             <div className="flex flex-col items-center">
               <div className="relative">
@@ -241,29 +241,12 @@ function TBI() {
                   />
                 </div>
               </div>
-              <h2 className="font-bold text-xl text-black dark:text-gray-950 mt-6">Angelo Valdez</h2>
-              <p className="text-sm text-black dark:text-gray-950 text-center mt-2 max-w-xs">CEO of Harper and Hill, Global & International Network Connector, ASEAN HR Business leader & Former Director for South East Asia at Morgan Philips Group</p>
+              <h2 className="font-bold text-xl text-black dark:text-white mt-6">Angelo Valdez</h2>
+              <p className="text-sm text-black dark:text-white text-center mt-2 max-w-xs">CEO of Harper and Hill, Global & International Network Connector, ASEAN HR Business leader & Former Director for South East Asia at Morgan Philips Group</p>
             </div>
           </div>
         </section>
       </div>
-          <ul className="flex flex-wrap items-center mt-0 text-sm font-medium phone:hidden laptop:flex text-gray-400">
-            <li>
-              <a href="#section2" className="hover:underline me-4 tablet:me-6">
-                About
-              </a>
-            </li>
-            <li>
-              <a href="#1" className="hover:underline me-4 tablet:me-6">
-                Privacy Policy
-              </a>
-            </li>
-            <li>
-              <a href="#2" className="hover:underline me-4 tablet:me-6">
-                Licensing
-              </a>
-            </li>
-          </ul>
     </>
   );
 }

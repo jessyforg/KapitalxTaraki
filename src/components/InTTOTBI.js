@@ -95,7 +95,7 @@ export default function InTTOTBI() {
               <img src={ParaPo} className="w-full h-full px-5" alt="" />
             </div>
             <div className="absolute my-rotate-y-180 backface-hidden w-full h-full bg-gray-100 overflow-hidden rounded-lg">
-              <div className="text-center flex flex-col items-center justify-center h-full text-gray-800 px-5">
+              <div className="text-center flex flex-col items-center justify-center h-full text-black px-5">
                 <p>
                   A jeepney navigation system that provides user with commuting
                   information such a jeepney routes, jeepney stations, and

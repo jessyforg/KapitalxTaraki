@@ -482,7 +482,28 @@ function Messages() {
   }
 
   return (
-    <div className="trk-messages-page min-h-screen bg-[#181818] flex flex-col w-full h-screen p-2 md:p-6">
+    <div className="trk-messages-page min-h-screen bg-white dark:bg-[#181818] flex flex-col w-full h-screen p-2 md:p-6">
+      {/* Back Button */}
+      <div className="mb-4">
+        <button
+          onClick={() => {
+            if (user?.role === 'entrepreneur') {
+              navigate('/entrepreneur-dashboard');
+            } else if (user?.role === 'investor') {
+              navigate('/investor-dashboard');
+            } else if (user?.role === 'admin') {
+              navigate('/admin');
+            } else {
+              navigate('/');
+            }
+          }}
+          className="flex items-center gap-2 text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+        >
+          <FaArrowLeft size={16} />
+          <span>Back to {user?.role === 'entrepreneur' ? 'Dashboard' : user?.role === 'investor' ? 'Dashboard' : user?.role === 'admin' ? 'Admin' : 'Home'}</span>
+        </button>
+      </div>
+      
       {error && (
         <div className="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <span className="block sm:inline">{error}</span>
@@ -497,9 +518,9 @@ function Messages() {
           </button>
         </div>
       )}
-      <div className="flex flex-1 w-full h-full max-w-full mx-auto gap-6 items-stretch justify-center">
-        {/* Categories Sidebar - floating */}
-        <aside className="w-20 min-w-[64px] bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-6 gap-2 h-full rounded-2xl shadow-xl">
+      <div className="flex flex-1 w-full h-full max-w-full mx-auto gap-2 md:gap-6 items-stretch justify-center">
+        {/* Categories Sidebar - hidden on mobile */}
+        <aside className="hidden md:flex w-20 min-w-[64px] bg-gray-50 dark:bg-[#181818] flex-col items-center py-6 gap-2 h-full rounded-2xl shadow-xl border border-gray-200 dark:border-none">
           {/* Built-in folders */}
           <button
             key="all"
@@ -541,10 +562,31 @@ function Messages() {
             <FaPlus size={24} />
           </button>
         </aside>
-        {/* Chat List Sidebar - floating */}
-        <aside className="w-80 bg-[#232323] dark:bg-[#181818] flex flex-col items-center py-8 px-4 h-full rounded-2xl shadow-xl">
-          {/* User Profile */}
-          <div className="flex flex-col items-center mb-8">
+        {/* Chat List Sidebar - responsive width */}
+        <aside className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-white dark:bg-[#181818] flex-col items-center py-4 md:py-8 px-2 md:px-4 h-full rounded-2xl shadow-xl border border-gray-200 dark:border-none`}>
+          {/* Mobile category tabs */}
+          <div className="md:hidden w-full flex gap-1 mb-4 px-2">
+            <button
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              onClick={() => { setSelectedCategory('all'); setShowArchived(false); }}
+            >
+              All
+            </button>
+            <button
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'requests' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              onClick={() => { setSelectedCategory('requests'); setShowArchived(false); }}
+            >
+              Requests
+            </button>
+            <button
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'archived' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              onClick={() => { setSelectedCategory('archived'); setShowArchived(true); }}
+            >
+              Archived
+            </button>
+          </div>
+          {/* User Profile - hidden on mobile */}
+          <div className="hidden md:flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 mb-2 overflow-hidden">
               {user?.profile_image ? (
                 <img src={user.profile_image} alt={`${user.first_name} ${user.last_name}`} className="w-16 h-16 rounded-full object-cover" />
@@ -580,7 +622,7 @@ function Messages() {
           <form onSubmit={handleSearch} className="w-full mb-4">
             <div className="relative">
               <input
-                className="w-full rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 pl-4 pr-10 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 pl-4 pr-10 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 placeholder="Search chats..."
                 value={search}
                 onChange={e => { setSearch(e.target.value); console.log('Input changed:', e.target.value); }}
@@ -617,14 +659,14 @@ function Messages() {
                   searchResults.map(user => (
                     <button
                       key={`search-${user.id}`}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 transition text-left hover:bg-orange-100 dark:hover:bg-orange-900"
+                      className="w-full flex items-center gap-3 px-3 py-3 md:py-2 rounded-xl mb-1 transition text-left hover:bg-orange-100 dark:hover:bg-orange-900"
                       onClick={() => user.id && handleSelectChat(user.id)}
                     >
                       <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
                         {user.profile_picture_url ? <img src={user.profile_picture_url} alt={`${user.first_name} ${user.last_name}`} className="w-10 h-10 rounded-full object-cover" /> : <FaUser />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-trkblack dark:text-white truncate">{user.first_name} {user.last_name}</div>
+                        <div className="font-semibold text-trkblack dark:text-white truncate text-sm">{user.first_name} {user.last_name}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
                       </div>
                       <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{user.role}</div>
@@ -655,7 +697,7 @@ function Messages() {
                         )}
                         onClick={() => conv.id && handleSelectChat(conv.id)}
                       >
-                        <div className="w-full flex items-center gap-3 px-3 py-2 rounded-2xl mb-1 transition text-left">
+                        <div className="w-full flex items-center gap-3 px-3 py-3 md:py-2 rounded-2xl mb-1 transition text-left">
                           <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
                             {conv.profile_picture_url ? (
                               <img src={conv.profile_picture_url} alt={`${conv.first_name} ${conv.last_name}`} className="w-10 h-10 rounded-full object-cover" />
@@ -664,7 +706,7 @@ function Messages() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-trkblack dark:text-white truncate">{conv.first_name} {conv.last_name}</div>
+                            <div className="font-semibold text-trkblack dark:text-white truncate text-sm">{conv.first_name} {conv.last_name}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {lastMsgPrefix}{conv.last_message}
                             </div>
@@ -684,21 +726,28 @@ function Messages() {
             )}
           </div>
         </aside>
-        {/* Center Chat Area - floating */}
-        <main className="flex-1 flex flex-col bg-[#232323] dark:bg-[#232323] rounded-2xl shadow-xl p-0 relative z-10" style={{ minWidth: 0 }}>
+        {/* Center Chat Area - full width on mobile */}
+        <main className={`${selectedChat ? 'flex' : 'hidden md:flex'} flex-1 flex flex-col bg-gray-50 dark:bg-[#232323] rounded-2xl shadow-xl p-0 relative z-10 border border-gray-200 dark:border-none`} style={{ minWidth: 0 }}>
           {selectedChat && chatUser ? (
             <>
               {/* Chat Header */}
-              <div className="flex items-center gap-3 px-8 py-5 border-b border-trkblack/10 dark:border-white/10 bg-[#232323] dark:bg-[#232323] rounded-t-2xl">
-                <div className="w-12 h-12 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 md:px-8 py-4 md:py-5 border-b border-trkblack/10 dark:border-white/10 bg-[#232323] dark:bg-[#232323] rounded-t-2xl">
+                {/* Mobile back button */}
+                <button 
+                  className="md:hidden p-2 text-gray-400 hover:text-orange-500"
+                  onClick={() => setSelectedChat(null)}
+                >
+                  <FaArrowLeft size={20} />
+                </button>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
                   {chatUser.profile_picture_url || chatUser.profile_image ? (
-                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-12 h-12 rounded-full object-cover border-2 border-orange-500" />
+                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-orange-500" />
                   ) : (
-                    <FaUser size={28} />
+                    <FaUser size={20} className="md:w-7 md:h-7" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-trkblack dark:text-white text-lg truncate">{chatUser.first_name} {chatUser.last_name}</div>
+                  <div className="font-semibold text-trkblack dark:text-white text-base md:text-lg truncate">{chatUser.first_name} {chatUser.last_name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {chatUser.status === 'invisible' ? 'Offline' : (chatUser.status ? (chatUser.status.charAt(0).toUpperCase() + chatUser.status.slice(1)) : 'Online')}
                   </div>
@@ -707,13 +756,13 @@ function Messages() {
                 {isRequest && user.id === selectedRequest.receiver_id && (
                   <div className="flex gap-2">
                     <button
-                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold"
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg font-semibold text-sm"
                       onClick={() => handleRequestAction(selectedRequest.sender_id, 'approve')}
                     >
                       ✔ Accept
                     </button>
                     <button
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 md:px-4 py-2 rounded-lg font-semibold text-sm"
                       onClick={() => handleRequestAction(selectedRequest.sender_id, 'reject')}
                     >
                       ❌ Decline
@@ -721,13 +770,13 @@ function Messages() {
                   </div>
                 )}
                 <button className="text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-full p-2" onClick={() => setShowInfoSidebar(v => !v)}>
-                  <FaInfoCircle size={22} />
+                  <FaInfoCircle size={20} className="md:w-6 md:h-6" />
                 </button>
               </div>
               {/* Main chat area: show request UI only for requests, otherwise show messages */}
               {isRequest ? (
-                <div className="flex-1 flex flex-col items-center justify-center px-8 py-6">
-                  <div className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-xl p-6 mb-4 w-full max-w-lg text-center">
+                <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8 py-6">
+                  <div className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-xl p-4 md:p-6 mb-4 w-full max-w-lg text-center">
                     <div className="font-semibold text-lg mb-2">Message Request</div>
                     <div className="mb-2">{`${selectedRequest.first_name} ${selectedRequest.last_name}`} wants to chat with you:</div>
                     <div className="italic text-gray-700 dark:text-gray-300 mb-2">"{selectedRequest.intro_message || selectedRequest.content}"</div>
@@ -737,18 +786,18 @@ function Messages() {
               ) : (
                 <>
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4 bg-[#f5f6fa] dark:bg-[#181818]">
+                  <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 flex flex-col gap-4 bg-[#f5f6fa] dark:bg-[#181818]">
                     {messages.length === 0 ? (
                       <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
-                        <FaUserCircle size={60} className="mb-2 text-orange-500" />
-                        <div className="text-lg font-semibold">No messages yet. Start the conversation!</div>
+                        <FaUserCircle size={40} className="md:w-15 md:h-15 mb-2 text-orange-500" />
+                        <div className="text-base md:text-lg font-semibold text-center">No messages yet. Start the conversation!</div>
                       </div>
                     ) : (
                       messages.map(msg => (
                         <div
                           key={msg.message_id || msg.id}
                           className={classNames(
-                            "max-w-[70%] px-5 py-3 rounded-2xl text-sm shadow-sm",
+                            "max-w-[85%] md:max-w-[70%] px-4 md:px-5 py-3 rounded-2xl text-sm shadow-sm",
                             msg.sender_id === user.id
                               ? "bg-[#2d2d2d] text-white self-end rounded-br-md"
                               : "bg-[#1a1a1a] text-white self-start rounded-bl-md"
@@ -760,11 +809,11 @@ function Messages() {
                             </span>
                             <span className="text-[10px] text-gray-400 ml-2">{msg.time || ''}</span>
                           </div>
-                          <div>{msg.content}</div>
+                          <div className="text-sm md:text-base">{msg.content}</div>
                           {msg.files?.map(file => (
                             <div key={file.id || file.file_id} className="mt-2">
                               {file.type && file.type.startsWith('image/') ? (
-                                <img src={file.url} alt={file.name} className="max-w-[200px] rounded-lg" />
+                                <img src={file.url} alt={file.name} className="max-w-[150px] md:max-w-[200px] rounded-lg" />
                               ) : (
                                 <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center gap-1">
                                   <FaPaperclip className="inline" />
@@ -779,9 +828,9 @@ function Messages() {
                     <div ref={messagesEndRef} />
                   </div>
                   {/* Message Input */}
-                  <form className="flex items-center gap-2 px-8 py-5 border-t border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]" onSubmit={handleSendMessage}>
+                  <form className="flex items-center gap-2 px-4 md:px-8 py-4 md:py-5 border-t border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]" onSubmit={handleSendMessage}>
                     <label className="cursor-pointer text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded p-2">
-                      <FaPaperclip size={20} />
+                      <FaPaperclip size={18} className="md:w-5 md:h-5" />
                       <input
                         type="file"
                         className="hidden"
@@ -790,13 +839,13 @@ function Messages() {
                       />
                     </label>
                     <input
-                      className="flex-1 rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-3 px-5 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="flex-1 rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 md:py-3 px-3 md:px-5 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm md:text-base"
                       placeholder="Write your message..."
                       value={messageInput}
                       onChange={e => setMessageInput(e.target.value)}
                     />
-                    <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 font-semibold shadow">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow">
+                      <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                     </button>
                   </form>
                 </>
@@ -804,14 +853,14 @@ function Messages() {
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
-              <FaUserCircle size={60} className="mb-2 text-orange-500" />
-              <div className="text-lg font-semibold">Select a conversation or search for a user to start chatting</div>
+              <FaUserCircle size={40} className="md:w-15 md:h-15 mb-2 text-orange-500" />
+              <div className="text-base md:text-lg font-semibold text-center">Select a conversation or search for a user to start chatting</div>
             </div>
           )}
         </main>
-        {/* Right Sidebar: Chat Info & Shared Files - floating */}
+        {/* Right Sidebar: Chat Info & Shared Files - hidden on mobile */}
         {selectedChat && chatUser && showInfoSidebar && (
-          <aside className="w-80 bg-[#232323] dark:bg-[#232323] rounded-2xl shadow-xl flex flex-col py-6 px-4 relative z-10">
+          <aside className="hidden lg:flex w-80 bg-white dark:bg-[#232323] rounded-2xl shadow-xl flex-col py-6 px-4 relative z-10 border border-gray-200 dark:border-none">
             {/* Chat Info */}
             <div className="flex flex-col items-center mb-8">
               {chatUser.profile_picture_url || chatUser.profile_image ? (
@@ -877,7 +926,7 @@ function Messages() {
       {/* Add Category Modal */}
       {showAddCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <form className="bg-white dark:bg-[#232323] rounded-2xl shadow-2xl p-8 max-w-sm w-full relative" onSubmit={handleAddCategory}>
+          <form className="bg-white dark:bg-[#232323] rounded-2xl shadow-2xl p-6 md:p-8 max-w-sm w-full mx-4 relative" onSubmit={handleAddCategory}>
             <button className="absolute top-3 right-3 text-orange-500 hover:text-orange-700" onClick={() => setShowAddCategory(false)} type="button">
               <FaTimes size={24} />
             </button>

@@ -103,9 +103,9 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
   if (verificationSent) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
-        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn">
-          <h2 className="text-2xl font-bold mb-4 text-center text-black">Verify Your Email</h2>
-          <p className="text-center text-gray-600 mb-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm animate-fadeIn">
+          <h2 className="text-xl font-bold mb-4 text-center text-black">Verify Your Email</h2>
+          <p className="text-center text-gray-600 mb-4 text-sm">
             We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
           </p>
           <button
@@ -121,7 +121,7 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn relative">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm animate-fadeIn relative">
         {onClose && (
           <button
             className="absolute top-2 right-2 text-gray-500 hover:text-orange-600 text-2xl"
@@ -133,26 +133,26 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
         )}
         <div className="flex justify-between mb-6">
           <button
-            className={`flex-1 py-2 text-lg font-semibold transition-colors duration-200 ${authTab === 'login' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
+            className={`flex-1 py-2 text-base font-semibold transition-colors duration-200 ${authTab === 'login' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
             onClick={() => setAuthTab('login')}
           >
             Log in
           </button>
           <button
-            className={`flex-1 py-2 text-lg font-semibold transition-colors duration-200 ${authTab === 'signup' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
+            className={`flex-1 py-2 text-base font-semibold transition-colors duration-200 ${authTab === 'signup' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
             onClick={() => setAuthTab('signup')}
           >
             Sign up
           </button>
         </div>
-        <h2 className="text-2xl font-bold mb-4 text-center text-black">Sign up</h2>
+        <h2 className="text-xl font-bold mb-4 text-center text-black">Sign up</h2>
         {error && (
           <div className="text-red-500 text-sm text-center mb-4">{error}</div>
         )}
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-3" onSubmit={handleSubmit}>
           <div className="flex gap-2">
             <input
-              className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+              className="w-1/2 p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
               type="text"
               placeholder="First Name"
               required
@@ -160,7 +160,7 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
               onChange={e => setFirstName(e.target.value)}
             />
             <input
-              className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+              className="w-1/2 p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
               type="text"
               placeholder="Last Name"
               required
@@ -169,7 +169,7 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
             />
           </div>
           <input
-            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+            className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
             type="email"
             placeholder="Email"
             required
@@ -179,7 +179,7 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+              className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
               placeholder="Password"
               required
               value={password}
@@ -193,19 +193,19 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 002.25 12s3.75 7.5 9.75 7.5c1.956 0 3.693-.377 5.18-1.01M6.228 6.228A10.45 10.45 0 0112 4.5c6 0 9.75 7.5 9.75 7.5a10.46 10.46 0 01-4.293 4.774M6.228 6.228l11.544 11.544M6.228 6.228L3 3m15 15l-3-3" />
                 </svg>
               )}
             </span>
           </div>
           <input
-            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+            className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
             type="password"
             placeholder="Retype Password"
             required
@@ -216,7 +216,7 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
             <div className="text-red-500 text-xs text-center animate-pulse mt-1">{passwordError}</div>
           )}
           <select
-            className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+            className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
             required
             value={role}
             onChange={e => setRole(e.target.value)}
@@ -237,31 +237,31 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
           </div>
           <button 
             type="submit" 
-            className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-lg shadow mt-2"
+            className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-base shadow mt-2"
             disabled={loading}
           >
             {loading ? 'Signing up...' : 'Sign up'}
           </button>
         </form>
-        <div className="flex flex-row gap-4 justify-center mt-6 mb-2">
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Google">
-            <FaGoogle size={28} className="text-orange-500" />
+        <div className="flex flex-row gap-4 justify-center mt-4 mb-2">
+          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Google">
+            <FaGoogle size={20} className="text-orange-500" />
           </button>
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Facebook">
-            <FaFacebookF size={28} className="text-orange-500" />
+          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Facebook">
+            <FaFacebookF size={20} className="text-orange-500" />
           </button>
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Microsoft">
-            <FaMicrosoft size={28} className="text-orange-500" />
+          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Microsoft">
+            <FaMicrosoft size={20} className="text-orange-500" />
           </button>
         </div>
-        <div className="text-center text-sm mt-6 text-black">
+        <div className="text-center text-xs mt-4 text-black">
           Have an account?{' '}
           <button className="text-orange-600 hover:underline font-semibold" onClick={() => setAuthTab('login')}>Log in</button>
         </div>
         {/* Terms Modal */}
         {showTerms && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-            <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative animate-slideInFromTop">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative animate-slideInFromTop">
               <button className="absolute top-2 right-2 text-gray-500 hover:text-orange-600 text-2xl" onClick={() => setShowTerms(false)}>&times;</button>
               <h3 className="text-lg font-bold mb-2 text-center">Terms and Conditions</h3>
               <div className="h-64 overflow-y-auto text-sm text-gray-700 p-2 border rounded bg-gray-50">

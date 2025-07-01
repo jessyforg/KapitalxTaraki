@@ -172,7 +172,7 @@ function EventsPage() {
                         {events.map(event => (
                           <button
                             key={event.id}
-                            className="mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition"
+                            className={`mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition ${tab === 'upcoming' ? 'bg-white text-gray-800' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white'}`}
                             onClick={() => { setSelectedEvent(event); setModalOpen(true); }}
                           >
                             <div className="mb-1">

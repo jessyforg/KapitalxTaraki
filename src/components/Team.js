@@ -63,7 +63,7 @@ function TarakiTeam() {
                     style={{ backgroundImage: `url(${maamT})` }}
                   ></div>
                   <div className="flex flex-col justify-center px-2 py-2 tablet:px-3">
-                    <h1 className="font-montserrattext-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
+                    <h1 className="font-montserrat text-[1.1rem] tablet:text-[1.5rem] tablet-m:text-[1.7rem] font-semibold text-orange-700">
                       Dr. Thelma D. Palaoag
                     </h1>
                     <h1 className="font-montserrat text-[0.9rem] tablet:text-lg tablet-m:text-xl">

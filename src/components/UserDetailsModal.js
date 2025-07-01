@@ -161,6 +161,14 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Force light mode on this modal
+  useEffect(() => {
+    const modalElement = document.getElementById('user-details-modal');
+    if (modalElement) {
+      modalElement.classList.add('light');
+    }
+  }, []);
+
   // Fetch user data on mount
   useEffect(() => {
     if (user && user.id) {
@@ -551,47 +559,47 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-slate-50 bg-opacity-95">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-4xl min-h-[600px] h-[700px] animate-fadeIn flex border-2 border-slate-200">
+    <div id="user-details-modal" className="fixed inset-0 z-50 bg-slate-50 bg-opacity-95 p-0 md:p-4 flex items-start md:items-center justify-center">
+      <div className="bg-white rounded-none md:rounded-3xl shadow-xl w-full h-full md:w-full md:max-w-2xl md:h-[620px] animate-fadeIn flex flex-col md:flex-row border-0 md:border-2 border-slate-200 overflow-hidden">
         {/* Stepper Sidebar */}
-        <div className="w-1/4 min-w-[220px] bg-slate-100 rounded-l-3xl py-10 px-6 flex flex-col items-start h-full shadow-lg border-r border-slate-200">
-          <h2 className="text-2xl font-extrabold mb-10 text-[#F04F06] tracking-wide">Let us know you better</h2>
-          <ul className="space-y-6 w-full">
+        <div className="w-full md:w-56 bg-slate-100 md:rounded-l-3xl py-4 px-4 flex flex-col items-center md:items-start h-auto md:h-full shadow-lg border-b md:border-r md:border-b-0 border-slate-200">
+          <h2 className="text-lg font-extrabold mb-4 text-[#F04F06] tracking-wide px-2 hidden md:block">Let us know you better</h2>
+          <ul className="w-full flex flex-row items-center justify-center md:flex-col md:items-start md:space-y-5">
             {steps.map((s, idx) => (
-              <li key={s.label} className="flex items-center gap-3">
-                <span className={`flex items-center justify-center w-7 h-7 rounded-full border-2 text-base font-bold transition-all duration-200 
+              <li key={s.label} className="flex-1 md:flex-none flex flex-col md:flex-row items-center gap-1 md:gap-3 px-1 md:px-2 text-center md:text-left">
+                <span className={`flex items-center justify-center w-8 h-8 md:w-6 md:h-6 rounded-full border-2 text-sm font-bold transition-all duration-200 
                   ${step === idx ? 'bg-[#FF7A1A] border-[#FF7A1A] text-white shadow-lg' : step > idx ? 'bg-[#FFB26B] border-[#FFB26B] text-[#FF7A1A]' : 'bg-slate-200 border-slate-200 text-slate-400'}`}>{idx + 1}</span>
-                <span className={`text-base transition-all duration-200 ${step === idx ? 'font-bold text-[#FF7A1A]' : step > idx ? 'text-[#FF7A1A]' : 'text-slate-400'}`}>{s.label}</span>
+                <span className={`text-xs md:text-sm transition-all duration-200 ${step === idx ? 'font-bold text-[#FF7A1A]' : step > idx ? 'text-[#FF7A1A]' : 'text-slate-400'}`}>{s.label}</span>
               </li>
             ))}
           </ul>
         </div>
         {/* Main Content */}
-        <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-14 h-full bg-white rounded-r-3xl shadow-inner">
+        <form onSubmit={step === steps.length - 1 ? handleSubmit : handleNext} className="flex-1 flex flex-col p-4 md:p-8 h-full bg-white md:rounded-r-3xl shadow-inner overflow-hidden">
           {error && (
-            <div className="text-[#FF7A1A] text-base text-center mb-4 font-semibold">{error}</div>
+            <div className="text-[#FF7A1A] text-sm text-center mb-3 font-semibold">{error}</div>
           )}
-          <div className="flex-1 overflow-y-auto">
-            <div className="bg-slate-50 rounded-2xl shadow p-8 mb-6 border border-slate-200">
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2 md:pr-4 md:-mr-4 custom-scrollbar">
+            <div className="bg-slate-50 rounded-2xl shadow p-6 mb-6 border border-slate-200">
               {renderStep()}
             </div>
           </div>
-          <div className="sticky bottom-0 left-0 right-0 bg-white pt-6 border-t border-slate-200 z-10 flex justify-between">
+          <div className="sticky bottom-0 left-0 right-0 bg-white pt-5 border-t border-slate-200 z-10 flex justify-between">
             <button
               type="button"
               onClick={handlePrev}
-              className={`px-7 py-2.5 rounded-full font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] 
+              className={`px-5 py-2 rounded-full font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] text-sm
                 ${step === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-[#FF7A1A] border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A]'}`}
               disabled={step === 0}
             >
               Previous
             </button>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {step === steps.length - 1 && (
                 <button
                   type="button"
                   onClick={handleSkip}
-                  className="px-7 py-2.5 rounded-full text-[#FF7A1A] bg-white border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A] font-semibold transition-all duration-200 shadow-md"
+                  className="px-5 py-2 rounded-full text-[#FF7A1A] bg-white border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A] font-semibold transition-all duration-200 shadow-md text-sm"
                 >
                   Skip for now
                 </button>
@@ -599,7 +607,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-7 py-2.5 bg-[#FF7A1A] text-white rounded-full font-bold shadow-lg hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] disabled:opacity-50"
+                className="px-5 py-2 bg-[#FF7A1A] text-white rounded-full font-bold shadow-lg hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] disabled:opacity-50 text-sm"
               >
                 {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save Profile') : 'Next'}
               </button>

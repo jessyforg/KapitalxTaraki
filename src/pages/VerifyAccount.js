@@ -151,7 +151,7 @@ export default function VerifyAccount() {
 
   const statusColors = {
     verified: 'bg-green-100 text-green-700 border-green-300',
-    pending: 'bg-orange-100 text-orange-700 border-orange-300',
+    Pending: 'bg-orange-100 text-orange-700 border-orange-300',
     'not approved': 'bg-red-100 text-red-700 border-red-300',
     default: 'bg-gray-100 text-gray-700 border-gray-300',
   };
@@ -162,125 +162,133 @@ export default function VerifyAccount() {
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-orange-50 flex flex-row items-start pt-28 px-2 relative">
-        {/* Back Button */}
-        <button
-          className="fixed top-28 left-8 z-40 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full shadow font-semibold flex items-center gap-2"
-          onClick={() => navigate(-1)}
-        >
-          <span className="text-lg">&#8592;</span> Back
-        </button>
-        {/* Main Card */}
-        <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 mt-4">
-          <h1 className="text-3xl font-bold mb-2 text-orange-700">Account Verification</h1>
-          <p className="mb-6 text-gray-600">Upload your verification documents to unlock all features of the platform.</p>
-          {loading ? <div>Loading...</div> : (
-            <>
-              {error && <div className="text-red-500 mb-2 font-semibold">{error}</div>}
-              {success && <div className="text-green-600 mb-2 font-semibold">{success}</div>}
-              <div className="mb-6">
-                <span className={`inline-block px-5 py-2 rounded-full font-semibold border text-base mb-2 ${statusColors[status] || statusColors.default}`}>{status ? capitalizeFirst(status) : 'Unknown'}</span>
-              </div>
-              <form className="space-y-5 mb-2" onSubmit={handleSubmit} encType="multipart/form-data">
-                <div>
-                  <label className="block font-semibold mb-1 text-orange-700">Document Type</label>
-                  <select name="document_type" value={form.document_type} onChange={handleChange} required className="w-full border border-orange-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400">
-                    <option value="">Select document type</option>
-                    <option value="government_id">Government ID</option>
-                    <option value="passport">Passport</option>
-                    <option value="drivers_license">Driver's License</option>
-                    <option value="business_registration">Business Registration</option>
-                    <option value="professional_license">Professional License</option>
-                    <option value="tax_certificate">Tax Certificate</option>
-                    <option value="bank_statement">Bank Statement</option>
-                    <option value="utility_bill">Utility Bill</option>
-                    <option value="proof_of_address">Proof of Address</option>
-                    <option value="employment_certificate">Employment Certificate</option>
-                    <option value="educational_certificate">Educational Certificate</option>
-                    <option value="other">Other Document</option>
-                  </select>
-                </div>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="block font-semibold mb-1 text-orange-700">Document Number</label>
-                    <input name="document_number" value={form.document_number} onChange={handleChange} className="w-full border border-orange-200 rounded-lg px-3 py-2" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-semibold mb-1 text-orange-700">Issue Date</label>
-                    <input type="date" name="issue_date" value={form.issue_date} onChange={handleChange} className="w-full border border-orange-200 rounded-lg px-3 py-2" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-semibold mb-1 text-orange-700">Expiry Date</label>
-                    <input type="date" name="expiry_date" value={form.expiry_date} onChange={handleChange} className="w-full border border-orange-200 rounded-lg px-3 py-2" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-orange-700">Issuing Authority</label>
-                  <input name="issuing_authority" value={form.issuing_authority} onChange={handleChange} className="w-full border border-orange-200 rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-orange-700">Upload Document <span className="text-xs text-gray-500">(PDF, JPG, PNG, max 5MB)</span></label>
-                  <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} required className="w-full border border-orange-200 rounded-lg px-3 py-2 bg-orange-50" />
-                </div>
-                <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2 rounded-lg font-semibold shadow transition disabled:opacity-60 disabled:cursor-not-allowed" disabled={uploading}>{uploading ? 'Uploading...' : 'Submit Document'}</button>
-              </form>
-            </>
-          )}
-        </div>
-        {/* Floating Sidebar: Uploaded Documents */}
-        <aside className="fixed right-8 top-28 bottom-8 z-30 w-96 bg-white rounded-2xl shadow-xl border border-orange-100 flex flex-col p-6 overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4 text-orange-700">Uploaded Documents</h2>
-          {documents.length === 0 ? <div className="text-gray-500">No documents uploaded yet.</div> : (
-            <div className="space-y-4">
-              {documents.map(doc => (
-                <div key={doc.document_id} className="border border-orange-100 rounded-xl p-4 bg-orange-50 mb-2">
-                  {editDoc && editDoc.document_id === doc.document_id ? (
-                    <form className="space-y-2" onSubmit={handleEditSubmit} encType="multipart/form-data">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[doc.status] || statusColors.default}`}>{capitalizeFirst(doc.status)}</span>
-                        <span className="font-semibold text-orange-700">{doc.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-orange-700">Document Number</label>
-                        <input name="document_number" value={editForm.document_number} onChange={handleEditFormChange} className="w-full border border-orange-200 rounded-lg px-2 py-1 text-sm" />
-                        <label className="text-xs font-semibold text-orange-700">Issue Date</label>
-                        <input type="date" name="issue_date" value={editForm.issue_date} onChange={handleEditFormChange} className="w-full border border-orange-200 rounded-lg px-2 py-1 text-sm" />
-                        <label className="text-xs font-semibold text-orange-700">Expiry Date</label>
-                        <input type="date" name="expiry_date" value={editForm.expiry_date} onChange={handleEditFormChange} className="w-full border border-orange-200 rounded-lg px-2 py-1 text-sm" />
-                        <label className="text-xs font-semibold text-orange-700">Issuing Authority</label>
-                        <input name="issuing_authority" value={editForm.issuing_authority} onChange={handleEditFormChange} className="w-full border border-orange-200 rounded-lg px-2 py-1 text-sm" />
-                        <label className="text-xs font-semibold text-orange-700">Replace Document (optional)</label>
-                        <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" onChange={handleEditFormChange} className="w-full border border-orange-200 rounded-lg px-2 py-1 text-sm bg-orange-50" />
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1 rounded-lg font-semibold text-sm shadow transition disabled:opacity-60 disabled:cursor-not-allowed" disabled={editUploading}>{editUploading ? 'Saving...' : 'Save'}</button>
-                        <button type="button" className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-1 rounded-lg font-semibold text-sm" onClick={handleEditCancel}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[doc.status] || statusColors.default}`}>{capitalizeFirst(doc.status)}</span>
-                        <span className="font-semibold text-orange-700">{doc.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                        <button className="ml-auto text-xs text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer'}} onClick={() => handleEditClick(doc)}>Edit</button>
-                        <button className="ml-2 text-xs text-red-600 font-semibold hover:text-red-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer'}} onClick={() => handleDeleteDocument(doc.document_id)}>Delete</button>
-                      </div>
-                      <div className="text-sm text-gray-700 mb-1">Number: {doc.document_number || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Issued: {doc.issue_date || 'N/A'} | Expiry: {doc.expiry_date || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Issuing Authority: {doc.issuing_authority || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Uploaded: {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleString() : 'N/A'}</div>
-                      {doc.rejection_reason && <div className="text-red-600 text-xs mt-1">Reason: {doc.rejection_reason}</div>}
-                      <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 text-xs font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}} >View Document</a>
-                    </>
-                  )}
-                </div>
-              ))}
+    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#181818] flex flex-col items-center py-8 px-2">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:gap-8">
+        {/* Main Form Section */}
+        <div className="flex-1 bg-white dark:bg-[#232526] rounded-2xl shadow-lg p-6 md:p-10 mb-6 md:mb-0">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 flex items-center gap-2 px-5 py-2 rounded-full bg-[#ff7f32] hover:bg-[#e86c1a] text-white font-semibold shadow transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff7f32] focus:ring-offset-2 dark:focus:ring-offset-[#232526] w-fit"
+            aria-label="Go back"
+          >
+            <span className="text-xl">←</span> Back
+          </button>
+          <h1 className="text-3xl font-bold text-[#b45309] dark:text-[#ffb366] mb-2">Account Verification</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">Upload your verification documents to unlock all features of the platform.</p>
+          <div className="mb-6">
+            <span className="inline-block px-4 py-2 rounded-full border border-[#ff7f32] text-[#b45309] dark:text-[#ffb366] bg-[#fff7ed] dark:bg-[#2d2d2d] font-semibold text-base">{status || 'Pending'}</span>
+          </div>
+          {error && <div className="mb-4 text-red-600 dark:text-red-400">{error}</div>}
+          {success && <div className="mb-4 text-green-600 dark:text-green-400">{success}</div>}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Document Type</label>
+              <select
+                name="document_type"
+                value={form.document_type}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32]"
+                required
+              >
+                <option value="">Select document type</option>
+                <option value="passport">Passport</option>
+                <option value="id_card">ID Card</option>
+                <option value="driver_license">Driver's License</option>
+                <option value="other">Other</option>
+              </select>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Document Number</label>
+                <input
+                  type="text"
+                  name="document_number"
+                  value={form.document_number}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Issue Date</label>
+                <input
+                  type="date"
+                  name="issue_date"
+                  value={form.issue_date}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Expiry Date</label>
+                <input
+                  type="date"
+                  name="expiry_date"
+                  value={form.expiry_date}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32]"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Issuing Authority</label>
+              <input
+                type="text"
+                name="issuing_authority"
+                value={form.issuing_authority}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1 text-[#b45309] dark:text-[#ffb366]">Upload Document <span className="text-xs text-gray-500">(PDF, JPG, PNG, max 5MB)</span></label>
+              <input
+                type="file"
+                name="document"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#232526] text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f32] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#ff7f32] file:text-white file:font-semibold file:cursor-pointer"
+                required
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={uploading}
+                className="px-6 py-2 rounded-lg bg-[#ff7f32] hover:bg-[#e86c1a] text-white font-semibold shadow transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff7f32] focus:ring-offset-2 dark:focus:ring-offset-[#232526] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {uploading ? 'Uploading...' : 'Submit'}
+              </button>
+            </div>
+          </form>
+        </div>
+        {/* Sidebar: Uploaded Documents */}
+        <aside className="w-full md:w-96 bg-white dark:bg-[#232526] rounded-2xl shadow-lg p-6 h-fit md:sticky md:top-8 self-start">
+          <h2 className="text-2xl font-bold text-[#b45309] dark:text-[#ffb366] mb-4">Uploaded Documents</h2>
+          {loading ? (
+            <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+          ) : documents.length === 0 ? (
+            <div className="text-gray-500 dark:text-gray-400">No documents uploaded yet.</div>
+          ) : (
+            <ul className="space-y-4">
+              {documents.map((doc) => (
+                <li key={doc.id} className="bg-[#fff7ed] dark:bg-[#2d2d2d] rounded-lg p-4 flex flex-col gap-2 border border-[#ff7f32]/20 dark:border-[#ffb366]/20">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[#b45309] dark:text-[#ffb366]">{doc.document_type.replace(/_/g, ' ').toUpperCase()}</span>
+                    {/* Add edit/delete buttons if needed */}
+                  </div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300">No: {doc.document_number}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Issued: {doc.issue_date} | Expires: {doc.expiry_date}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Authority: {doc.issuing_authority}</div>
+                </li>
+              ))}
+            </ul>
           )}
         </aside>
       </div>
-    </>
+    </div>
   );
-} 
+}

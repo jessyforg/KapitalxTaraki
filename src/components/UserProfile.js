@@ -54,21 +54,21 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">General Information</h2>
         {!isEditingGeneral && isOwnProfile && (
           <button onClick={() => setIsEditingGeneral(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-6 text-base">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
         <div>
           <div className="text-gray-600 mb-1">First Name</div>
-          <input id="general-firstName" name="general-firstName" type="text" value={generalInfo.firstName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, firstName: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input id="general-firstName" name="general-firstName" type="text" value={generalInfo.firstName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, firstName: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Last Name</div>
-          <input id="general-lastName" name="general-lastName" type="text" value={generalInfo.lastName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, lastName: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input id="general-lastName" name="general-lastName" type="text" value={generalInfo.lastName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, lastName: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Date of Birth</div>
@@ -79,7 +79,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
             value={formatDate(generalInfo.birthdate)}
             disabled={!isEditingGeneral}
             onChange={handleDateChange}
-            className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
           />
         </div>
         <div>
@@ -90,7 +90,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
               name="general-gender"
               value={generalInfo.gender}
               onChange={handleGenderChange}
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select gender</option>
               <option value="male">Male</option>
@@ -104,21 +104,21 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
               type="text" 
               value={formatGender(generalInfo.gender)} 
               disabled 
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" 
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
             />
           )}
         </div>
         <div>
           <div className="text-gray-600 mb-1">Phone</div>
-          <input id="general-contact_number" name="general-contact_number" type="text" value={generalInfo.contact_number} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, contact_number: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input id="general-contact_number" name="general-contact_number" type="text" value={generalInfo.contact_number} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, contact_number: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Email</div>
-          <input id="general-email" name="general-email" type="text" value={generalInfo.email} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, email: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input id="general-email" name="general-email" type="text" value={generalInfo.email} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, email: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
         </div>
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <div className="text-gray-600 mb-1">Address</div>
-          <input id="general-location" name="general-location" type="text" value={generalInfo.location} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, location: e.target.value })} className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input id="general-location" name="general-location" type="text" value={generalInfo.location} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, location: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
         </div>
       </div>
       {isEditingGeneral && (
@@ -141,7 +141,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
 
 function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-6 border border-gray-200 h-auto min-h-0 mb-12">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 h-auto min-h-0 mb-12">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-bold text-orange-600">About</h2>
         {!isEditingAbout && isOwnProfile && (
@@ -149,9 +149,9 @@ function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleS
         )}
       </div>
       {isEditingAbout ? (
-        <textarea value={about} onChange={e => setAbout(e.target.value)} className="w-full bg-gray-100 rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line" />
+        <textarea value={about} onChange={e => setAbout(e.target.value)} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line" />
       ) : (
-        <div className="bg-gray-100 rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line">{about}</div>
+        <div className="bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line">{about}</div>
       )}
       {isEditingAbout && (
         <div className="flex gap-2 mt-4">
@@ -216,7 +216,7 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow p-6 border border-gray-200">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-orange-600">Professional Background</h3>
         {!isEditingProfessional && isOwnProfile && (
@@ -252,14 +252,14 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
                   type="text"
                   value={emp.company || ''}
                   onChange={e => handleEmploymentChange(idx, 'company', e.target.value)}
-                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Company Name"
                 />
                 <input
                   type="text"
                   value={emp.title || ''}
                   onChange={e => handleEmploymentChange(idx, 'title', e.target.value)}
-                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Title"
                 />
               </div>
@@ -268,14 +268,14 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
                   type="text"
                   value={emp.industry || ''}
                   onChange={e => handleEmploymentChange(idx, 'industry', e.target.value)}
-                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Industry"
                 />
                 <input
                   type="date"
                   value={emp.hire_date ? emp.hire_date.slice(0, 10) : ''}
                   onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
-                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Hire Date"
                 />
               </div>
@@ -284,7 +284,7 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
                   type="text"
                   value={emp.employment_type || ''}
                   onChange={e => handleEmploymentChange(idx, 'employment_type', e.target.value)}
-                  className="w-1/2 bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Employment Type"
                 />
                 <label className="flex items-center gap-2">
@@ -362,7 +362,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
   };
 
   return (
-    <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200">
+    <div className="flex-1 bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">Education</h2>
         {!isEditingAcademic && isOwnProfile && (
@@ -379,7 +379,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
                   type="text"
                   value={profile.level || ''}
                   onChange={e => handleProfileChange(index, 'level', e.target.value)}
-                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Education Level"
                 />
               </div>
@@ -389,7 +389,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
                   type="text"
                   value={profile.course || ''}
                   onChange={e => handleProfileChange(index, 'course', e.target.value)}
-                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Course Name"
                 />
               </div>
@@ -399,7 +399,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
                   type="text"
                   value={profile.institution || ''}
                   onChange={e => handleProfileChange(index, 'institution', e.target.value)}
-                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Institution Name"
                 />
               </div>
@@ -409,7 +409,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
                   type="text"
                   value={profile.address || ''}
                   onChange={e => handleProfileChange(index, 'address', e.target.value)}
-                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Institution Address"
                 />
               </div>
@@ -419,7 +419,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
                   type="date"
                   value={profile.graduation_date || ''}
                   onChange={e => handleProfileChange(index, 'graduation_date', e.target.value)}
-                  className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                 />
               </div>
               <div className="flex items-end">
@@ -537,7 +537,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
       {/* Left column: Permissions + Connected Accounts stacked */}
       <div className="flex flex-col gap-6 flex-1 mb-6">
         {/* Permissions Card */}
-        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+        <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
           <h2 className="text-xl font-bold text-orange-600 mb-6">Permissions</h2>
           <div className="flex flex-col gap-6 text-lg">
             <label className="flex items-center gap-3">
@@ -570,7 +570,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
           </div>
         </div>
         {/* Connected Accounts Card */}
-        <div className="bg-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
+        <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow border border-gray-200 p-8 flex flex-col">
           <h2 className="text-xl font-bold text-orange-600 mb-6">Connected Accounts</h2>
           <div className="mb-2 font-semibold text-lg">Social Sign-in</div>
           <div className="grid grid-cols-2 gap-3">
@@ -608,7 +608,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
         </div>
       </div>
       {/* Right column: Password Information */}
-      <div className="flex-1 bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6 flex flex-col">
+      <div className="flex-1 bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6 flex flex-col">
         <h2 className="text-xl font-bold text-orange-600 mb-6">Password Information</h2>
         <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
           <label className="font-semibold">Current Password*
@@ -617,7 +617,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
               value={passwordData.current_password}
               onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
               placeholder="Enter your current password" 
-              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 mt-1" 
               required
             />
           </label>
@@ -627,7 +627,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
               value={passwordData.new_password}
               onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
               placeholder="Enter your new password" 
-              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 mt-1" 
               required
             />
           </label>
@@ -637,7 +637,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
               value={passwordData.confirm_password}
               onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
               placeholder="Confirm new password" 
-              className="w-full bg-gray-100 rounded px-3 py-2 mt-1" 
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 mt-1" 
               required
             />
           </label>
@@ -749,7 +749,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
       : []);
 
   return (
-    <div className="bg-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">Matchmaking Preferences</h2>
         {!isEditingPreferences && isOwnProfile && (
@@ -763,12 +763,12 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
             <select
               value={localPreferences.position_desired || ''}
               onChange={e => setLocalPreferences({ ...localPreferences, position_desired: e.target.value })}
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select position</option>
               <option value="co-founder">Co-Founder</option>
               <option value="technical_co-founder">Technical Co-Founder</option>
-              <option value="business_co-founder">Business Co-Founder</option>
+              <option value="business_co_founder">Business Co-Founder</option>
               <option value="investor">Investor</option>
               <option value="advisor">Advisor</option>
             </select>
@@ -782,7 +782,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
                 const selected = Array.from(e.target.selectedOptions, option => option.value);
                 setLocalPreferences({ ...localPreferences, preferred_industries: selected });
               }}
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="Technology">Technology</option>
               <option value="Healthcare">Healthcare</option>
@@ -799,7 +799,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
             <select
               value={localPreferences.preferred_startup_stage || ''}
               onChange={e => setLocalPreferences({ ...localPreferences, preferred_startup_stage: e.target.value })}
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select stage</option>
               <option value="idea">Idea Stage</option>
@@ -814,7 +814,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
               type="text"
               value={localPreferences.preferred_location || ''}
               onChange={e => setLocalPreferences({ ...localPreferences, preferred_location: e.target.value })}
-              className="w-full bg-gray-100 rounded px-3 py-2 text-gray-700 font-semibold"
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
               placeholder="Enter preferred location"
             />
           </div>
@@ -1212,7 +1212,7 @@ export default function UserProfile() {
 
   // Sidebar
   const Sidebar = () => (
-    <div className="bg-white rounded-2xl shadow w-[270px] h-[calc(100vh-110px)] flex flex-col items-center py-6 px-6 pb-8 mr-8 border border-gray-200 overflow-y-auto min-h-0">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow w-full lg:w-[270px] lg:h-[calc(100vh-110px)] flex flex-col items-center py-6 px-6 pb-8 lg:mr-8 border border-gray-200 overflow-y-auto min-h-0">
       <div className="flex flex-col items-center mb-8">
         <div className="mb-3 relative group">
           {user.profile_image && user.profile_image.trim() !== '' ? (
@@ -1296,7 +1296,7 @@ export default function UserProfile() {
 
   // Header
   const Header = () => (
-    <div className="flex items-center justify-between w-full px-8 py-4 bg-white rounded-2xl shadow mb-8">
+    <div className="flex items-center justify-between w-full px-8 py-4 bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow mb-8">
       <div className="flex items-center gap-4 w-1/2">
         <input type="text" placeholder="Search" className="w-full px-4 py-2 rounded border border-gray-300 bg-gray-50 focus:outline-none" />
       </div>
@@ -1317,7 +1317,7 @@ export default function UserProfile() {
   // Right Panel
   const RightPanel = () => (
     <div className="flex flex-col gap-6 min-h-[700px] max-w-[420px] w-full">
-      <div className="bg-white rounded-2xl shadow p-6 border border-gray-200 flex items-center gap-4 mb-2">
+      <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 flex items-center gap-4 mb-2">
         {user.profile_image && user.profile_image.trim() !== '' ? (
           <img src={user.profile_image} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
         ) : (
@@ -1336,6 +1336,15 @@ export default function UserProfile() {
         isEditingProfessional={isEditingProfessional} 
         setIsEditingProfessional={setIsEditingProfessional} 
         handleSaveProfessional={handleSaveProfessional} 
+        user={user} 
+        isOwnProfile={isOwnProfile}
+      />
+      <AboutCard 
+        about={about} 
+        setAbout={setAbout} 
+        isEditingAbout={isEditingAbout} 
+        setIsEditingAbout={setIsEditingAbout} 
+        handleSaveAbout={handleSaveAbout} 
         user={user} 
         isOwnProfile={isOwnProfile}
       />
@@ -1364,9 +1373,9 @@ export default function UserProfile() {
 
   // Main Layout
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
+    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#181818] flex flex-col">
       <Navbar />
-      <div className="flex flex-row w-full gap-8 px-8 pt-24 pb-8">
+      <div className="flex flex-col lg:flex-row w-full gap-8 px-4 sm:px-8 pt-24 pb-8">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           {activeSection === 'personal' && <>
@@ -1379,15 +1388,27 @@ export default function UserProfile() {
               user={user} 
               isOwnProfile={isOwnProfile}
             />
-            <AboutCard 
-              about={about} 
-              setAbout={setAbout} 
-              isEditingAbout={isEditingAbout} 
-              setIsEditingAbout={setIsEditingAbout} 
-              handleSaveAbout={handleSaveAbout} 
-              user={user} 
-              isOwnProfile={isOwnProfile}
-            />
+            {/* Show Professional Background and About on mobile */}
+            <div className="lg:hidden">
+              <ProfessionalBackgroundCard 
+                employments={employments} 
+                setEmployments={setEmployments} 
+                isEditingProfessional={isEditingProfessional} 
+                setIsEditingProfessional={setIsEditingProfessional} 
+                handleSaveProfessional={handleSaveProfessional} 
+                user={user} 
+                isOwnProfile={isOwnProfile}
+              />
+              <AboutCard 
+                about={about} 
+                setAbout={setAbout} 
+                isEditingAbout={isEditingAbout} 
+                setIsEditingAbout={setIsEditingAbout} 
+                handleSaveAbout={handleSaveAbout} 
+                user={user} 
+                isOwnProfile={isOwnProfile}
+              />
+            </div>
           </>}
           {activeSection === 'academic' && <AcademicProfile />}
           {activeSection === 'matchmaking' && (
@@ -1403,9 +1424,8 @@ export default function UserProfile() {
           )}
           {activeSection === 'privacy' && isOwnProfile && <PrivacySettings />}
         </div>
-        {activeSection === 'personal' && <RightPanel />}
+        {activeSection === 'personal' && <div className="hidden lg:block"><RightPanel /></div>}
       </div>
     </div>
   );
 }
-
