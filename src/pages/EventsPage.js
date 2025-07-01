@@ -63,9 +63,14 @@ function EventsPage() {
           date: e.event_date ? new Date(e.event_date) : null,
           tags: e.tags ? e.tags.split(',').map(t => t.trim()) : [],
           rsvpLink: e.rsvp_link,
-          time: e.time,
+          time: e.start_time && e.end_time 
+            ? `${formatTime(e.start_time)} - ${formatTime(e.end_time)}`
+            : e.start_time 
+            ? formatTime(e.start_time)
+            : e.time,
           venue: e.location,
-          type: e.status // use status as type (upcoming, ongoing, completed)
+          type: e.status, // use status as type (upcoming, ongoing, completed)
+          status: e.status
         }));
         setEvents(data);
       } catch (err) {
@@ -75,16 +80,100 @@ function EventsPage() {
       }
     };
     fetchEvents();
+    
+    // Set up periodic refresh every minute to get latest status updates
+    const interval = setInterval(fetchEvents, 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  // Additional real-time checks for events starting/ending soon
+  useEffect(() => {
+    const checkAndRefreshForTransitions = () => {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Find events that might transition in the next few minutes
+      const eventsNeedingChecks = events.filter(event => {
+        if (!event.date || !event.start_time) return false;
+        
+        const isToday = event.date.toDateString() === now.toDateString();
+        if (!isToday) return false;
+        
+        const [startHour, startMin] = event.start_time.split(':').map(Number);
+        const eventStartMinutes = startHour * 60 + startMin;
+        
+        // Check if event starts within the next 2 minutes or just started
+        const timeDiff = eventStartMinutes - currentMinutes;
+        return timeDiff >= -2 && timeDiff <= 2;
+      });
+      
+      // If there are events about to transition, refresh the data
+      if (eventsNeedingChecks.length > 0) {
+        const fetchEvents = async () => {
+          try {
+            const res = await fetch('/api/events');
+            if (!res.ok) throw new Error('Failed to fetch events');
+            let data = await res.json();
+            data = data.map(e => ({
+              ...e,
+              date: e.event_date ? new Date(e.event_date) : null,
+              tags: e.tags ? e.tags.split(',').map(t => t.trim()) : [],
+              rsvpLink: e.rsvp_link,
+              time: e.start_time && e.end_time 
+                ? `${formatTime(e.start_time)} - ${formatTime(e.end_time)}`
+                : e.start_time 
+                ? formatTime(e.start_time)
+                : e.time,
+              venue: e.location,
+              type: e.status,
+              status: e.status
+            }));
+            setEvents(data);
+          } catch (err) {
+            console.error('Error refreshing events:', err);
+          }
+        };
+        fetchEvents();
+      }
+    };
+    
+    // Check every 30 seconds for events that are about to start or just started
+    const frequentInterval = setInterval(checkAndRefreshForTransitions, 30 * 1000);
+    
+    return () => clearInterval(frequentInterval);
+  }, [events]);
+
+  // Helper function to format time from 24-hour to 12-hour format
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   // Get unique event dates for highlighting
   const eventDates = events.map(e => e.date?.toDateString()).filter(Boolean);
 
   // Filter events by tab and filter
-  const filteredEvents = events.filter(e =>
-    (tab === "upcoming" ? e.type === "upcoming" : e.type === "completed" || e.type === "past") &&
-    (filter === "All Events" || (e.tags && e.tags.includes(filter)))
-  );
+  const filteredEvents = events.filter(e => {
+    // Tab filtering
+    let tabMatch = false;
+    if (tab === "upcoming") {
+      tabMatch = e.type === "upcoming";
+    } else if (tab === "ongoing") {
+      tabMatch = e.type === "ongoing";
+    } else if (tab === "past") {
+      tabMatch = e.type === "completed" || e.type === "past";
+    }
+    
+    // Filter by event type/tag
+    const filterMatch = filter === "All Events" || (e.tags && e.tags.includes(filter));
+    
+    return tabMatch && filterMatch;
+  });
 
   // Group events by date
   const groupedEvents = filteredEvents.reduce((acc, event) => {
@@ -103,8 +192,12 @@ function EventsPage() {
     return null;
   }
 
-  // Example: Add images to events (in real app, this would come from API)
-  const eventImages = {};
+  // Count events by status
+  const eventCounts = {
+    upcoming: events.filter(e => e.status === 'upcoming').length,
+    ongoing: events.filter(e => e.status === 'ongoing').length,
+    past: events.filter(e => e.status === 'completed' || e.status === 'past').length
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18191a]">
@@ -142,18 +235,33 @@ function EventsPage() {
                   </select>
                   <button className="bg-[#ea580c] text-white px-4 py-2 rounded ml-0 sm:ml-2 font-semibold shadow hover:bg-orange-700 transition">Filter</button>
                   <div className="flex-1"></div>
-                  <div className="flex gap-2 mt-2 sm:mt-0">
+                  <div className="flex gap-2 mt-2 sm:mt-0 flex-wrap">
                     <button
-                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
+                      className={`px-4 py-2 rounded font-semibold transition flex items-center gap-2 ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
                       onClick={() => setTab('upcoming')}
                     >
                       Upcoming Events
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${tab === 'upcoming' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {eventCounts.upcoming}
+                      </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded font-semibold transition ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
+                      className={`px-4 py-2 rounded font-semibold transition flex items-center gap-2 ${tab === 'ongoing' ? 'bg-green-600 text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-green-50 dark:hover:bg-[#333]'}`}
+                      onClick={() => setTab('ongoing')}
+                    >
+                      🔴 Live Events
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${tab === 'ongoing' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {eventCounts.ongoing}
+                      </span>
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded font-semibold transition flex items-center gap-2 ${tab === 'past' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
                       onClick={() => setTab('past')}
                     >
                       Past Events
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${tab === 'past' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {eventCounts.past}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -164,7 +272,9 @@ function EventsPage() {
                   ) : error ? (
                     <div className="text-red-500 dark:text-red-400 text-center py-8">{error}</div>
                   ) : Object.keys(groupedEvents).length === 0 ? (
-                    <div className="text-gray-500 dark:text-gray-300 text-center py-8">No events found.</div>
+                    <div className="text-gray-500 dark:text-gray-300 text-center py-8">
+                      {tab === 'ongoing' ? 'No live events at the moment.' : `No ${tab} events found.`}
+                    </div>
                   ) : (
                     Object.entries(groupedEvents).map(([date, events]) => (
                       <div key={date} className="mb-10">
@@ -172,15 +282,30 @@ function EventsPage() {
                         {events.map(event => (
                           <button
                             key={event.id}
-                            className={`mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition ${tab === 'upcoming' ? 'bg-white text-gray-800' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white'}`}
+                            className={`mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition relative ${
+                              tab === 'upcoming' ? 'bg-white text-gray-800' : 
+                              tab === 'ongoing' ? 'bg-green-50 dark:bg-green-900/20 text-gray-800 dark:text-white border-l-4 border-l-green-500' :
+                              'bg-gray-100 dark:bg-[#232526] text-black dark:text-white'
+                            }`}
                             onClick={() => { setSelectedEvent(event); setModalOpen(true); }}
                           >
+                            {/* Live indicator for ongoing events */}
+                            {event.status === 'ongoing' && (
+                              <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                LIVE
+                              </div>
+                            )}
+                            
                             <div className="mb-1">
-                              <span className="font-bold text-xl text-black dark:text-white leading-tight block">{event.title}</span>
+                              <span className="font-bold text-xl text-black dark:text-white leading-tight block pr-16">{event.title}</span>
                               <span className="block text-gray-400 dark:text-gray-300 text-sm mt-1 flex items-center">
-                                <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <svg className="w-4 h-4 mr-1 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" /></svg>
                                 {event.date ? event.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ''}
                                 <span className="ml-2">{event.time}</span>
+                                {event.status === 'ongoing' && (
+                                  <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">• Currently happening</span>
+                                )}
                               </span>
                             </div>
                             <div className="text-gray-700 dark:text-gray-200 mb-2 text-base leading-snug">
@@ -199,6 +324,11 @@ function EventsPage() {
                               {event.tags && event.tags.map(tag => (
                                 <span key={tag} className="bg-gray-200 dark:bg-[#333] text-xs px-2 py-1 rounded font-semibold text-gray-700 dark:text-white">{tag}</span>
                               ))}
+                              {event.status === 'ongoing' && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-semibold animate-pulse">
+                                  LIVE NOW
+                                </span>
+                              )}
                             </div>
                           </button>
                         ))}
@@ -215,6 +345,27 @@ function EventsPage() {
                     onChange={setCalendarDate}
                     tileContent={tileContent}
                   />
+                </div>
+                
+                {/* Event Status Summary */}
+                <div className="mt-4 w-full bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Event Status</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Upcoming:</span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">{eventCounts.upcoming}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        🔴 Live:
+                      </span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{eventCounts.ongoing}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Completed:</span>
+                      <span className="font-semibold text-gray-600 dark:text-gray-400">{eventCounts.past}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -234,13 +385,27 @@ function EventsPage() {
             </button>
             {/* Left side: Event Details */}
             <div className="flex-1 pr-4">
-              <h2 className="text-2xl font-bold mb-2 text-[#ea580c] dark:text-orange-300">{selectedEvent.title}</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-2xl font-bold text-[#ea580c] dark:text-orange-300">{selectedEvent.title}</h2>
+                {selectedEvent.status === 'ongoing' && (
+                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    LIVE
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-300 text-sm">
-                <svg className="w-5 h-5 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <svg className="w-5 h-5 text-[#ea580c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" /></svg>
                 <span className="font-bold text-black dark:text-white mr-1">{selectedEvent.date ? selectedEvent.date.toLocaleDateString(undefined, { weekday: 'long' }) : ''}</span>
                 <span className="mr-1">{selectedEvent.date ? selectedEvent.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
                 <span className="mx-1">|</span>
                 <span>{selectedEvent.time}</span>
+                {selectedEvent.status === 'ongoing' && (
+                  <>
+                    <span className="mx-1">|</span>
+                    <span className="text-green-600 dark:text-green-400 font-semibold">Currently happening</span>
+                  </>
+                )}
               </div>
               <div className="text-gray-700 dark:text-gray-200 mb-3 text-base leading-snug whitespace-pre-line">{selectedEvent.description}</div>
               {selectedEvent.venue && (
@@ -253,15 +418,24 @@ function EventsPage() {
                 {selectedEvent.tags && selectedEvent.tags.map(tag => (
                   <span key={tag} className="bg-gray-200 dark:bg-[#333] text-xs px-2 py-1 rounded font-semibold text-gray-700 dark:text-white">{tag}</span>
                 ))}
+                {selectedEvent.status === 'ongoing' && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-semibold animate-pulse">
+                    LIVE NOW
+                  </span>
+                )}
               </div>
               {selectedEvent.rsvpLink && (
                 <a
                   href={selectedEvent.rsvpLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mb-4 px-6 py-2 bg-[#ea580c] text-white font-semibold rounded shadow hover:bg-orange-700 transition"
+                  className={`inline-block mb-4 px-6 py-2 font-semibold rounded shadow transition ${
+                    selectedEvent.status === 'ongoing' 
+                      ? 'bg-green-600 text-white hover:bg-green-700' 
+                      : 'bg-[#ea580c] text-white hover:bg-orange-700'
+                  }`}
                 >
-                  RSVP / Register
+                  {selectedEvent.status === 'ongoing' ? 'Join Live Event' : 'RSVP / Register'}
                 </a>
               )}
             </div>

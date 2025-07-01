@@ -1832,14 +1832,16 @@ app.post("/api/events", authenticateToken, async (req, res) => {
 			status,
 			rsvp_link,
 			time,
+			start_time,
+			end_time,
 			tags,
 		} = req.body;
 		if (!title || !event_date) {
 			return res.status(400).json({ error: "Title and event_date are required" });
 		}
 		const [result] = await pool.query(
-			`INSERT INTO events (title, description, event_date, location, organizer_id, status, rsvp_link, time, tags, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+			`INSERT INTO events (title, description, event_date, location, organizer_id, status, rsvp_link, time, start_time, end_time, tags, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
 			[
 				title,
 				description,
@@ -1849,6 +1851,8 @@ app.post("/api/events", authenticateToken, async (req, res) => {
 				status || "upcoming",
 				rsvp_link,
 				time,
+				start_time,
+				end_time,
 				tags,
 			]
 		);
@@ -1873,6 +1877,8 @@ app.put("/api/events/:id", authenticateToken, async (req, res) => {
 			status,
 			rsvp_link,
 			time,
+			start_time,
+			end_time,
 			tags,
 		} = req.body;
 		const eventId = req.params.id;
@@ -1899,7 +1905,7 @@ app.put("/api/events/:id", authenticateToken, async (req, res) => {
 		// Update the event
 		await pool.query(
 			`UPDATE events 
-			 SET title = ?, description = ?, event_date = ?, location = ?, status = ?, rsvp_link = ?, time = ?, tags = ?, updated_at = NOW()
+			 SET title = ?, description = ?, event_date = ?, location = ?, status = ?, rsvp_link = ?, time = ?, start_time = ?, end_time = ?, tags = ?, updated_at = NOW()
 			 WHERE id = ?`,
 			[
 				title,
@@ -1909,6 +1915,8 @@ app.put("/api/events/:id", authenticateToken, async (req, res) => {
 				status || "upcoming",
 				rsvp_link,
 				time,
+				start_time,
+				end_time,
 				tags,
 				eventId,
 			]
@@ -1935,6 +1943,36 @@ app.get("/api/events", async (req, res) => {
 		res.json(rows);
 	} catch (error) {
 		console.error("Error fetching events:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+// Delete Event endpoint
+app.delete("/api/events/:id", authenticateToken, async (req, res) => {
+	try {
+		const eventId = req.params.id;
+
+		// Check if event exists and if user is authorized to delete it
+		const [existingEvent] = await pool.query(
+			"SELECT * FROM events WHERE id = ?",
+			[eventId]
+		);
+
+		if (existingEvent.length === 0) {
+			return res.status(404).json({ error: "Event not found" });
+		}
+
+		// Check if user is the organizer or an admin
+		if (existingEvent[0].organizer_id !== req.user.id && req.user.role !== 'admin') {
+			return res.status(403).json({ error: "Not authorized to delete this event" });
+		}
+
+		// Delete the event
+		await pool.query("DELETE FROM events WHERE id = ?", [eventId]);
+
+		res.json({ message: "Event deleted successfully" });
+	} catch (error) {
+		console.error("Error deleting event:", error);
 		res.status(500).json({ error: "Internal server error" });
 	}
 });

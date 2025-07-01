@@ -42,6 +42,7 @@ function AdminDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [eventFiles, setEventFiles] = useState([]); // For new file upload
   const [eventNotification, setEventNotification] = useState(null); // For event creation notification
+  const [eventsLoading, setEventsLoading] = useState(false); // For events loading state
   const [roleFilter, setRoleFilter] = useState('all');
   const [roleFilterAnim, setRoleFilterAnim] = useState(''); // Add animation state for role filter
   // State for month/year picker
@@ -95,7 +96,7 @@ function AdminDashboard() {
 
   // Add state for event modal (sidebar version)
   const [showEventModal, setShowEventModal] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', start_time: '', end_time: '', location: '', rsvp_link: '', description: '' });
   
   // Add state for editing events
   const [editingEvent, setEditingEvent] = useState(null);
@@ -111,6 +112,10 @@ function AdminDashboard() {
   const [showBulkActionModal, setShowBulkActionModal] = useState(false);
   const [bulkAction, setBulkAction] = useState('');
   const [startupActionNotification, setStartupActionNotification] = useState(null);
+
+  // Add state for event deletion confirmation
+  const [showDeleteEventModal, setShowDeleteEventModal] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   // Add comprehensive user management state
   const [selectedUserIds, setSelectedUserIds] = useState([]);
@@ -272,7 +277,11 @@ function AdminDashboard() {
   }, [darkMode]);
 
   // Helper to get events for a specific date
-  const getEventsForDate = (dateStr) => events.filter(e => e.date === dateStr);
+  const getEventsForDate = (dateStr) => events.filter(e => {
+    if (!e.event_date) return false;
+    const eventDate = new Date(e.event_date);
+    return eventDate.toISOString().split('T')[0] === dateStr;
+  });
 
   // Calendar rendering helpers      // Revised getMonthMatrix to align Sunday as 0, Monday as 1, ... Saturday as 6
   const getMonthMatrix = (date) => {
@@ -381,9 +390,40 @@ function AdminDashboard() {
   }
 
   // Add event deletion logic
-  const handleDeleteEvent = (eventToDelete) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      setEvents(evts => evts.filter(e => e !== eventToDelete));
+  const handleDeleteEvent = (event) => {
+    setEventToDelete(event);
+    setShowDeleteEventModal(true);
+  };
+
+  // Actual delete function after confirmation
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/events/${eventToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to delete event');
+
+      // Remove from local state
+      setEvents(events.filter(e => e.id !== eventToDelete.id));
+      
+      // Close modal and reset state
+      setShowDeleteEventModal(false);
+      setEventToDelete(null);
+      
+      // Show success notification
+      setEventNotification({ type: 'success', message: 'Event deleted successfully!' });
+      setTimeout(() => setEventNotification(null), 3000);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      setEventNotification({ type: 'error', message: error.message });
+      setTimeout(() => setEventNotification(null), 3000);
     }
   };
 
@@ -512,13 +552,13 @@ function AdminDashboard() {
     // Parse the event date and time
     const eventDate = event.event_date ? new Date(event.event_date) : null;
     const dateStr = eventDate ? eventDate.toISOString().split('T')[0] : '';
-    const timeStr = eventDate ? eventDate.toTimeString().split(' ')[0].substring(0, 5) : '';
     
     // Populate the form with existing event data
     setNewEvent({
       title: event.title || '',
       date: dateStr,
-      time: timeStr,
+      start_time: event.start_time || '',
+      end_time: event.end_time || '',
       location: event.location || '',
       rsvp_link: event.rsvp_link || '',
       description: event.description || '',
@@ -637,7 +677,7 @@ function AdminDashboard() {
   const handleSidebarEventSave = async () => {
     try {
       const token = localStorage.getItem('token');
-      const event_date = newEvent.date + (newEvent.time ? `T${newEvent.time}` : '');
+      const event_date = newEvent.date + (newEvent.start_time ? `T${newEvent.start_time}` : '');
       
       if (isEditMode && editingEvent) {
         // Update existing event
@@ -653,7 +693,8 @@ function AdminDashboard() {
             location: newEvent.location,
             status: newEvent.status || 'upcoming',
             rsvp_link: newEvent.rsvp_link,
-            time: newEvent.time,
+            start_time: newEvent.start_time,
+            end_time: newEvent.end_time,
             description: newEvent.description,
             tags: newEvent.tags
           })
@@ -682,7 +723,8 @@ function AdminDashboard() {
             location: newEvent.location,
             status: newEvent.status || 'upcoming',
             rsvp_link: newEvent.rsvp_link,
-            time: newEvent.time,
+            start_time: newEvent.start_time,
+            end_time: newEvent.end_time,
             description: newEvent.description,
             tags: newEvent.tags
           })
@@ -699,24 +741,162 @@ function AdminDashboard() {
       setShowEventModal(false);
       setIsEditMode(false);
       setEditingEvent(null);
-      setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+      setNewEvent({ title: '', date: '', start_time: '', end_time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
     } catch (error) {
       setEventNotification({ type: 'error', message: error.message });
     }
   };
 
+  // Function to automatically update event statuses based on date/time
+  const updateEventStatuses = async (eventsList = events) => {
+    const now = new Date();
+    const updatedEvents = [];
+    let hasUpdates = false;
+
+    console.log('🕐 Checking event statuses at:', now.toLocaleTimeString());
+
+    for (const event of eventsList) {
+      if (!event.event_date) {
+        updatedEvents.push(event);
+        continue;
+      }
+
+      const eventDate = new Date(event.event_date);
+      let newStatus = event.status;
+
+      // Check if event is happening today first
+      const today = new Date();
+      const isToday = eventDate.toDateString() === today.toDateString();
+      
+      if (isToday) {
+        // If event is today, check if it's currently ongoing based on start/end times
+        let startTime, endTime;
+        
+        if (event.start_time && event.end_time) {
+          // Use provided start and end times
+          const [startHour, startMin] = event.start_time.split(':').map(Number);
+          const [endHour, endMin] = event.end_time.split(':').map(Number);
+          startTime = startHour * 60 + startMin;
+          endTime = endHour * 60 + endMin;
+        } else if (event.start_time) {
+          // Use start time and assume 2 hour duration
+          const [startHour, startMin] = event.start_time.split(':').map(Number);
+          startTime = startHour * 60 + startMin;
+          endTime = startTime + 120; // 2 hours
+        } else {
+          // Fallback to event_date time
+          const eventTime = eventDate.getHours() * 60 + eventDate.getMinutes();
+          startTime = eventTime;
+          endTime = eventTime + 120; // 2 hours
+        }
+        
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        
+        console.log(`📅 Event "${event.title}": Current=${currentTime}min, Start=${startTime}min, End=${endTime}min, Status=${event.status}`);
+        
+        if (currentTime >= startTime && currentTime <= endTime) {
+          // Event is currently happening - mark as ongoing
+          if (event.status !== 'ongoing') {
+            newStatus = 'ongoing';
+            hasUpdates = true;
+            console.log(`🔴 CHANGING "${event.title}" to ONGOING (LIVE)`);
+          }
+        } else if (currentTime > endTime) {
+          // Event has ended today - mark as completed
+          if (event.status !== 'completed') {
+            newStatus = 'completed';
+            hasUpdates = true;
+            console.log(`✅ CHANGING "${event.title}" to COMPLETED`);
+          }
+        } else {
+          // Event is today but hasn't started yet - mark as upcoming
+          if (event.status !== 'upcoming') {
+            newStatus = 'upcoming';
+            hasUpdates = true;
+            console.log(`⏳ CHANGING "${event.title}" to UPCOMING`);
+          }
+        }
+      } else {
+        // Event is not today - check if it's in the future or past
+        const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        if (eventDateOnly < todayOnly) {
+          // Event was in the past - mark as completed
+          if (event.status !== 'completed') {
+            newStatus = 'completed';
+            hasUpdates = true;
+            console.log(`📅 CHANGING "${event.title}" to COMPLETED (past date)`);
+          }
+        } else {
+          // Event is in the future - mark as upcoming
+          if (event.status !== 'upcoming') {
+            newStatus = 'upcoming';
+            hasUpdates = true;
+            console.log(`📅 CHANGING "${event.title}" to UPCOMING (future date)`);
+          }
+        }
+      }
+
+      // If status changed, update the event in backend
+      if (newStatus !== event.status) {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`/api/events/${event.id}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...event,
+              status: newStatus
+            })
+          });
+          if (res.ok) {
+            updatedEvents.push({ ...event, status: newStatus });
+          } else {
+            updatedEvents.push(event);
+          }
+        } catch (error) {
+          console.error('Error updating event status:', error);
+          updatedEvents.push(event);
+        }
+      } else {
+        updatedEvents.push(event);
+      }
+    }
+
+    // Update local state if there were changes
+    if (hasUpdates) {
+      setEvents(updatedEvents);
+      console.log('🔄 Updated events with new statuses');
+    } else {
+      console.log('✨ No status changes needed');
+    }
+
+    return updatedEvents;
+  };
+
   // Add fetchEvents function
   const fetchEvents = async () => {
     try {
+      setEventsLoading(true);
       const token = localStorage.getItem('token');
       const res = await fetch('/api/events', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch events');
       const data = await res.json();
-      setEvents(data);
+      
+      // Automatically update event statuses after fetching
+      const updatedEvents = await updateEventStatuses(data);
+      setEvents(updatedEvents);
     } catch (error) {
+      console.error('Error fetching events:', error);
       setEventNotification({ type: 'error', message: error.message });
+    } finally {
+      setEventsLoading(false);
     }
   };
 
@@ -733,18 +913,28 @@ function AdminDashboard() {
       .then(response => response.json())
       .then(data => {
         if (!data.error) {
-          // Try to fetch upcoming events count from backend if available
-          if (typeof data.total_upcoming_events !== 'undefined') {
-            setDashboardStats(data);
-          } else {
-            // Fallback: calculate upcoming events from events state
-            setDashboardStats(stats => ({
+          // Calculate upcoming events from events state
+          const upcomingEventsCount = Array.isArray(events)
+            ? events.filter(e => {
+                if (!e.event_date) return false;
+                // Prioritize status if available, otherwise use date
+                if (e.status) {
+                  return e.status === 'upcoming' || e.status === 'ongoing';
+                }
+                // Fallback to date-based filtering
+                const eventDate = new Date(e.event_date);
+                const now = new Date();
+                return eventDate >= now;
+              }).length
+            : 0;
+          
+          // Use backend count if available, otherwise use calculated count
+          setDashboardStats({
               ...data,
-              total_upcoming_events: Array.isArray(events)
-                ? events.filter(e => new Date(e.date) >= new Date()).length
-                : 0
-            }));
-          }
+            total_upcoming_events: typeof data.total_upcoming_events !== 'undefined' 
+              ? data.total_upcoming_events 
+              : upcomingEventsCount
+          });
         }
       })
       .catch(error => console.error('Error fetching dashboard stats:', error));
@@ -754,8 +944,71 @@ function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'dashboard') {
       fetchDashboardStats();
+      // Also fetch events if not already loaded
+      if (events.length === 0) {
+        fetchEvents();
+      }
     }
-  }, [activeTab, events]);
+  }, [activeTab]);
+
+  // Update dashboard stats when events change
+  useEffect(() => {
+    if (activeTab === 'dashboard' && events.length > 0) {
+      fetchDashboardStats();
+    }
+  }, [events, activeTab]);
+
+  // Periodic status updates - check every minute for more real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (events.length > 0) {
+        updateEventStatuses();
+      }
+    }, 1 * 60 * 1000); // 1 minute instead of 5 minutes
+
+    return () => clearInterval(interval);
+  }, [events]);
+
+  // Additional real-time checks for events starting/ending soon
+  useEffect(() => {
+    const checkUpcomingTransitions = () => {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Find events that might transition in the next few minutes
+      const eventsNeedingChecks = events.filter(event => {
+        if (!event.event_date || !event.start_time) return false;
+        
+        const eventDate = new Date(event.event_date);
+        const isToday = eventDate.toDateString() === now.toDateString();
+        
+        if (!isToday) return false;
+        
+        const [startHour, startMin] = event.start_time.split(':').map(Number);
+        const eventStartMinutes = startHour * 60 + startMin;
+        
+        // Check if event starts within the next 2 minutes or just started
+        const timeDiff = eventStartMinutes - currentMinutes;
+        return timeDiff >= -2 && timeDiff <= 2;
+      });
+      
+      if (eventsNeedingChecks.length > 0) {
+        updateEventStatuses();
+      }
+    };
+    
+    // Check every 30 seconds for events that are about to start or just started
+    const frequentInterval = setInterval(checkUpcomingTransitions, 30 * 1000);
+    
+    return () => clearInterval(frequentInterval);
+  }, [events]);
+
+  // Update event statuses when dashboard becomes active
+  useEffect(() => {
+    if (activeTab === 'dashboard' && events.length > 0) {
+      updateEventStatuses();
+    }
+  }, [activeTab]);
 
   // Fetch startups and users when Site Performance tab is active
   useEffect(() => {
@@ -788,8 +1041,18 @@ function AdminDashboard() {
             case 'dashboard':
               // Show upcoming events from the events state (created by admin)
               const upcomingEvents = events
-                .filter(e => new Date(e.date) >= new Date())
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .filter(e => {
+                  if (!e.event_date) return false;
+                  // Prioritize status if available, otherwise use date
+                  if (e.status) {
+                    return e.status === 'upcoming' || e.status === 'ongoing';
+                  }
+                  // Fallback to date-based filtering
+                  const eventDate = new Date(e.event_date);
+                  const now = new Date();
+                  return eventDate >= now;
+                })
+                .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
                 .slice(0, 3); // Show next 3 upcoming events
               return (
                 <div className="flex flex-col gap-6 w-full">
@@ -816,22 +1079,65 @@ function AdminDashboard() {
                       <span className={`${darkMode ? 'text-gray-400' : 'text-orange-700'} text-sm`}>Upcoming Events</span>
                       <span className='text-3xl font-bold mt-2 text-black dark:text-white'>{dashboardStats.total_upcoming_events}</span>
                       <div className="mt-2 w-full">
-                        {dashboardStats.total_upcoming_events === 0 && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events.</span>}
-                        {upcomingEvents.map((event, idx) => (
-                          <div key={idx} className={`flex flex-col mb-2 p-2 rounded border ${darkMode ? 'bg-[#181818] border-orange-900/30' : 'bg-orange-50 border-orange-200'}`}>
+                        {eventsLoading && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading events...</span>}
+                        {!eventsLoading && dashboardStats.total_upcoming_events === 0 && <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events.</span>}
+                        {upcomingEvents.map((event, idx) => {
+                          const eventDate = new Date(event.event_date);
+                          const formattedDate = eventDate.toLocaleDateString();
+                          
+                          // Format time range
+                          let formattedTime = '';
+                          if (event.start_time && event.end_time) {
+                            // Convert 24-hour to 12-hour format for display
+                            const formatTime = (timeStr) => {
+                              const [hours, minutes] = timeStr.split(':');
+                              const hour = parseInt(hours);
+                              const ampm = hour >= 12 ? 'PM' : 'AM';
+                              const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                              return `${displayHour}:${minutes} ${ampm}`;
+                            };
+                            formattedTime = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
+                          } else if (event.start_time) {
+                            const formatTime = (timeStr) => {
+                              const [hours, minutes] = timeStr.split(':');
+                              const hour = parseInt(hours);
+                              const ampm = hour >= 12 ? 'PM' : 'AM';
+                              const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                              return `${displayHour}:${minutes} ${ampm}`;
+                            };
+                            formattedTime = formatTime(event.start_time);
+                          } else if (eventDate.getHours() !== 0 || eventDate.getMinutes() !== 0) {
+                            formattedTime = eventDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                          }
+                          
+                          return (
+                            <div key={event.id || idx} className={`flex flex-col mb-2 p-2 rounded border ${darkMode ? 'bg-[#181818] border-orange-900/30' : 'bg-orange-50 border-orange-200'}`}>
                             <span className={`text-xs font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>{event.title}</span>
-                            <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{event.date} {event.time && `- ${event.time}`}</span>
+                              <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {formattedDate} {formattedTime && `• ${formattedTime}`}
+                              </span>
                             <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{event.location}</span>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              {event.eventTag && (
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${darkMode ? 'bg-[#232323] border-orange-700 text-orange-300' : 'bg-orange-100 border-orange-300 text-orange-700'}`}>{event.eventTag}</span>
-                              )}
-                              {event.eventType && (
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${darkMode ? 'bg-[#232323] border-orange-700 text-orange-300' : 'bg-orange-100 border-orange-300 text-orange-700'}`}>{event.eventType === 'upcoming' ? 'Upcoming Event' : 'Past Event'}</span>
+                                {event.tags && event.tags.split(',').map((tag, tagIdx) => (
+                                  <span key={tagIdx} className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${darkMode ? 'bg-[#232323] border-orange-700 text-orange-300' : 'bg-orange-100 border-orange-300 text-orange-700'}`}>
+                                    {tag.trim()}
+                                  </span>
+                                ))}
+                                {event.status && (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                                    event.status === 'ongoing' 
+                                      ? (darkMode ? 'bg-green-900 border-green-700 text-green-300' : 'bg-green-100 border-green-300 text-green-700')
+                                      : event.status === 'completed'
+                                      ? (darkMode ? 'bg-gray-900 border-gray-700 text-gray-300' : 'bg-gray-100 border-gray-300 text-gray-700')
+                                      : (darkMode ? 'bg-[#232323] border-orange-700 text-orange-300' : 'bg-orange-100 border-orange-300 text-orange-700')
+                                  }`}>
+                                    {event.status === 'ongoing' ? '🔴 LIVE' : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                                  </span>
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <button
                         className={`mt-2 px-3 py-1 rounded text-xs font-semibold transition ${darkMode ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
@@ -956,9 +1262,22 @@ function AdminDashboard() {
                             <div key={event.id} className="bg-orange-50 dark:bg-[#2a2a2a] rounded-lg p-4 mb-4 flex flex-col gap-1 border border-orange-100 dark:border-orange-700">
                               <div className="flex items-center justify-between">
                                 <span className="text-orange-700 dark:text-orange-400 font-semibold">{event.title}</span>
-                                <button className="text-orange-400 hover:text-orange-600" onClick={() => handleEditEvent(event)} title="Edit Event">
-                                  <FiEdit2 size={16} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    className="text-orange-400 hover:text-orange-600 transition" 
+                                    onClick={() => handleEditEvent(event)} 
+                                    title="Edit Event"
+                                  >
+                                    <FiEdit2 size={16} />
+                                  </button>
+                                  <button 
+                                    className="text-red-400 hover:text-red-600 transition" 
+                                    onClick={() => handleDeleteEvent(event)} 
+                                    title="Delete Event"
+                                  >
+                                    <FiTrash2 size={16} />
+                                  </button>
+                                </div>
                               </div>
                               <span className="text-xs text-gray-500 dark:text-gray-300">{event.event_date ? new Date(event.event_date).toLocaleString() : ''}</span>
                               {event.location && <span className="text-xs text-gray-500 dark:text-gray-300">{event.location}</span>}
@@ -982,7 +1301,7 @@ function AdminDashboard() {
                               setShowEventModal(false);
                               setIsEditMode(false);
                               setEditingEvent(null);
-                              setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+                              setNewEvent({ title: '', date: '', start_time: '', end_time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
                             }}>&times;</button>
                           <h2 className="text-xl font-bold mb-4 text-orange-700">{isEditMode ? 'Edit Event' : 'Create Event'}</h2>
                           <div className="flex flex-col gap-4">
@@ -993,18 +1312,26 @@ function AdminDashboard() {
                               value={newEvent.title}
                               onChange={e => setNewEvent(ev => ({ ...ev, title: e.target.value }))}
                             />
+                            <input
+                              className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
+                              type="date"
+                              value={newEvent.date}
+                              onChange={e => setNewEvent(ev => ({ ...ev, date: e.target.value }))}
+                            />
                             <div className="flex gap-2">
                               <input
                                 className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
-                                type="date"
-                                value={newEvent.date}
-                                onChange={e => setNewEvent(ev => ({ ...ev, date: e.target.value }))}
+                                type="time"
+                                placeholder="Start time"
+                                value={newEvent.start_time}
+                                onChange={e => setNewEvent(ev => ({ ...ev, start_time: e.target.value }))}
                               />
                               <input
                                 className="w-1/2 p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
                                 type="time"
-                                value={newEvent.time}
-                                onChange={e => setNewEvent(ev => ({ ...ev, time: e.target.value }))}
+                                placeholder="End time"
+                                value={newEvent.end_time}
+                                onChange={e => setNewEvent(ev => ({ ...ev, end_time: e.target.value }))}
                               />
                             </div>
                             <input
@@ -1050,7 +1377,7 @@ function AdminDashboard() {
                                   setShowEventModal(false);
                                   setIsEditMode(false);
                                   setEditingEvent(null);
-                                  setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+                                  setNewEvent({ title: '', date: '', start_time: '', end_time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
                                 }}
                               >Cancel</button>
                               <button
@@ -1132,28 +1459,28 @@ function AdminDashboard() {
 
                   {/* Search and Filters */}
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-                    <input
-                      type="text"
+                      <input
+                        type="text"
                       placeholder="Search users..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
                       bg-white text-black border-orange-300 
                      dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
-                    />
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="rounded-lg px-4 py-2 focus:outline-none border 
+                      />
+                      <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="rounded-lg px-4 py-2 focus:outline-none border 
                        bg-white text-black border-orange-300 
                        dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="admin">Administrator</option>
-                      <option value="entrepreneur">Entrepreneur</option>
-                      <option value="investor">Investor</option>
-                    </select>
-                  </div>
+                        >
+                        <option value="all">All Roles</option>
+                        <option value="admin">Administrator</option>
+                        <option value="entrepreneur">Entrepreneur</option>
+                        <option value="investor">Investor</option>
+                      </select>
+                    </div>
 
                   {/* Bulk Actions */}
                   {selectedUserIds.length > 0 && (
@@ -1232,27 +1559,27 @@ function AdminDashboard() {
                                   {/* Name */}
                                   <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
-                                      {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
-                                      user.full_name || user.email}
+                          {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
+                          user.full_name || user.email}
                                     </div>
-                                  </td>
+                          </td>
                                   
                                   {/* Email */}
                                   <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.email}</div>
-                                  </td>
+                          </td>
                                   
                                   {/* Role */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
-                                      {roleLabels[user.role] || user.role}
+                          {roleLabels[user.role] || user.role}
                                     </div>
-                                  </td>
+                          </td>
                                   
                                   {/* Location */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.location || 'N/A'}</div>
-                                  </td>
+                            </td>
                                   
                                   {/* Status */}
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
@@ -1334,22 +1661,21 @@ case 'sitePerformance':
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg">
-        <table className="min-w-full w-full min-w-[800px] table-fixed divide-y divide-orange-100">
+        <table className="min-w-full w-full min-w-[720px] table-fixed divide-y divide-orange-100">
           <thead>
             <tr className="bg-orange-100">
               <th className="px-4 py-3 font-semibold w-[180px]">Name</th>
               <th className="px-4 py-3 font-semibold w-[180px]">Industry</th>
               <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
               <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
-              <th className="px-4 py-3 font-semibold w-[120px]">Stage</th>
+              <th className="px-4 py-3 font-semibold w-[120px] text-center">Stage</th>
               <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
-              <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
             {(reportType === 'startups' ? filteredStartups : filteredUsers).length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-lg">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-lg">
                   No results found.
                 </td>
               </tr>
@@ -1377,31 +1703,13 @@ case 'sitePerformance':
                   </td>
 
                   {/* Stage */}
-                  <td className="px-4 py-3 w-[120px] truncate">
+                  <td className="px-4 py-3 w-[120px] truncate text-center">
                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(item.startup_stage)}</div>
                   </td>
 
                   {/* Status */}
                   <td className="px-4 py-3 w-[100px] truncate">
                     {renderStatusBadge(item.approval_status)}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3 w-[100px] truncate text-center" onClick={e => e.stopPropagation()}>
-                    {item.approval_status === 'pending' ? (
-                      <>
-                        <button
-                          onClick={() => handleAcceptStartup(item.startup_id)}
-                          className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
-                        >Approve</button>
-                        <button
-                          onClick={() => handleDeclineStartup(item.startup_id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                        >Reject</button>
-                      </>
-                    ) : (
-                      <span className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">—</span>
-                    )}
                   </td>
                 </tr>
               ))
@@ -1495,8 +1803,8 @@ case 'sitePerformance':
                       </button>
                     </div>
                   )}
-                                     {/* Table */}
-                   <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
+                  {/* Table */}
+                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {startupLoading ? (
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -1520,7 +1828,7 @@ case 'sitePerformance':
                               <th className="px-4 py-3 font-semibold w-[160px]">Industry</th>
                               <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
                               <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
-                              <th className="px-4 py-3 font-semibold w-[100px]">Stage</th>
+                              <th className="px-4 py-3 font-semibold w-[100px] text-center">Stage</th>
                               <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
                               <th className="px-4 py-3 font-semibold w-[120px] text-center">Actions</th>
                             </tr>
@@ -1571,7 +1879,7 @@ case 'sitePerformance':
                                   </td>
                                   
                                   {/* Stage */}
-                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(startup.startup_stage)}</div>
                                   </td>
                                   
@@ -2426,44 +2734,44 @@ case 'sitePerformance':
           {renderContent()}
         </main>
         {/* Verification Modal */}
-        {modalOpen && selectedRequest && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col md:flex-row items-stretch gap-6">
-              <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleCloseModal}>&times;</button>
-              {/* Left: Details */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-bold mb-2 text-orange-700 text-center md:text-left">Verification Application</h3>
-                <div className="mb-4 w-full">
-                  <div className="font-semibold text-lg text-black mb-1">{selectedRequest.first_name} {selectedRequest.last_name} <span className="text-xs text-gray-500">({selectedRequest.email})</span></div>
-                  <div className="text-sm text-gray-700 mb-1">Role: {selectedRequest.role}</div>
-                  <div className="text-sm text-gray-700 mb-1">Document Type: {selectedRequest.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-                  <div className="text-sm text-gray-700 mb-1">Number: {selectedRequest.document_number || 'N/A'}</div>
-                  <div className="text-sm text-gray-700 mb-1">Issued: {selectedRequest.issue_date || 'N/A'} | Expiry: {selectedRequest.expiry_date || 'N/A'}</div>
-                  <div className="text-sm text-gray-700 mb-1">Issuing Authority: {selectedRequest.issuing_authority || 'N/A'}</div>
-                  <div className="text-sm text-gray-700 mb-1">Uploaded: {selectedRequest.uploaded_at ? new Date(selectedRequest.uploaded_at).toLocaleString() : 'N/A'}</div>
-                </div>
-                <div className="flex flex-col gap-2 mt-4 w-full">
-                  <div className="flex gap-2 justify-center">
-                    <button onClick={handleApprove} disabled={modalActionLoading} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Approve</button>
-                    <button onClick={handleReject} disabled={modalActionLoading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Not Approve</button>
+            {modalOpen && selectedRequest && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col md:flex-row items-stretch gap-6">
+                  <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleCloseModal}>&times;</button>
+                  {/* Left: Details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold mb-2 text-orange-700 text-center md:text-left">Verification Application</h3>
+                    <div className="mb-4 w-full">
+                      <div className="font-semibold text-lg text-black mb-1">{selectedRequest.first_name} {selectedRequest.last_name} <span className="text-xs text-gray-500">({selectedRequest.email})</span></div>
+                      <div className="text-sm text-gray-700 mb-1">Role: {selectedRequest.role}</div>
+                      <div className="text-sm text-gray-700 mb-1">Document Type: {selectedRequest.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                      <div className="text-sm text-gray-700 mb-1">Number: {selectedRequest.document_number || 'N/A'}</div>
+                      <div className="text-sm text-gray-700 mb-1">Issued: {selectedRequest.issue_date || 'N/A'} | Expiry: {selectedRequest.expiry_date || 'N/A'}</div>
+                      <div className="text-sm text-gray-700 mb-1">Issuing Authority: {selectedRequest.issuing_authority || 'N/A'}</div>
+                      <div className="text-sm text-gray-700 mb-1">Uploaded: {selectedRequest.uploaded_at ? new Date(selectedRequest.uploaded_at).toLocaleString() : 'N/A'}</div>
+                    </div>
+                    <div className="flex flex-col gap-2 mt-4 w-full">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={handleApprove} disabled={modalActionLoading} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Approve</button>
+                        <button onClick={handleReject} disabled={modalActionLoading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Not Approve</button>
+                      </div>
+                      <input type="text" placeholder="Rejection reason (required for Not Approve)" value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="w-full border border-orange-200 rounded-lg px-3 py-2 mt-2" />
+                      {modalError && <div className="text-red-500 text-sm mt-1 text-center">{modalError}</div>}
+                    </div>
                   </div>
-                  <input type="text" placeholder="Rejection reason (required for Not Approve)" value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="w-full border border-orange-200 rounded-lg px-3 py-2 mt-2" />
-                  {modalError && <div className="text-red-500 text-sm mt-1 text-center">{modalError}</div>}
+                  {/* Right: Document Preview */}
+                  <div className="flex-1 min-w-0 flex flex-col items-center justify-center border-l border-orange-100 pl-6">
+                    <span className="text-sm font-semibold text-orange-700 mb-2">Document Preview</span>
+                    {selectedRequest.file_type && selectedRequest.file_type.startsWith('image') ? (
+                      <img src={selectedRequest.file_path} alt="Document" className="max-h-72 max-w-full rounded shadow border border-orange-100" />
+                    ) : selectedRequest.file_type && selectedRequest.file_type === 'application/pdf' ? (
+                      <iframe src={selectedRequest.file_path} title="Document PDF" className="w-64 h-72 rounded border border-orange-100 shadow" />
+                    ) : (
+                      <a href={selectedRequest.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}}>View Document</a>
+                    )}
+                  </div>
                 </div>
               </div>
-              {/* Right: Document Preview */}
-              <div className="flex-1 min-w-0 flex flex-col items-center justify-center border-l border-orange-100 pl-6">
-                <span className="text-sm font-semibold text-orange-700 mb-2">Document Preview</span>
-                {selectedRequest.file_type && selectedRequest.file_type.startsWith('image') ? (
-                  <img src={selectedRequest.file_path} alt="Document" className="max-h-72 max-w-full rounded shadow border border-orange-100" />
-                ) : selectedRequest.file_type && selectedRequest.file_type === 'application/pdf' ? (
-                  <iframe src={selectedRequest.file_path} title="Document PDF" className="w-64 h-72 rounded border border-orange-100 shadow" />
-                ) : (
-                  <a href={selectedRequest.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}}>View Document</a>
-                )}
-              </div>
-            </div>
-          </div>
         )}
       </div>
       {/* Action Dropdown Portal */}
@@ -2844,6 +3152,53 @@ case 'sitePerformance':
                 onClick={handleBulkUserAction}
                 disabled={!bulkUserAction}
               >Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Event Confirmation Modal */}
+      {showDeleteEventModal && eventToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-md relative animate-fadeIn flex flex-col gap-6">
+            <button 
+              className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" 
+              onClick={() => {
+                setShowDeleteEventModal(false);
+                setEventToDelete(null);
+              }}
+            >
+              &times;
+            </button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">Delete Event</h3>
+            <div className="mb-4 w-full">
+              <div className="font-semibold text-lg text-black dark:text-white mb-1">{eventToDelete.title}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                Date: {eventToDelete.event_date ? new Date(eventToDelete.event_date).toLocaleDateString() : 'N/A'}
+              </div>
+              {eventToDelete.location && (
+                <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Location: {eventToDelete.location}</div>
+              )}
+              <div className="text-sm text-red-600 dark:text-red-400 mt-3">
+                Are you sure you want to delete this event? This action cannot be undone.
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-orange-700 dark:text-orange-400 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={() => {
+                  setShowDeleteEventModal(false);
+                  setEventToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition font-semibold"
+                onClick={confirmDeleteEvent}
+              >
+                Delete Event
+              </button>
             </div>
           </div>
         </div>
