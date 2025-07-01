@@ -1136,10 +1136,12 @@ app.get("/api/users/:id/preferences", authenticateToken, async (req, res) => {
 app.get("/api/users", authenticateToken, async (req, res) => {
 	try {
 		const [users] = await pool.query(`
-      SELECT id, first_name, last_name, email, role, is_verified, created_at, updated_at
+      SELECT id, first_name, last_name, full_name, email, role, is_verified, is_suspended,
+             location, industry, created_at, verification_status
       FROM users
       ORDER BY created_at DESC
     `);
+		
 		res.json(users);
 	} catch (error) {
 		console.error("Error fetching users:", error);
@@ -1625,6 +1627,200 @@ app.post(
 	}
 );
 
+// Suspend startup (admin only)
+app.post(
+	"/api/admin/startups/:id/suspend",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can suspend startups" });
+			}
+
+			const { id } = req.params;
+
+			// Update startup status
+			await pool.query(
+				`UPDATE startups 
+				 SET approval_status = 'suspended', 
+				     updated_at = NOW()
+				 WHERE startup_id = ?`,
+				[id]
+			);
+
+			res.json({ message: "Startup suspended successfully" });
+		} catch (error) {
+			console.error("Error suspending startup:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Reactivate startup (admin only)
+app.post(
+	"/api/admin/startups/:id/reactivate",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can reactivate startups" });
+			}
+
+			const { id } = req.params;
+
+			// Update startup status
+			await pool.query(
+				`UPDATE startups 
+				 SET approval_status = 'approved', 
+				     updated_at = NOW()
+				 WHERE startup_id = ?`,
+				[id]
+			);
+
+			res.json({ message: "Startup reactivated successfully" });
+		} catch (error) {
+			console.error("Error reactivating startup:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Edit startup (admin only)
+app.put(
+	"/api/admin/startups/:id",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can edit startups" });
+			}
+
+			const { id } = req.params;
+			const { name, industry, location, description, startup_stage, approval_status } = req.body;
+
+			// Update startup
+			await pool.query(
+				`UPDATE startups 
+				 SET name = ?, industry = ?, location = ?, description = ?, startup_stage = ?, approval_status = ?, updated_at = NOW()
+				 WHERE startup_id = ?`,
+				[name, industry, location, description, startup_stage, approval_status, id]
+			);
+
+			// Get updated startup with entrepreneur details
+			const [rows] = await pool.query(
+				`SELECT s.*, 
+				        CONCAT(u.first_name, ' ', u.last_name) as entrepreneur_name,
+				        u.email as entrepreneur_email
+				 FROM startups s
+				 LEFT JOIN users u ON s.entrepreneur_id = u.id 
+				 WHERE s.startup_id = ?`,
+				[id]
+			);
+
+			if (rows.length === 0) {
+				return res.status(404).json({ error: "Startup not found" });
+			}
+
+			res.json(rows[0]);
+		} catch (error) {
+			console.error("Error editing startup:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Delete startup (admin only)
+app.delete(
+	"/api/admin/startups/:id",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can delete startups" });
+			}
+
+			const { id } = req.params;
+
+			// Check if startup exists
+			const [existingStartup] = await pool.query(
+				"SELECT * FROM startups WHERE startup_id = ?",
+				[id]
+			);
+
+			if (existingStartup.length === 0) {
+				return res.status(404).json({ error: "Startup not found" });
+			}
+
+			// Delete related records first (if any foreign key constraints)
+			// You might need to delete from related tables like matches, etc.
+			await pool.query("DELETE FROM matches WHERE startup_id = ?", [id]);
+			
+			// Delete the startup
+			await pool.query("DELETE FROM startups WHERE startup_id = ?", [id]);
+
+			res.json({ message: "Startup deleted successfully" });
+		} catch (error) {
+			console.error("Error deleting startup:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Bulk action for startups (admin only)
+app.post(
+	"/api/admin/startups/bulk-action",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can perform bulk actions" });
+			}
+
+			const { startup_ids, action } = req.body;
+
+			if (!startup_ids || !Array.isArray(startup_ids) || startup_ids.length === 0) {
+				return res.status(400).json({ error: "startup_ids array is required" });
+			}
+
+			if (!action || !['suspend', 'reactivate', 'delete'].includes(action)) {
+				return res.status(400).json({ error: "Invalid action. Must be 'suspend', 'reactivate', or 'delete'" });
+			}
+
+			const placeholders = startup_ids.map(() => '?').join(',');
+
+			if (action === 'delete') {
+				// Delete related records first
+				await pool.query(`DELETE FROM matches WHERE startup_id IN (${placeholders})`, startup_ids);
+				
+				// Delete startups
+				await pool.query(`DELETE FROM startups WHERE startup_id IN (${placeholders})`, startup_ids);
+			} else {
+				// Update approval status
+				const status = action === 'suspend' ? 'suspended' : 'approved';
+				await pool.query(
+					`UPDATE startups 
+					 SET approval_status = ?, updated_at = NOW()
+					 WHERE startup_id IN (${placeholders})`,
+					[status, ...startup_ids]
+				);
+			}
+
+			res.json({ 
+				message: `Successfully ${action}d ${startup_ids.length} startup(s)`,
+				affected_count: startup_ids.length
+			});
+		} catch (error) {
+			console.error("Error performing bulk action:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
 // Create Event endpoint
 app.post("/api/events", authenticateToken, async (req, res) => {
 	try {
@@ -1662,6 +1858,83 @@ app.post("/api/events", authenticateToken, async (req, res) => {
 		res.status(201).json(rows[0]);
 	} catch (error) {
 		console.error("Error creating event:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+// Update Event endpoint
+app.put("/api/events/:id", authenticateToken, async (req, res) => {
+	try {
+		const {
+			title,
+			description,
+			event_date,
+			location,
+			status,
+			rsvp_link,
+			time,
+			tags,
+		} = req.body;
+		const eventId = req.params.id;
+
+		if (!title || !event_date) {
+			return res.status(400).json({ error: "Title and event_date are required" });
+		}
+
+		// Check if event exists and if user is authorized to edit it
+		const [existingEvent] = await pool.query(
+			"SELECT * FROM events WHERE id = ?",
+			[eventId]
+		);
+
+		if (existingEvent.length === 0) {
+			return res.status(404).json({ error: "Event not found" });
+		}
+
+		// Check if user is the organizer or an admin
+		if (existingEvent[0].organizer_id !== req.user.id && req.user.role !== 'admin') {
+			return res.status(403).json({ error: "Not authorized to edit this event" });
+		}
+
+		// Update the event
+		await pool.query(
+			`UPDATE events 
+			 SET title = ?, description = ?, event_date = ?, location = ?, status = ?, rsvp_link = ?, time = ?, tags = ?, updated_at = NOW()
+			 WHERE id = ?`,
+			[
+				title,
+				description,
+				event_date,
+				location,
+				status || "upcoming",
+				rsvp_link,
+				time,
+				tags,
+				eventId,
+			]
+		);
+
+		// Get the updated event
+		const [rows] = await pool.query("SELECT * FROM events WHERE id = ?", [eventId]);
+		res.json(rows[0]);
+	} catch (error) {
+		console.error("Error updating event:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+// Get all events endpoint
+app.get("/api/events", async (req, res) => {
+	try {
+		const [rows] = await pool.query(`
+			SELECT e.*, u.full_name as organizer_name 
+			FROM events e 
+			LEFT JOIN users u ON e.organizer_id = u.id 
+			ORDER BY e.event_date DESC
+		`);
+		res.json(rows);
+	} catch (error) {
+		console.error("Error fetching events:", error);
 		res.status(500).json({ error: "Internal server error" });
 	}
 });
@@ -1723,8 +1996,258 @@ app.get("/api/users/role/entrepreneur", authenticateToken, async (req, res) => {
 	}
 });
 
+// User Management Endpoints (Admin only)
+
+// Suspend user (admin only)
+app.post(
+	"/api/admin/users/:id/suspend",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can suspend users" });
+			}
+
+			const { id } = req.params;
+
+			// Check if user exists
+			const [existingUser] = await pool.query(
+				"SELECT * FROM users WHERE id = ?",
+				[id]
+			);
+
+			if (existingUser.length === 0) {
+				return res.status(404).json({ error: "User not found" });
+			}
+
+			// Update user status
+			await pool.query(
+				`UPDATE users 
+				 SET is_suspended = true, updated_at = NOW()
+				 WHERE id = ?`,
+				[id]
+			);
+
+			res.json({ message: "User suspended successfully" });
+		} catch (error) {
+			console.error("Error suspending user:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Reactivate user (admin only)
+app.post(
+	"/api/admin/users/:id/reactivate",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can reactivate users" });
+			}
+
+			const { id } = req.params;
+
+			// Update user status
+			await pool.query(
+				`UPDATE users 
+				 SET is_suspended = false, updated_at = NOW()
+				 WHERE id = ?`,
+				[id]
+			);
+
+			res.json({ message: "User reactivated successfully" });
+		} catch (error) {
+			console.error("Error reactivating user:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Edit user (admin only)
+app.put(
+	"/api/admin/users/:id",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can edit users" });
+			}
+
+			const { id } = req.params;
+			const { first_name, last_name, email, role, is_verified, is_suspended, industry, location } = req.body;
+
+			// Check if user exists
+			const [existingUser] = await pool.query(
+				"SELECT * FROM users WHERE id = ?",
+				[id]
+			);
+
+			if (existingUser.length === 0) {
+				return res.status(404).json({ error: "User not found" });
+			}
+
+			// Check if email is already taken by another user
+			if (email !== existingUser[0].email) {
+				const [emailCheck] = await pool.query(
+					"SELECT id FROM users WHERE email = ? AND id != ?",
+					[email, id]
+				);
+
+				if (emailCheck.length > 0) {
+					return res.status(400).json({ error: "Email already exists" });
+				}
+			}
+
+			// Update user
+			await pool.query(
+				`UPDATE users 
+				 SET first_name = ?, last_name = ?, email = ?, role = ?, is_verified = ?, is_suspended = ?, 
+				     industry = ?, location = ?, updated_at = NOW()
+				 WHERE id = ?`,
+				[first_name, last_name, email, role, is_verified, is_suspended, industry, location, id]
+			);
+
+			// Get updated user
+			const [rows] = await pool.query(
+				"SELECT id, first_name, last_name, email, role, is_verified, is_suspended, industry, location, created_at FROM users WHERE id = ?",
+				[id]
+			);
+
+			res.json(rows[0]);
+		} catch (error) {
+			console.error("Error editing user:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Delete user (admin only)
+app.delete(
+	"/api/admin/users/:id",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can delete users" });
+			}
+
+			const { id } = req.params;
+
+			// Check if user exists
+			const [existingUser] = await pool.query(
+				"SELECT * FROM users WHERE id = ?",
+				[id]
+			);
+
+			if (existingUser.length === 0) {
+				return res.status(404).json({ error: "User not found" });
+			}
+
+			// Prevent deletion of admin users by other admins (security measure)
+			if (existingUser[0].role === 'admin' && req.user.id !== parseInt(id)) {
+				return res.status(403).json({ error: "Cannot delete other admin users" });
+			}
+
+			// Delete related records first (if any foreign key constraints)
+			await pool.query("DELETE FROM matches WHERE investor_id = ? OR startup_id IN (SELECT startup_id FROM startups WHERE entrepreneur_id = ?)", [id, id]);
+			await pool.query("DELETE FROM startups WHERE entrepreneur_id = ?", [id]);
+			await pool.query("DELETE FROM entrepreneurs WHERE entrepreneur_id = ?", [id]);
+			await pool.query("DELETE FROM investors WHERE investor_id = ?", [id]);
+			await pool.query("DELETE FROM user_preferences WHERE user_id = ?", [id]);
+			await pool.query("DELETE FROM verification_documents WHERE user_id = ?", [id]);
+			
+			// Delete the user
+			await pool.query("DELETE FROM users WHERE id = ?", [id]);
+
+			res.json({ message: "User deleted successfully" });
+		} catch (error) {
+			console.error("Error deleting user:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Bulk action for users (admin only)
+app.post(
+	"/api/admin/users/bulk-action",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can perform bulk actions" });
+			}
+
+			const { user_ids, action } = req.body;
+
+			if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+				return res.status(400).json({ error: "user_ids array is required" });
+			}
+
+			if (!action || !['suspend', 'reactivate', 'verify', 'delete'].includes(action)) {
+				return res.status(400).json({ error: "Invalid action. Must be 'suspend', 'reactivate', 'verify', or 'delete'" });
+			}
+
+			const placeholders = user_ids.map(() => '?').join(',');
+
+			if (action === 'delete') {
+				// Prevent deletion of admin users
+				const [adminCheck] = await pool.query(
+					`SELECT id FROM users WHERE id IN (${placeholders}) AND role = 'admin' AND id != ?`,
+					[...user_ids, req.user.id]
+				);
+
+				if (adminCheck.length > 0) {
+					return res.status(403).json({ error: "Cannot delete admin users" });
+				}
+
+				// Delete related records first
+				await pool.query(`DELETE FROM matches WHERE investor_id IN (${placeholders}) OR startup_id IN (SELECT startup_id FROM startups WHERE entrepreneur_id IN (${placeholders}))`, user_ids);
+				await pool.query(`DELETE FROM startups WHERE entrepreneur_id IN (${placeholders})`, user_ids);
+				await pool.query(`DELETE FROM entrepreneurs WHERE entrepreneur_id IN (${placeholders})`, user_ids);
+				await pool.query(`DELETE FROM investors WHERE investor_id IN (${placeholders})`, user_ids);
+				await pool.query(`DELETE FROM user_preferences WHERE user_id IN (${placeholders})`, user_ids);
+				await pool.query(`DELETE FROM verification_documents WHERE user_id IN (${placeholders})`, user_ids);
+				
+				// Delete users
+				await pool.query(`DELETE FROM users WHERE id IN (${placeholders})`, user_ids);
+			} else {
+				// Update user status
+				let updateQuery = '';
+				let params = [];
+
+				if (action === 'suspend') {
+					updateQuery = `UPDATE users SET is_suspended = true, updated_at = NOW() WHERE id IN (${placeholders})`;
+					params = user_ids;
+				} else if (action === 'reactivate') {
+					updateQuery = `UPDATE users SET is_suspended = false, updated_at = NOW() WHERE id IN (${placeholders})`;
+					params = user_ids;
+				} else if (action === 'verify') {
+					updateQuery = `UPDATE users SET is_verified = true, updated_at = NOW() WHERE id IN (${placeholders})`;
+					params = user_ids;
+				}
+
+				await pool.query(updateQuery, params);
+			}
+
+			res.json({ 
+				message: `Successfully ${action}d ${user_ids.length} user(s)`,
+				affected_count: user_ids.length
+			});
+		} catch (error) {
+			console.error("Error performing bulk user action:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
 const ticketsRouter = require("./routes/tickets")(pool);
-app.use("/api/tickets", ticketsRouter);
+app.use("/api/tickets", authenticateToken, ticketsRouter);
 
 const notificationsRouter = require("./routes/notifications")(pool);
 app.use("/api/notifications", authenticateToken, notificationsRouter);

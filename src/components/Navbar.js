@@ -733,7 +733,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 placeholder="Search users and startups..."
                 className={`w-full block min-w-0 max-w-xs sm:max-w-md md:max-w-xl rounded-lg border ${
                   darkMode 
-                    ? 'bg-[#181818] border-white/20 text-white placeholder-gray-400' 
+                    ? 'bg-trkblack border-white/20 text-white placeholder-gray-400' 
                     : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                 } focus:outline-none focus:border-orange-500 transition-colors px-4 py-2 pl-10`}
               />
@@ -745,7 +745,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
             {showSearchResults && (searchQuery.trim() || isSearching) && (
               <div className={`absolute w-full mt-2 rounded-lg shadow-lg z-50 ${
                 darkMode 
-                  ? 'bg-[#181818] border border-white/20' 
+                  ? 'bg-trkblack border border-white/20' 
                   : 'bg-white border border-gray-200'
               }`}>
                 {isSearching ? (
@@ -846,7 +846,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 <li className="dropdown relative group">
                   <span className="rounded-md">
                     <button
-                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue ${darkMode ? 'active:bg-trkblack active:text-white' : 'active:bg-gray-50 active:text-gray-800'}`}
                       type="button"
                       aria-haspopup="true"
                       aria-expanded="false"
@@ -857,7 +857,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                       </svg>
                     </button>
                   </span>
-                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
                     <ul className="py-1">
                       <li>
                         <Link
@@ -901,7 +901,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 <li className="dropdown relative group">
                   <span className="rounded-md">
                     <button
-                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue ${darkMode ? 'active:bg-trkblack active:text-white' : 'active:bg-gray-50 active:text-gray-800'}`}
                       type="button"
                       aria-haspopup="true"
                       aria-expanded="false"
@@ -912,7 +912,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                       </svg>
                     </button>
                   </span>
-                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
                     <ul className="py-1">
                       <li>
                         <Link
@@ -980,7 +980,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 <li className="dropdown relative group">
                   <span className="rounded-md">
                     <button
-                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800`}
+                      className={`inline-flex phone:py-2 tablet-m:py-0 px-3 w-full leading-5 transition duration-150 ease-in-out bg-transparent rounded-md ${darkMode ? 'text-white' : 'text-trkblack'} hover:text-orange-600 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue ${darkMode ? 'active:bg-trkblack active:text-white' : 'active:bg-gray-50 active:text-gray-800'}`}
                       type="button"
                       aria-haspopup="true"
                       aria-expanded="false"
@@ -991,7 +991,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                       </svg>
                     </button>
                   </span>
-                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-[#181818] bg-opacity-95' : 'bg-white'}`}> 
+                  <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
                     <ul className="py-1">
                       <li>
                         <NavLink
@@ -1086,7 +1086,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                   {/* Mobile modal overlay */}
                   {showNotifications && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
-                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg relative animate-fadeIn`}>
+                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn`}>
                         <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setShowNotifications(false)} aria-label="Close notifications">&times;</button>
                         <NotificationDropdown
                           notifications={notifications}
@@ -1191,7 +1191,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                   {/* Mobile modal overlay */}
                   {msgDropdownOpen && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
-                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg relative animate-fadeIn mt-20`}>
+                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn mt-20`}>
                         <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setMsgDropdownOpen(false)} aria-label="Close messages">&times;</button>
                         <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
                         <div className="max-h-96 overflow-y-auto">
@@ -1275,7 +1275,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                   {isProfileOpen && (
                     <div
                       ref={dropdownRef}
-                      className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-[#181818] border border-white/10' : 'bg-white border border-gray-200'}`}
+                      className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 ${darkMode ? 'bg-trkblack border border-white/10' : 'bg-white border border-gray-200'}`}
                       tabIndex={-1}
                     >
                       <div className="p-4 border-b border-gray-200 dark:border-white/10">
@@ -1383,7 +1383,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       {/* Mobile search modal */}
       {showMobileSearch && (
         <div className="fixed inset-0 z-[999] bg-black bg-opacity-70 flex flex-col items-center justify-start pt-24 px-4 animate-fadeIn">
-          <div className={`w-full max-w-md mx-auto bg-white dark:bg-[#181818] rounded-2xl shadow-lg p-4 relative pt-10`}>
+          <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg p-4 relative pt-10`}>
             <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setShowMobileSearch(false)} aria-label="Close search">&times;</button>
             <div className="relative w-full z-10">
               <input
@@ -1392,7 +1392,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 onChange={handleSearchChange}
                 autoFocus
                 placeholder="Search users and startups..."
-                className={`w-full rounded-lg border ${darkMode ? 'bg-[#181818] border-white/20 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'} focus:outline-none focus:border-orange-500 transition-colors px-4 py-3 pl-10 text-lg`}
+                className={`w-full rounded-lg border ${darkMode ? 'bg-trkblack border-white/20 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'} focus:outline-none focus:border-orange-500 transition-colors px-4 py-3 pl-10 text-lg`}
               />
               <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
             </div>
@@ -1484,7 +1484,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
               )}
               {/* User Profile Section - Show when user is logged in */}
               {user && (
-                <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-trkblack rounded-lg">
                   {user.profile_image ? (
                     <img
                       src={user.profile_image}
@@ -1518,7 +1518,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'startups'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-building text-xl"></i>
@@ -1531,7 +1531,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'cofounders'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-users text-xl"></i>
@@ -1544,7 +1544,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'investors'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-hand-holding-usd text-xl"></i>
@@ -1561,7 +1561,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'startups'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-building text-xl"></i>
@@ -1574,7 +1574,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'matches'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-star text-xl"></i>
@@ -1587,7 +1587,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'entrepreneurs'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-users text-xl"></i>
@@ -1600,7 +1600,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
                               activeDashboardSection === 'investors'
                                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
                             }`}
                           >
                             <i className="fas fa-hand-holding-usd text-xl"></i>
@@ -1613,7 +1613,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     <li>
                       <button
                         onClick={() => handleExternalNavigation('/ecosystem')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
                       >
                         <i className="fas fa-globe text-xl"></i>
                         <span>Ecosystem</span>
@@ -1622,7 +1622,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     <li>
                       <button
                         onClick={() => handleExternalNavigation('/events')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
                       >
                         <i className="fas fa-calendar text-xl"></i>
                         <span>Events</span>
@@ -1631,7 +1631,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     <li>
                       <button
                         onClick={() => handleExternalNavigation('/settings')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800"
+                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
                       >
                         <i className="fas fa-cog text-xl"></i>
                         <span>Settings</span>

@@ -39,6 +39,47 @@ const eventController = {
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
+  },
+
+  async updateEvent(req, res) {
+    try {
+      const { title, description, event_date, location, status, rsvp_link, tags } = req.body;
+      const eventId = req.params.id;
+
+      const updated = await Event.update(eventId, {
+        title,
+        description,
+        event_date,
+        location,
+        status,
+        rsvp_link,
+        tags
+      });
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      const updatedEvent = await Event.findById(eventId);
+      res.json({ message: 'Event updated successfully', event: updatedEvent });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  async deleteEvent(req, res) {
+    try {
+      const eventId = req.params.id;
+      const deleted = await Event.delete(eventId);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      res.json({ message: 'Event deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
   }
 };
 

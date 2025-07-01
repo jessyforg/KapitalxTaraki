@@ -5,7 +5,7 @@ const API_URL = process.env.REACT_APP_API_URL || '';
 // Get notifications for the current user
 export const getNotifications = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/notifications`, {
+    const response = await axios.get(`${API_URL}/notifications`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -21,7 +21,7 @@ export const getNotifications = async () => {
 export const markNotificationAsRead = async (notificationId) => {
   try {
     const response = await axios.post(
-      `${API_URL}/api/notifications/${notificationId}/read`,
+      `${API_URL}/notifications/${notificationId}/read`,
       {},
       {
         headers: {
@@ -40,7 +40,7 @@ export const markNotificationAsRead = async (notificationId) => {
 export const markAllNotificationsAsRead = async () => {
   try {
     const response = await axios.post(
-      `${API_URL}/api/notifications/read-all`,
+      `${API_URL}/notifications/read-all`,
       {},
       {
         headers: {
@@ -59,7 +59,7 @@ export const markAllNotificationsAsRead = async () => {
 export const updateNotificationPreferences = async (preferences) => {
   try {
     const response = await axios.put(
-      `${API_URL}/api/notifications/preferences`,
+      `${API_URL}/notifications/preferences`,
       preferences,
       {
         headers: {
@@ -77,7 +77,7 @@ export const updateNotificationPreferences = async (preferences) => {
 // Get notification preferences
 export const getNotificationPreferences = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/notifications/preferences`, {
+    const response = await axios.get(`${API_URL}/notifications/preferences`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -93,7 +93,7 @@ export const getNotificationPreferences = async () => {
 export const deleteNotification = async (notificationId) => {
   try {
     const response = await axios.delete(
-      `${API_URL}/api/notifications/${notificationId}`,
+      `${API_URL}/notifications/${notificationId}`,
       {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -110,7 +110,7 @@ export const deleteNotification = async (notificationId) => {
 // Get unread notification count
 export const getUnreadNotificationCount = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/notifications/unread-count`, {
+    const response = await axios.get(`${API_URL}/notifications/unread-count`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail, FiChevronLeft, FiChevronRight, FiMoreVertical, FiEye, FiPause, FiPlay, FiTrash2, FiCheck } from 'react-icons/fi';
 import { FaTicketAlt } from 'react-icons/fa'; // Add ticket icon
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
@@ -50,10 +50,7 @@ function AdminDashboard() {
   const [pickerMonth, setPickerMonth] = useState(calendarDate.getMonth());
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  // Add state for real pending verification requests
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [pendingLoading, setPendingLoading] = useState(false);
-  const [pendingError, setPendingError] = useState('');
+  // Add state for verification modal (for users tab)
   const [selectedRequest, setSelectedRequest] = useState(null); // For modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalActionLoading, setModalActionLoading] = useState(false);
@@ -99,6 +96,35 @@ function AdminDashboard() {
   // Add state for event modal (sidebar version)
   const [showEventModal, setShowEventModal] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '' });
+  
+  // Add state for editing events
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Add comprehensive startup management state
+  const [selectedStartupIds, setSelectedStartupIds] = useState([]);
+  const [showActionDropdown, setShowActionDropdown] = useState(null);
+  const [editingStartup, setEditingStartup] = useState(null);
+  const [showEditStartupModal, setShowEditStartupModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [startupToDelete, setStartupToDelete] = useState(null);
+  const [showBulkActionModal, setShowBulkActionModal] = useState(false);
+  const [bulkAction, setBulkAction] = useState('');
+  const [startupActionNotification, setStartupActionNotification] = useState(null);
+
+  // Add comprehensive user management state
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [showUserActionDropdown, setShowUserActionDropdown] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [showDeleteUserConfirmModal, setShowDeleteUserConfirmModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [showBulkUserActionModal, setShowBulkUserActionModal] = useState(false);
+  const [bulkUserAction, setBulkUserAction] = useState('');
+  const [userActionNotification, setUserActionNotification] = useState(null);
+  const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
+  const [selectedUserModal, setSelectedUserModal] = useState(null);
+  const [userTab, setUserTab] = useState('active'); // 'active', 'suspended', 'pending'
 
   // Dashboard analytics state
   const [dashboardStats, setDashboardStats] = useState({
@@ -131,11 +157,63 @@ function AdminDashboard() {
     (!industryFilter || s.industry === industryFilter) &&
     (!locationFilter || s.location === locationFilter)
   );
-  const filteredUsers = users.filter(u =>
-    (!roleFilterReport || u.role === roleFilterReport) &&
-    (!locationFilter || u.location === locationFilter) &&
-    (!industryFilter || u.industry === industryFilter)
-  );
+  // Helper function to calculate user status counts
+  const getUserStatusCounts = () => {
+    const counts = { active: 0, pending: 0, suspended: 0 };
+    users.forEach(u => {
+      const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
+      const isSuspended = u.is_suspended === true || u.is_suspended === 1;
+      const userStatus = isSuspended ? 'suspended' : (isVerified ? 'active' : 'pending');
+      counts[userStatus]++;
+    });
+    return counts;
+  };
+
+  // Helper function to calculate startup status counts
+  const getStartupStatusCounts = () => {
+    const counts = { approved: 0, pending: 0, suspended: 0 };
+    startups.forEach(s => {
+      if (s.approval_status && counts.hasOwnProperty(s.approval_status)) {
+        counts[s.approval_status]++;
+      }
+    });
+    return counts;
+  };
+
+  const userStatusCounts = getUserStatusCounts();
+  const startupStatusCounts = getStartupStatusCounts();
+
+  const filteredUsers = users.filter(u => {
+    // Search query filter
+    const matchesSearch = !searchQuery || 
+      (u.first_name && u.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (u.last_name && u.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (u.full_name && u.full_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Role filter
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    
+    // User status filter for tabs
+    // Handle both boolean and integer values for is_verified and is_suspended
+    const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
+    const isSuspended = u.is_suspended === true || u.is_suspended === 1;
+    const userStatus = isSuspended ? 'suspended' : (isVerified ? 'active' : 'pending');
+    const matchesUserTab = userTab === userStatus;
+    
+    // Report filters (for site performance)
+    const matchesReportRole = !roleFilterReport || u.role === roleFilterReport;
+    const matchesLocation = !locationFilter || u.location === locationFilter;
+    const matchesIndustry = !industryFilter || u.industry === industryFilter;
+    
+    // For users tab, use search, role, and user tab filters
+    if (activeTab === 'users') {
+      return matchesSearch && matchesRole && matchesUserTab;
+    }
+    
+    // For site performance tab, use report filters
+    return matchesReportRole && matchesLocation && matchesIndustry;
+  });
   const exportToExcel = (data, filename) => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -415,7 +493,8 @@ function AdminDashboard() {
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       approved: 'bg-green-100 text-green-800 border-green-200',
-      rejected: 'bg-red-100 text-red-800 border-red-200'
+      rejected: 'bg-red-100 text-red-800 border-red-200',
+      suspended: 'bg-orange-100 text-orange-800 border-orange-200'
     };
 
     return (
@@ -427,36 +506,30 @@ function AdminDashboard() {
 
   // Handle event edit
   const handleEditEvent = (event) => {
-    // TODO: Implement event edit functionality
-    console.log('Edit event:', event);
+    setEditingEvent(event);
+    setIsEditMode(true);
+    
+    // Parse the event date and time
+    const eventDate = event.event_date ? new Date(event.event_date) : null;
+    const dateStr = eventDate ? eventDate.toISOString().split('T')[0] : '';
+    const timeStr = eventDate ? eventDate.toTimeString().split(' ')[0].substring(0, 5) : '';
+    
+    // Populate the form with existing event data
+    setNewEvent({
+      title: event.title || '',
+      date: dateStr,
+      time: timeStr,
+      location: event.location || '',
+      rsvp_link: event.rsvp_link || '',
+      description: event.description || '',
+      status: event.status || 'upcoming',
+      tags: event.tags || ''
+    });
+    
+    setShowEventModal(true);
   };
 
-  // Fetch pending verification requests
-  const fetchPendingRequests = async () => {
-    setPendingLoading(true);
-    setPendingError('');
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/verification/pending', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch pending requests');
-      const data = await res.json();
-      setPendingRequests(data);
-    } catch (e) {
-      setPendingError(e.message);
-    } finally {
-      setPendingLoading(false);
-    }
-  };
-
-  // Fetch on tab change
-  useEffect(() => {
-    if (activeTab === 'users' || activeTab === 'startup') {
-      fetchPendingRequests();
-    }
-    // eslint-disable-next-line
-  }, [activeTab]);
+  // Note: Verification requests are now handled through the users tab interface
 
   // Handler for opening modal
   const handleOpenModal = async (docId) => {
@@ -496,7 +569,7 @@ function AdminDashboard() {
       });
       if (!res.ok) throw new Error('Failed to approve document');
       handleCloseModal();
-      fetchPendingRequests();
+      fetchUsers(); // Refresh users to update verification status
     } catch (e) {
       setModalError(e.message);
     } finally {
@@ -523,7 +596,7 @@ function AdminDashboard() {
       });
       if (!res.ok) throw new Error('Failed to reject document');
       handleCloseModal();
-      fetchPendingRequests();
+      fetchUsers(); // Refresh users to update verification status
     } catch (e) {
       setModalError(e.message);
     } finally {
@@ -554,32 +627,78 @@ function AdminDashboard() {
     return map[stage] || stage.charAt(0).toUpperCase() + stage.slice(1);
   };
 
+  // Helper function to convert text to title case
+  const toTitleCase = (str) => {
+    if (!str) return '';
+    return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   // Add event handler for sidebar modal
   const handleSidebarEventSave = async () => {
     try {
       const token = localStorage.getItem('token');
       const event_date = newEvent.date + (newEvent.time ? `T${newEvent.time}` : '');
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: newEvent.title,
-          event_date,
-          location: newEvent.location,
-          status: newEvent.status || 'upcoming',
-          rsvp_link: newEvent.rsvp_link,
-          time: newEvent.time,
-          description: newEvent.description,
-          tags: newEvent.tags
-        })
-      });
-      if (!res.ok) throw new Error('Failed to create event');
-      const savedEvent = await res.json();
-      setEvents([...events, savedEvent]);
+      
+      if (isEditMode && editingEvent) {
+        // Update existing event
+        const res = await fetch(`/api/events/${editingEvent.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: newEvent.title,
+            event_date,
+            location: newEvent.location,
+            status: newEvent.status || 'upcoming',
+            rsvp_link: newEvent.rsvp_link,
+            time: newEvent.time,
+            description: newEvent.description,
+            tags: newEvent.tags
+          })
+        });
+        if (!res.ok) throw new Error('Failed to update event');
+        const updatedEvent = await res.json();
+        
+        // Update the events list
+        setEvents(events.map(event => 
+          event.id === editingEvent.id ? updatedEvent : event
+        ));
+        
+        setEventNotification({ type: 'success', message: 'Event updated successfully!' });
+        setTimeout(() => setEventNotification(null), 3000); // Auto-dismiss after 3 seconds
+      } else {
+        // Create new event
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: newEvent.title,
+            event_date,
+            location: newEvent.location,
+            status: newEvent.status || 'upcoming',
+            rsvp_link: newEvent.rsvp_link,
+            time: newEvent.time,
+            description: newEvent.description,
+            tags: newEvent.tags
+          })
+        });
+        if (!res.ok) throw new Error('Failed to create event');
+        const savedEvent = await res.json();
+        setEvents([...events, savedEvent]);
+        
+        setEventNotification({ type: 'success', message: 'Event created successfully!' });
+        setTimeout(() => setEventNotification(null), 3000); // Auto-dismiss after 3 seconds
+      }
+      
+      // Reset modal state
       setShowEventModal(false);
+      setIsEditMode(false);
+      setEditingEvent(null);
       setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
     } catch (error) {
       setEventNotification({ type: 'error', message: error.message });
@@ -735,6 +854,24 @@ function AdminDashboard() {
               const monthName = calendarDate.toLocaleString('default', { month: 'long' });
               return (
                 <div className="flex flex-col md:flex-row gap-4 w-full">
+                  {/* Event Notification */}
+                  {eventNotification && (
+                    <div className={`fixed top-24 right-8 z-50 p-4 rounded-lg shadow-lg animate-fadeIn ${
+                      eventNotification.type === 'success' 
+                        ? 'bg-green-100 border border-green-300 text-green-800' 
+                        : 'bg-red-100 border border-red-300 text-red-800'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span>{eventNotification.message}</span>
+                        <button 
+                          className="ml-4 text-lg font-semibold hover:opacity-70"
+                          onClick={() => setEventNotification(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {/* Calendar Section */}
                   <div className="flex-1 min-w-0">
                     {/* Calendar Header */}
@@ -841,8 +978,13 @@ function AdminDashboard() {
                     {showEventModal && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
                         <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn relative">
-                          <button className="absolute top-2 right-2 text-2xl text-orange-500 hover:text-orange-700" onClick={() => setShowEventModal(false)}>&times;</button>
-                          <h2 className="text-xl font-bold mb-4 text-orange-700">Create Event</h2>
+                                                      <button className="absolute top-2 right-2 text-2xl text-orange-500 hover:text-orange-700" onClick={() => {
+                              setShowEventModal(false);
+                              setIsEditMode(false);
+                              setEditingEvent(null);
+                              setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+                            }}>&times;</button>
+                          <h2 className="text-xl font-bold mb-4 text-orange-700">{isEditMode ? 'Edit Event' : 'Create Event'}</h2>
                           <div className="flex flex-col gap-4">
                             <input
                               className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
@@ -904,13 +1046,18 @@ function AdminDashboard() {
                             <div className="flex gap-2 mt-4">
                               <button
                                 className="flex-1 bg-gray-200 text-orange-700 py-2 rounded-lg hover:bg-gray-300 transition"
-                                onClick={() => setShowEventModal(false)}
+                                onClick={() => {
+                                  setShowEventModal(false);
+                                  setIsEditMode(false);
+                                  setEditingEvent(null);
+                                  setNewEvent({ title: '', date: '', time: '', location: '', rsvp_link: '', description: '', status: 'upcoming', tags: '' });
+                                }}
                               >Cancel</button>
                               <button
                                 className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
                                 onClick={handleSidebarEventSave}
                                 disabled={!newEvent.title || !newEvent.date}
-                              >Create Event</button>
+                              >{isEditMode ? 'Update Event' : 'Create Event'}</button>
                             </div>
                           </div>
                         </div>
@@ -920,81 +1067,205 @@ function AdminDashboard() {
                 </div>
               );
             case 'users':
-              // Use the filteredUsers variable from the top-level scope
               return (
-                <div className="flex flex-col gap-6">
-                  {activeTab === 'users' && (
-                    <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Users Management</h1>
-                  )}
-                  <div className="bg-white p-8 rounded-xl border border-orange-700 shadow-sm">
-                    {/* Search and Roles */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3 relative">
-                      <input
-                        type="text"
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
-                      bg-white text-black border-orange-700 
-                     dark:bg-[#232323] dark:text-white dark:border-orange-700"
-                      />
-                      <select
-                        value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value)}
-                        className="rounded-lg px-4 py-2 focus:outline-none border 
-                       bg-white text-black border-orange-700 
-                       dark:bg-[#232323] dark:text-white dark:border-orange-700"
+                <div className={`flex flex-col gap-6 w-full border border-orange-100 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
+                  {/* User Action Notification */}
+                  {userActionNotification && (
+                    <div className={`fixed top-24 right-8 z-50 p-4 rounded-lg shadow-lg animate-fadeIn ${
+                      userActionNotification.type === 'success' 
+                        ? 'bg-green-100 border border-green-300 text-green-800' 
+                        : 'bg-red-100 border border-red-300 text-red-800'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span>{userActionNotification.message}</span>
+                        <button 
+                          className="ml-4 text-lg font-semibold hover:opacity-70"
+                          onClick={() => setUserActionNotification(null)}
                         >
-                        <option value="all">All Roles</option>
-                        <option value="admin">Administrator</option>
-                        <option value="entrepreneur">Entrepreneur</option>
-                        <option value="investor">Investor</option>
-                      </select>
+                          ×
+                        </button>
+                      </div>
                     </div>
+                  )}
+
+                  <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>User Management</h1>
+                  
+                  {/* Tab Buttons */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'active' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setUserTab('active');
+                        setSelectedUserIds([]);
+                      }}
+                    >
+                      Active
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'active' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {userStatusCounts.active}
+                      </span>
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setUserTab('pending');
+                        setSelectedUserIds([]);
+                      }}
+                    >
+                      Pending
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {userStatusCounts.pending}
+                      </span>
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setUserTab('suspended');
+                        setSelectedUserIds([]);
+                      }}
+                    >
+                      Suspended
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {userStatusCounts.suspended}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
+                      bg-white text-black border-orange-300 
+                     dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
+                    />
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      className="rounded-lg px-4 py-2 focus:outline-none border 
+                       bg-white text-black border-orange-300 
+                       dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="admin">Administrator</option>
+                      <option value="entrepreneur">Entrepreneur</option>
+                      <option value="investor">Investor</option>
+                    </select>
+                  </div>
+
+                  {/* Bulk Actions */}
+                  {selectedUserIds.length > 0 && (
+                    <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                      <span className="text-sm text-orange-700 dark:text-orange-400 font-medium">
+                        {selectedUserIds.length} user(s) selected
+                      </span>
+                      <button
+                        onClick={() => setShowBulkUserActionModal(true)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm font-medium"
+                      >
+                        Bulk Actions
+                      </button>
+                      <button
+                        onClick={() => setSelectedUserIds([])}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
+                      >
+                        Clear Selection
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Table */}
+                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {loading ? (
-                      <div className="flex-1 flex items-center justify-center">
+                      <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                       </div>
                     ) : error ? (
-                      <div className="flex-1 flex items-center justify-center text-red-500">
-                        {error}
-                      </div>
+                      <div className="text-red-500 text-center">{error}</div>
                     ) : (
-                      <div className="overflow-x-auto rounded-lg">
-                        <table className="min-w-full text-left text-sm text-gray-700">
+                      <div className="overflow-x-auto w-full rounded-lg">
+                        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
                           <thead>
-                            <tr className="bg-orange-100 text-orange-700">
-                              <th className="px-4 py-3 font-semibold">NAME</th>
-                              <th className="px-4 py-3 font-semibold">EMAIL</th>
-                              <th className="px-4 py-3 font-semibold">ROLE</th>
-                              <th className="px-4 py-3 font-semibold text-center">ACTIONS</th>
+                            <tr className="bg-orange-100">
+                              <th className="px-4 py-3 font-semibold w-[50px]">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
+                                  onChange={(e) => handleSelectAllUsers(e.target.checked)}
+                                  className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                />
+                              </th>
+                              <th className="px-4 py-3 font-semibold w-[200px]">Name</th>
+                              <th className="px-4 py-3 font-semibold w-[200px]">Email</th>
+                              <th className="px-4 py-3 font-semibold w-[120px]">Role</th>
+                              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
+                              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
+                              <th className="px-4 py-3 font-semibold w-[110px] text-center">Actions</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            {filteredUsers.map((user) => (
-                          <tr key={user.id} className="group border-b border-orange-100 hover:bg-orange-50 transition duration-300">
-                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
-                          {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
-                          user.full_name || user.email}
-                          </td>
-                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
-                          {user.email}
-                          </td>
-                          <td className="px-4 py-3 text-black dark:text-white group-hover:text-orange-600">
-                          {roleLabels[user.role] || user.role}
-                          </td>
-                          <td className="px-4 py-3 text-center text-white">
-                          <button
-                          onClick={() => handleEditUser(user)}
-                          className="p-2 rounded-lg hover:bg-orange-100"
-                          title="Edit User"
-                          >
-                          <FiEdit2 className="inline-block text-orange-600" />
-                              </button>
-                            </td>
-                          </tr>
-
-                            ))}
+                          <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
+                            {filteredUsers.length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-lg">
+                                  No {userTab} users found.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredUsers.map((user) => (
+                                <tr
+                                  key={user.id}
+                                  className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer"
+                                  onClick={() => { setSelectedUserModal(user); setShowUserDetailsModal(true); }}
+                                >
+                                  {/* Checkbox */}
+                                  <td className="px-4 py-3 w-[50px]" onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedUserIds.includes(user.id)}
+                                      onChange={(e) => handleSelectUser(user.id, e.target.checked)}
+                                      className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                    />
+                                  </td>
+                                  
+                                  {/* Name */}
+                                  <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                                      {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
+                                      user.full_name || user.email}
+                                    </div>
+                                  </td>
+                                  
+                                  {/* Email */}
+                                  <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.email}</div>
+                                  </td>
+                                  
+                                  {/* Role */}
+                                  <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                                      {roleLabels[user.role] || user.role}
+                                    </div>
+                                  </td>
+                                  
+                                  {/* Location */}
+                                  <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
+                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.location || 'N/A'}</div>
+                                  </td>
+                                  
+                                  {/* Status */}
+                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                    {renderUserStatusBadge(user)}
+                                  </td>
+                                  
+                                  {/* Actions */}
+                                  <td className="px-4 py-3 w-[110px] text-center" onClick={e => e.stopPropagation()}>
+                                    {renderUserActionDropdown(user)}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -1063,14 +1334,14 @@ case 'sitePerformance':
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg">
-        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
+        <table className="min-w-full w-full min-w-[800px] table-fixed divide-y divide-orange-100">
           <thead>
             <tr className="bg-orange-100">
-              <th className="px-4 py-3 font-semibold w-[140px]">Name</th>
-              <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
-              <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
-              <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
-              <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
+              <th className="px-4 py-3 font-semibold w-[180px]">Name</th>
+              <th className="px-4 py-3 font-semibold w-[180px]">Industry</th>
+              <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
+              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
+              <th className="px-4 py-3 font-semibold w-[120px]">Stage</th>
               <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
               <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
             </tr>
@@ -1086,28 +1357,28 @@ case 'sitePerformance':
               (reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
                 <tr key={item.startup_id || item.id} className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer">
                   {/* Name */}
-                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                  <td className="px-4 py-3 w-[180px] truncate overflow-hidden whitespace-nowrap">
                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.name}</div>
                   </td>
 
                   {/* Industry */}
-                  <td className="px-4 py-3 w-[140px] truncate">
+                  <td className="px-4 py-3 w-[180px] truncate">
                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.industry}</div>
                   </td>
 
                   {/* Founder */}
-                  <td className="px-4 py-3 w-[140px] truncate">
+                  <td className="px-4 py-3 w-[120px] truncate">
                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.entrepreneur_name}</div>
                   </td>
 
                   {/* Location */}
-                  <td className="px-4 py-3 w-[140px] truncate">
+                  <td className="px-4 py-3 w-[120px] truncate">
                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.location}</div>
                   </td>
 
                   {/* Stage */}
-                  <td className="px-4 py-3 w-[140px] truncate">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.startup_stage}</div>
+                  <td className="px-4 py-3 w-[120px] truncate">
+                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(item.startup_stage)}</div>
                   </td>
 
                   {/* Status */}
@@ -1143,24 +1414,89 @@ case 'sitePerformance':
             case 'startup':
               return (
                 <div className={`flex flex-col gap-6 w-full border border-orange-100 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
+                  {/* Startup Action Notification */}
+                  {startupActionNotification && (
+                    <div className={`fixed top-24 right-8 z-50 p-4 rounded-lg shadow-lg animate-fadeIn ${
+                      startupActionNotification.type === 'success' 
+                        ? 'bg-green-100 border border-green-300 text-green-800' 
+                        : 'bg-red-100 border border-red-300 text-red-800'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span>{startupActionNotification.message}</span>
+                        <button 
+                          className="ml-4 text-lg font-semibold hover:opacity-70"
+                          onClick={() => setStartupActionNotification(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Startup Management</h1>
+                  
                   {/* Tab Buttons */}
                   <div className="flex gap-2 mb-4">
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${startupTab === 'approved' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
-                      onClick={() => setStartupTab('approved')}
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'approved' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setStartupTab('approved');
+                        setSelectedStartupIds([]);
+                      }}
                     >
                       Approved
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'approved' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {startupStatusCounts.approved}
+                      </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${startupTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
-                      onClick={() => setStartupTab('pending')}
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setStartupTab('pending');
+                        setSelectedStartupIds([]);
+                      }}
                     >
                       Pending
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {startupStatusCounts.pending}
+                      </span>
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      onClick={() => {
+                        setStartupTab('suspended');
+                        setSelectedStartupIds([]);
+                      }}
+                    >
+                      Suspended
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                        {startupStatusCounts.suspended}
+                      </span>
                     </button>
                   </div>
-                  {/* Table */}
-                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
+
+                  {/* Bulk Actions */}
+                  {selectedStartupIds.length > 0 && (
+                    <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                      <span className="text-sm text-orange-700 dark:text-orange-400 font-medium">
+                        {selectedStartupIds.length} startup(s) selected
+                      </span>
+                      <button
+                        onClick={() => setShowBulkActionModal(true)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm font-medium"
+                      >
+                        Bulk Actions
+                      </button>
+                      <button
+                        onClick={() => setSelectedStartupIds([])}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
+                      >
+                        Clear Selection
+                      </button>
+                    </div>
+                  )}
+                                     {/* Table */}
+                   <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {startupLoading ? (
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -1168,23 +1504,31 @@ case 'sitePerformance':
                     ) : startupError ? (
                       <div className="text-red-500 text-center">{startupError}</div>
                     ) : (
-                      <div className="overflow-x-auto w-full">
-                        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
+                      <div className="overflow-x-auto w-full rounded-lg">
+                        <table className="min-w-full w-full min-w-[930px] table-fixed divide-y divide-orange-100">
                           <thead>
                             <tr className="bg-orange-100">
-                              <th className="px-4 py-3 font-semibold w-[140px] ">Name</th>
-                              <th className="px-4 py-3 font-semibold w-[140px]">Industry</th>
-                              <th className="px-4 py-3 font-semibold w-[140px]">Founder</th>
-                              <th className="px-4 py-3 font-semibold w-[140px]">Location</th>
-                              <th className="px-4 py-3 font-semibold w-[140px]">Stage</th>
+                              <th className="px-4 py-3 font-semibold w-[50px]">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedStartupIds.length === startups.filter(startup => startup.approval_status === startupTab).length && startups.filter(startup => startup.approval_status === startupTab).length > 0}
+                                  onChange={(e) => handleSelectAllStartups(e.target.checked)}
+                                  className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                />
+                              </th>
+                              <th className="px-4 py-3 font-semibold w-[160px]">Name</th>
+                              <th className="px-4 py-3 font-semibold w-[160px]">Industry</th>
+                              <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
+                              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
+                              <th className="px-4 py-3 font-semibold w-[100px]">Stage</th>
                               <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
-                              <th className="px-4 py-3 font-semibold w-[100px] text-center">Actions</th>
+                              <th className="px-4 py-3 font-semibold w-[120px] text-center">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
                             {startups.filter(startup => startup.approval_status === startupTab).length === 0 ? (
                               <tr>
-                                <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-lg">No {startupTab === 'pending' ? 'pending' : 'approved'} startups found.</td>
+                                <td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-lg">No {startupTab === 'pending' ? 'pending' : startupTab === 'suspended' ? 'suspended' : 'approved'} startups found.</td>
                               </tr>
                             ) : (
                               startups.filter(startup => startup.approval_status === startupTab).map((startup) => (
@@ -1193,41 +1537,70 @@ case 'sitePerformance':
                                   className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer"
                                   onClick={() => { setSelectedStartupModal(startup); setStartupModalOpen(true); }}
                                 >
-                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  {/* Checkbox */}
+                                  <td className="px-4 py-3 w-[50px]" onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedStartupIds.includes(startup.startup_id)}
+                                      onChange={(e) => handleSelectStartup(startup.startup_id, e.target.checked)}
+                                      className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                    />
+                                  </td>
+                                  
+                                  {/* Name */}
+                                  <td className="px-4 py-3 w-[160px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="flex flex-col">
                                       <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.name}</div>
                                       <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  
+                                  {/* Industry */}
+                                  <td className="px-4 py-3 w-[160px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.industry}</div>
                                   </td>
-                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  
+                                  {/* Founder */}
+                                  <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.entrepreneur_name}</div>
                                   </td>
-                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  
+                                  {/* Location */}
+                                  <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.location}</div>
                                   </td>
-                                  <td className="px-4 py-3 w-[140px] truncate overflow-hidden whitespace-nowrap">
+                                  
+                                  {/* Stage */}
+                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
                                     <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(startup.startup_stage)}</div>
                                   </td>
+                                  
+                                  {/* Status */}
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
                                     {renderStatusBadge(startup.approval_status)}
                                   </td>
-                                  <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center" onClick={e => e.stopPropagation()}>
+                                  
+                                  {/* Actions */}
+                                  <td className="px-4 py-3 w-[120px] text-center" onClick={e => e.stopPropagation()}>
                                     {startupTab === 'pending' ? (
-                                      <>
+                                      <div className="flex gap-1 justify-center">
                                         <button
                                           onClick={() => handleAcceptStartup(startup.startup_id)}
-                                          className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
-                                        >Approve</button>
+                                          className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
+                                          title="Approve"
+                                        >
+                                          <FiCheck className="w-3 h-3" />
+                                        </button>
                                         <button
                                           onClick={() => handleDeclineStartup(startup.startup_id)}
-                                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                                        >Reject</button>
-                                      </>
+                                          className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                                          title="Reject"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
                                     ) : (
-                                      <span className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">—</span>
+                                      renderStartupActionDropdown(startup)
                                     )}
                                   </td>
                                 </tr>
@@ -1274,11 +1647,11 @@ case 'sitePerformance':
                           <tbody>
                             {tickets.map(ticket => (
                               <React.Fragment key={ticket.ticket_id}>
-                                <tr className="border-b border-orange-100 text-white hover:bg-orange-50 hover:text-orange-600 transition">
+                                <tr className="border-b border-orange-100 text-black dark:text-white hover:bg-orange-50 hover:text-orange-600 transition">
                                   <td className="px-4 py-3">{ticket.ticket_id}</td>
                                   <td className="px-4 py-3">{ticket.title}</td>
-                                  <td className="px-4 py-3">{ticket.type}</td>
-                                  <td className="px-4 py-3">{ticket.status}</td>
+                                  <td className="px-4 py-3">{toTitleCase(ticket.type)}</td>
+                                  <td className="px-4 py-3">{toTitleCase(ticket.status)}</td>
                                   <td className="px-4 py-3">{ticket.user_id}</td>
                                   <td className="px-4 py-3">{ticket.created_at}</td>
                                   <td className="px-4 py-3">{ticket.admin_response || ''}</td>
@@ -1297,16 +1670,16 @@ case 'sitePerformance':
                                 </tr>
                                 {editingTicket === ticket.ticket_id && (
                                   <tr>
-                                    <td colSpan={9} className="bg-orange-50 px-4 py-4">
+                                    <td colSpan={9} className="bg-orange-50 dark:bg-[#2a2a2a] px-4 py-4">
                                       <div className="flex flex-col gap-2">
                                         <textarea
-                                          className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
+                                          className="w-full border border-gray-300 dark:border-orange-700 bg-white dark:bg-[#232323] text-black dark:text-white rounded px-3 py-2 mb-2 placeholder-gray-400 dark:placeholder-gray-500"
                                           placeholder="Admin Response"
                                           value={adminResponse}
                                           onChange={e => setAdminResponse(e.target.value)}
                                         />
                                         <textarea
-                                          className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
+                                          className="w-full border border-gray-300 dark:border-orange-700 bg-white dark:bg-[#232323] text-black dark:text-white rounded px-3 py-2 mb-2 placeholder-gray-400 dark:placeholder-gray-500"
                                           placeholder="Admin Notes"
                                           value={adminNotes}
                                           onChange={e => setAdminNotes(e.target.value)}
@@ -1330,11 +1703,11 @@ case 'sitePerformance':
                                             }}
                                           >Save</button>
                                           <button
-                                            className="px-4 py-2 bg-gray-200 rounded"
+                                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                                             onClick={() => setEditingTicket(null)}
                                           >Cancel</button>
                                         </div>
-                                        {updateMessage && <div className="text-sm text-orange-700 mt-2">{updateMessage}</div>}
+                                        {updateMessage && <div className="text-sm text-orange-700 dark:text-orange-400 mt-2">{updateMessage}</div>}
                                       </div>
                                     </td>
                                   </tr>
@@ -1367,10 +1740,667 @@ case 'sitePerformance':
     }
   }, [activeTab]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showActionDropdown) {
+        // Check if click is outside both the dropdown and the trigger button
+        const isDropdownClick = event.target.closest('.fixed.w-48');
+        const isTriggerClick = event.target.closest('button[aria-label="actions"]') || 
+                              event.target.closest('.relative.inline-block');
+        
+        if (!isDropdownClick && !isTriggerClick) {
+          setShowActionDropdown(null);
+        }
+      }
+      
+      // Handle user action dropdown
+      if (showUserActionDropdown) {
+        const isUserDropdownClick = event.target.closest('.fixed.w-48');
+        const isUserTriggerClick = event.target.closest('button[aria-label="user-actions"]') || 
+                                  event.target.closest('.relative.inline-block');
+        
+        if (!isUserDropdownClick && !isUserTriggerClick) {
+          setShowUserActionDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActionDropdown, showUserActionDropdown]);
+
+  // Enhanced startup action handlers
+  const handleSuspendStartup = async (startupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${startupId}/suspend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to suspend startup');
+
+      setStartups(startups.map(s => 
+        s.startup_id === startupId 
+          ? { ...s, approval_status: 'suspended' }
+          : s
+      ));
+      
+      setStartupActionNotification({ type: 'success', message: 'Startup suspended successfully' });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
+
+  const handleReactivateStartup = async (startupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${startupId}/reactivate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to reactivate startup');
+
+      setStartups(startups.map(s => 
+        s.startup_id === startupId 
+          ? { ...s, approval_status: 'approved' }
+          : s
+      ));
+      
+      setStartupActionNotification({ type: 'success', message: 'Startup reactivated successfully' });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
+
+  const handleDeleteStartup = async (startupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${startupId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to delete startup');
+
+      setStartups(startups.filter(s => s.startup_id !== startupId));
+      setShowDeleteConfirmModal(false);
+      setStartupToDelete(null);
+      
+      setStartupActionNotification({ type: 'success', message: 'Startup deleted successfully' });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
+
+  const handleEditStartup = (startup) => {
+    setEditingStartup({
+      startup_id: startup.startup_id,
+      name: startup.name,
+      industry: startup.industry,
+      location: startup.location,
+      description: startup.description,
+      startup_stage: startup.startup_stage,
+      approval_status: startup.approval_status
+    });
+    setShowEditStartupModal(true);
+  };
+
+  const handleSaveStartupEdit = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${editingStartup.startup_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editingStartup)
+      });
+
+      if (!res.ok) throw new Error('Failed to update startup');
+
+      const updatedStartup = await res.json();
+      setStartups(startups.map(s => 
+        s.startup_id === editingStartup.startup_id ? updatedStartup : s
+      ));
+      
+      setShowEditStartupModal(false);
+      setEditingStartup(null);
+      
+      setStartupActionNotification({ type: 'success', message: 'Startup updated successfully' });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
+
+  // Bulk actions
+  const handleSelectAllStartups = (checked) => {
+    if (checked) {
+      const filteredStartupsIds = startups
+        .filter(startup => startup.approval_status === startupTab)
+        .map(s => s.startup_id);
+      setSelectedStartupIds(filteredStartupsIds);
+    } else {
+      setSelectedStartupIds([]);
+    }
+  };
+
+  const handleSelectStartup = (startupId, checked) => {
+    if (checked) {
+      setSelectedStartupIds([...selectedStartupIds, startupId]);
+    } else {
+      setSelectedStartupIds(selectedStartupIds.filter(id => id !== startupId));
+    }
+  };
+
+  const handleBulkAction = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/admin/startups/bulk-action', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startup_ids: selectedStartupIds,
+          action: bulkAction
+        })
+      });
+
+      if (!res.ok) throw new Error(`Failed to ${bulkAction} startups`);
+
+      // Refresh startups list
+      fetchStartups();
+      setSelectedStartupIds([]);
+      setShowBulkActionModal(false);
+      
+      setStartupActionNotification({ 
+        type: 'success', 
+        message: `Successfully ${bulkAction}d ${selectedStartupIds.length} startup(s)` 
+      });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
+
+  // Add state for dropdown position
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [userDropdownPosition, setUserDropdownPosition] = useState({ top: 0, left: 0 });
+
+  // Enhanced user action handlers
+  const handleSuspendUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/users/${userId}/suspend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to suspend user');
+
+      setUsers(users.map(u => 
+        u.id === userId 
+          ? { ...u, is_suspended: true }
+          : u
+      ));
+      
+      setUserActionNotification({ type: 'success', message: 'User suspended successfully' });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    } catch (error) {
+      setUserActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    }
+  };
+
+  const handleReactivateUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/users/${userId}/reactivate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to reactivate user');
+
+      setUsers(users.map(u => 
+        u.id === userId 
+          ? { ...u, is_suspended: false }
+          : u
+      ));
+      
+      setUserActionNotification({ type: 'success', message: 'User reactivated successfully' });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    } catch (error) {
+      setUserActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) throw new Error('Failed to delete user');
+
+      setUsers(users.filter(u => u.id !== userId));
+      setShowDeleteUserConfirmModal(false);
+      setUserToDelete(null);
+      
+      setUserActionNotification({ type: 'success', message: 'User deleted successfully' });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    } catch (error) {
+      setUserActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    }
+  };
+
+  const handleEditUserDetails = (user) => {
+    setEditingUser({
+      id: user.id,
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      email: user.email,
+      role: user.role,
+      is_verified: user.is_verified || false,
+      is_suspended: user.is_suspended || false,
+      industry: user.industry || '',
+      location: user.location || ''
+    });
+    setShowEditUserModal(true);
+  };
+
+  const handleSaveUserEdit = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editingUser)
+      });
+
+      if (!res.ok) throw new Error('Failed to update user');
+
+      const updatedUser = await res.json();
+      setUsers(users.map(u => 
+        u.id === editingUser.id ? updatedUser : u
+      ));
+      
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      
+      setUserActionNotification({ type: 'success', message: 'User updated successfully' });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    } catch (error) {
+      setUserActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    }
+  };
+
+  // User bulk actions
+  const handleSelectAllUsers = (checked) => {
+    if (checked) {
+      const filteredUserIds = filteredUsers.map(u => u.id);
+      setSelectedUserIds(filteredUserIds);
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (userId, checked) => {
+    if (checked) {
+      setSelectedUserIds([...selectedUserIds, userId]);
+    } else {
+      setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+    }
+  };
+
+  const handleBulkUserAction = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/admin/users/bulk-action', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_ids: selectedUserIds,
+          action: bulkUserAction
+        })
+      });
+
+      if (!res.ok) throw new Error(`Failed to ${bulkUserAction} users`);
+
+      // Refresh users list
+      fetchUsers();
+      setSelectedUserIds([]);
+      setShowBulkUserActionModal(false);
+      
+      setUserActionNotification({ 
+        type: 'success', 
+        message: `Successfully ${bulkUserAction}d ${selectedUserIds.length} user(s)` 
+      });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    } catch (error) {
+      setUserActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setUserActionNotification(null), 3000);
+    }
+  };
+
+  // Render user status badge
+  const renderUserStatusBadge = (user) => {
+    // Handle both boolean and integer values for is_verified and is_suspended
+    const isVerified = user.is_verified === true || user.is_verified === 1 || user.verification_status === 'verified';
+    const isSuspended = user.is_suspended === true || user.is_suspended === 1;
+    
+    if (isSuspended) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-semibold border bg-orange-100 text-orange-800 border-orange-200">
+          Suspended
+        </span>
+      );
+    } else if (!isVerified) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-semibold border bg-yellow-100 text-yellow-800 border-yellow-200">
+          Pending
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-semibold border bg-green-100 text-green-800 border-green-200">
+          Active
+        </span>
+      );
+    }
+  };
+
+  // Render startup action dropdown
+  const renderStartupActionDropdown = (startup) => (
+    <div className="relative inline-block">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          
+          // Calculate position relative to viewport
+          const rect = e.currentTarget.getBoundingClientRect();
+          const dropdownWidth = 192; // w-48 = 192px
+          const dropdownHeight = 200; // approximate height
+          
+          // Check if dropdown would go off-screen and adjust position
+          let left = rect.left;
+          let top = rect.bottom + 4;
+          
+          // Adjust horizontal position if needed
+          if (left + dropdownWidth > window.innerWidth) {
+            left = rect.right - dropdownWidth;
+          }
+          
+          // Adjust vertical position if needed
+          if (top + dropdownHeight > window.innerHeight) {
+            top = rect.top - dropdownHeight - 4;
+          }
+          
+          setDropdownPosition({ top, left });
+          setShowActionDropdown(showActionDropdown === startup.startup_id ? null : startup.startup_id);
+        }}
+        className="p-2 hover:bg-orange-100 dark:hover:bg-orange-800 rounded-lg transition"
+        aria-label="actions"
+        title="More actions"
+      >
+        <FiMoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+      </button>
+    </div>
+  );
+
+  // Render user action dropdown
+  const renderUserActionDropdown = (user) => (
+    <div className="relative inline-block">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          
+          // Calculate position relative to viewport
+          const rect = e.currentTarget.getBoundingClientRect();
+          const dropdownWidth = 192; // w-48 = 192px
+          const dropdownHeight = 200; // approximate height
+          
+          // Check if dropdown would go off-screen and adjust position
+          let left = rect.left;
+          let top = rect.bottom + 4;
+          
+          // Adjust horizontal position if needed
+          if (left + dropdownWidth > window.innerWidth) {
+            left = rect.right - dropdownWidth;
+          }
+          
+          // Adjust vertical position if needed
+          if (top + dropdownHeight > window.innerHeight) {
+            top = rect.top - dropdownHeight - 4;
+          }
+          
+          setUserDropdownPosition({ top, left });
+          setShowUserActionDropdown(showUserActionDropdown === user.id ? null : user.id);
+        }}
+        className="p-2 hover:bg-orange-100 dark:hover:bg-orange-800 rounded-lg transition"
+        aria-label="user-actions"
+        title="More actions"
+      >
+        <FiMoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+      </button>
+    </div>
+  );
+
+  // Render user dropdown as a separate component positioned fixed
+  const renderUserActionDropdownPortal = () => {
+    if (!showUserActionDropdown) return null;
+    
+    const user = users.find(u => u.id === showUserActionDropdown);
+    if (!user) return null;
+
+    return (
+      <div 
+        className="fixed w-48 bg-white dark:bg-[#232323] border border-orange-200 dark:border-orange-700 rounded-lg shadow-lg z-[1000]"
+        style={{
+          top: `${userDropdownPosition.top}px`,
+          left: `${userDropdownPosition.left}px`
+        }}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedUserModal(user);
+            setShowUserDetailsModal(true);
+            setShowUserActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 rounded-t-lg"
+        >
+          <FiEye className="w-4 h-4" />
+          View Details
+        </button>
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditUserDetails(user);
+            setShowUserActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2"
+        >
+          <FiEdit2 className="w-4 h-4" />
+          Edit User
+        </button>
+
+        {!(user.is_suspended === true || user.is_suspended === 1) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSuspendUser(user.id);
+              setShowUserActionDropdown(null);
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-yellow-600"
+          >
+            <FiPause className="w-4 h-4" />
+            Suspend
+          </button>
+        )}
+
+        {(user.is_suspended === true || user.is_suspended === 1) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReactivateUser(user.id);
+              setShowUserActionDropdown(null);
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-green-600"
+          >
+            <FiPlay className="w-4 h-4" />
+            Reactivate
+          </button>
+        )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setUserToDelete(user);
+            setShowDeleteUserConfirmModal(true);
+            setShowUserActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-800 flex items-center gap-2 text-red-600 rounded-b-lg"
+        >
+          <FiTrash2 className="w-4 h-4" />
+          Delete
+        </button>
+      </div>
+    );
+  };
+
+  // Render dropdown as a separate component positioned fixed
+  const renderActionDropdownPortal = () => {
+    if (!showActionDropdown) return null;
+    
+    const startup = startups.find(s => s.startup_id === showActionDropdown);
+    if (!startup) return null;
+
+    return (
+      <div 
+        className="fixed w-48 bg-white dark:bg-[#232323] border border-orange-200 dark:border-orange-700 rounded-lg shadow-lg z-[1000]"
+        style={{
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`
+        }}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedStartupModal(startup);
+            setStartupModalOpen(true);
+            setShowActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 rounded-t-lg"
+        >
+          <FiEye className="w-4 h-4" />
+          View Details
+        </button>
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditStartup(startup);
+            setShowActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2"
+        >
+          <FiEdit2 className="w-4 h-4" />
+          Edit Startup
+        </button>
+
+        {startup.approval_status === 'approved' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSuspendStartup(startup.startup_id);
+              setShowActionDropdown(null);
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-yellow-600"
+          >
+            <FiPause className="w-4 h-4" />
+            Suspend
+          </button>
+        )}
+
+        {startup.approval_status === 'suspended' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReactivateStartup(startup.startup_id);
+              setShowActionDropdown(null);
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-green-600"
+          >
+            <FiPlay className="w-4 h-4" />
+            Reactivate
+          </button>
+        )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStartupToDelete(startup);
+            setShowDeleteConfirmModal(true);
+            setShowActionDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-800 flex items-center gap-2 text-red-600 rounded-b-lg"
+        >
+          <FiTrash2 className="w-4 h-4" />
+          Delete
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72 pr-80">
+      <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72">
         {/* Floating Sidebar */}
         <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white dark:bg-[#232323] flex flex-col items-center py-8 border border-orange-100 dark:border-orange-700 rounded-2xl shadow-xl">
           {/* TARAKI logo removed from sidebar */}
@@ -1395,87 +2425,52 @@ case 'sitePerformance':
         <main className="flex-1 p-10 mt-24">
           {renderContent()}
         </main>
-        {/* Floating Pending Requests Card */}
-        {activeTab === 'users' && (
-        <aside className="fixed right-8 top-24 bottom-8 z-30 w-80 bg-white dark:bg-[#232323] rounded-2xl shadow-xl border border-orange-100 dark:border-orange-700 flex flex-col p-6">
-        <h2 className="text-lg font-bold mb-4 text-orange-700 dark:text-orange-400 border-b border-orange-100 dark:border-orange-700 pb-2">
-         Pending Verification Applications
-        </h2>
-        <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
-      {pendingLoading ? (
-      <div className="text-gray-500 dark:text-gray-300">Loading...</div>
-     ) : pendingError ? (
-      <div className="text-red-500">{pendingError}</div>
-      ) : pendingRequests.length === 0 ? (
-      <span className="text-gray-500 dark:text-gray-300">No pending verification applications.</span>
-       ) : (
-        pendingRequests.map(req => (
-          <div key={req.document_id} className="rounded-lg p-3 border border-orange-100 dark:border-orange-700 bg-orange-50 dark:bg-[#2a2a2a] flex items-center justify-between">
-            <div>
-            <span className="font-semibold text-black dark:text-white">{req.first_name} {req.last_name}</span>
-            <span className="block text-xs text-gray-700 dark:text-gray-300">{req.email}</span>
-            <span className="block text-xs text-gray-600 dark:text-gray-400">
-              {req.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-               </span>
-             </div>
-             <button
-             className="ml-2 p-2 rounded-full hover:bg-orange-200 dark:hover:bg-orange-300 flex items-center justify-center"
-             title="View Details"
-              onClick={() => handleOpenModal(req.document_id)}
-             >
-            <svg width="22" height="22" viewBox="0 0 24 24">
-              <circle cx="12" cy="5" r="1.5" fill="#fb923c" />
-              <circle cx="12" cy="12" r="1.5" fill="#fb923c" />
-              <circle cx="12" cy="19" r="1.5" fill="#fb923c" />
-               </svg>
-             </button>
-            </div>
-             ))
-            )}
-        </div>
-            {/* Modal for document details and approve/reject */}
-            {modalOpen && selectedRequest && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col md:flex-row items-stretch gap-6">
-                  <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleCloseModal}>&times;</button>
-                  {/* Left: Details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold mb-2 text-orange-700 text-center md:text-left">Verification Application</h3>
-                    <div className="mb-4 w-full">
-                      <div className="font-semibold text-lg text-black mb-1">{selectedRequest.first_name} {selectedRequest.last_name} <span className="text-xs text-gray-500">({selectedRequest.email})</span></div>
-                      <div className="text-sm text-gray-700 mb-1">Role: {selectedRequest.role}</div>
-                      <div className="text-sm text-gray-700 mb-1">Document Type: {selectedRequest.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-                      <div className="text-sm text-gray-700 mb-1">Number: {selectedRequest.document_number || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Issued: {selectedRequest.issue_date || 'N/A'} | Expiry: {selectedRequest.expiry_date || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Issuing Authority: {selectedRequest.issuing_authority || 'N/A'}</div>
-                      <div className="text-sm text-gray-700 mb-1">Uploaded: {selectedRequest.uploaded_at ? new Date(selectedRequest.uploaded_at).toLocaleString() : 'N/A'}</div>
-                    </div>
-                    <div className="flex flex-col gap-2 mt-4 w-full">
-                      <div className="flex gap-2 justify-center">
-                        <button onClick={handleApprove} disabled={modalActionLoading} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Approve</button>
-                        <button onClick={handleReject} disabled={modalActionLoading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Not Approve</button>
-                      </div>
-                      <input type="text" placeholder="Rejection reason (required for Not Approve)" value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="w-full border border-orange-200 rounded-lg px-3 py-2 mt-2" />
-                      {modalError && <div className="text-red-500 text-sm mt-1 text-center">{modalError}</div>}
-                    </div>
+        {/* Verification Modal */}
+        {modalOpen && selectedRequest && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col md:flex-row items-stretch gap-6">
+              <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={handleCloseModal}>&times;</button>
+              {/* Left: Details */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold mb-2 text-orange-700 text-center md:text-left">Verification Application</h3>
+                <div className="mb-4 w-full">
+                  <div className="font-semibold text-lg text-black mb-1">{selectedRequest.first_name} {selectedRequest.last_name} <span className="text-xs text-gray-500">({selectedRequest.email})</span></div>
+                  <div className="text-sm text-gray-700 mb-1">Role: {selectedRequest.role}</div>
+                  <div className="text-sm text-gray-700 mb-1">Document Type: {selectedRequest.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                  <div className="text-sm text-gray-700 mb-1">Number: {selectedRequest.document_number || 'N/A'}</div>
+                  <div className="text-sm text-gray-700 mb-1">Issued: {selectedRequest.issue_date || 'N/A'} | Expiry: {selectedRequest.expiry_date || 'N/A'}</div>
+                  <div className="text-sm text-gray-700 mb-1">Issuing Authority: {selectedRequest.issuing_authority || 'N/A'}</div>
+                  <div className="text-sm text-gray-700 mb-1">Uploaded: {selectedRequest.uploaded_at ? new Date(selectedRequest.uploaded_at).toLocaleString() : 'N/A'}</div>
+                </div>
+                <div className="flex flex-col gap-2 mt-4 w-full">
+                  <div className="flex gap-2 justify-center">
+                    <button onClick={handleApprove} disabled={modalActionLoading} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Approve</button>
+                    <button onClick={handleReject} disabled={modalActionLoading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow disabled:opacity-60">Not Approve</button>
                   </div>
-                  {/* Right: Document Preview */}
-                  <div className="flex-1 min-w-0 flex flex-col items-center justify-center border-l border-orange-100 pl-6">
-                    <span className="text-sm font-semibold text-orange-700 mb-2">Document Preview</span>
-                    {selectedRequest.file_type && selectedRequest.file_type.startsWith('image') ? (
-                      <img src={selectedRequest.file_path} alt="Document" className="max-h-72 max-w-full rounded shadow border border-orange-100" />
-                    ) : selectedRequest.file_type && selectedRequest.file_type === 'application/pdf' ? (
-                      <iframe src={selectedRequest.file_path} title="Document PDF" className="w-64 h-72 rounded border border-orange-100 shadow" />
-                    ) : (
-                      <a href={selectedRequest.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}}>View Document</a>
-                    )}
-                  </div>
+                  <input type="text" placeholder="Rejection reason (required for Not Approve)" value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="w-full border border-orange-200 rounded-lg px-3 py-2 mt-2" />
+                  {modalError && <div className="text-red-500 text-sm mt-1 text-center">{modalError}</div>}
                 </div>
               </div>
-            )}
-          </aside>
+              {/* Right: Document Preview */}
+              <div className="flex-1 min-w-0 flex flex-col items-center justify-center border-l border-orange-100 pl-6">
+                <span className="text-sm font-semibold text-orange-700 mb-2">Document Preview</span>
+                {selectedRequest.file_type && selectedRequest.file_type.startsWith('image') ? (
+                  <img src={selectedRequest.file_path} alt="Document" className="max-h-72 max-w-full rounded shadow border border-orange-100" />
+                ) : selectedRequest.file_type && selectedRequest.file_type === 'application/pdf' ? (
+                  <iframe src={selectedRequest.file_path} title="Document PDF" className="w-64 h-72 rounded border border-orange-100 shadow" />
+                ) : (
+                  <a href={selectedRequest.file_path} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:text-orange-800 focus:outline-none" style={{textDecoration: 'none', cursor: 'pointer', display: 'inline-block', marginTop: '0.5rem'}}>View Document</a>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
+      {/* Action Dropdown Portal */}
+      {renderActionDropdownPortal()}
+      {/* User Action Dropdown Portal */}
+      {renderUserActionDropdownPortal()}
+
       {/* Startup Details Modal */}
       {startupModalOpen && selectedStartupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -1496,6 +2491,359 @@ case 'sitePerformance':
               {selectedStartupModal.business_plan_url && (
                 <div className="text-sm text-gray-700 mb-1">Business Plan: <a href={selectedStartupModal.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View</a></div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+             {/* Edit Startup Modal */}
+       {showEditStartupModal && editingStartup && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+           <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+             <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowEditStartupModal(false)}>&times;</button>
+             <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">Edit Startup</h3>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {/* Name */}
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                 <input
+                   type="text"
+                   value={editingStartup.name || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, name: e.target.value})}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 />
+               </div>
+               
+               {/* Industry */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+                 <input
+                   type="text"
+                   value={editingStartup.industry || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, industry: e.target.value})}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 />
+               </div>
+               
+               {/* Location */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                 <input
+                   type="text"
+                   value={editingStartup.location || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, location: e.target.value})}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 />
+               </div>
+               
+               {/* Startup Stage */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Startup Stage</label>
+                 <select
+                   value={editingStartup.startup_stage || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, startup_stage: e.target.value})}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 >
+                   <option value="ideation">Ideation</option>
+                   <option value="validation">Validation</option>
+                   <option value="mvp">MVP</option>
+                   <option value="growth">Growth</option>
+                   <option value="maturity">Maturity</option>
+                 </select>
+               </div>
+               
+               {/* Approval Status */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                 <select
+                   value={editingStartup.approval_status || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, approval_status: e.target.value})}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 >
+                   <option value="pending">Pending</option>
+                   <option value="approved">Approved</option>
+                   <option value="rejected">Rejected</option>
+                   <option value="suspended">Suspended</option>
+                 </select>
+               </div>
+               
+               {/* Description */}
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                 <textarea
+                   value={editingStartup.description || ''}
+                   onChange={(e) => setEditingStartup({...editingStartup, description: e.target.value})}
+                   rows={3}
+                   className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                 />
+               </div>
+             </div>
+             
+             <div className="flex gap-2 mt-4">
+               <button
+                 className="flex-1 bg-gray-200 dark:bg-gray-700 text-orange-700 dark:text-orange-400 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                 onClick={() => setShowEditStartupModal(false)}
+               >Cancel</button>
+               <button
+                 className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
+                 onClick={handleSaveStartupEdit}
+               >Save Changes</button>
+             </div>
+           </div>
+         </div>
+       )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && startupToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowDeleteConfirmModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Delete Startup</h3>
+            <div className="mb-4 w-full">
+              <div className="font-semibold text-lg text-black dark:text-white mb-1">{startupToDelete.name}</div>
+              <div className="text-sm text-gray-700 mb-1">Are you sure you want to delete this startup?</div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 text-orange-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >Cancel</button>
+              <button
+                className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition font-semibold"
+                onClick={() => handleDeleteStartup(startupToDelete.startup_id)}
+              >Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Bulk Action Modal */}
+      {showBulkActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowBulkActionModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 text-center">Bulk Action</h3>
+            <div className="mb-4 w-full">
+              <select
+                value={bulkAction}
+                onChange={(e) => setBulkAction(e.target.value)}
+                className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black dark:text-white placeholder-gray-400"
+              >
+                <option value="">Select Action</option>
+                <option value="suspend">Suspend</option>
+                <option value="reactivate">Reactivate</option>
+                <option value="delete">Delete</option>
+              </select>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 text-orange-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                onClick={() => setShowBulkActionModal(false)}
+              >Cancel</button>
+              <button
+                className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
+                onClick={handleBulkAction}
+              >Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Details Modal */}
+      {showUserDetailsModal && selectedUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowUserDetailsModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">User Details</h3>
+            <div className="mb-4 w-full">
+              <div className="font-semibold text-lg text-black dark:text-white mb-1">
+                {(selectedUserModal.first_name && selectedUserModal.last_name && 
+                  `${selectedUserModal.first_name} ${selectedUserModal.last_name}`) ||
+                selectedUserModal.full_name || selectedUserModal.email}
+              </div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Email: {selectedUserModal.email}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Role: {roleLabels[selectedUserModal.role] || selectedUserModal.role}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Location: {selectedUserModal.location || 'N/A'}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Industry: {selectedUserModal.industry || 'N/A'}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Status: {renderUserStatusBadge(selectedUserModal)}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                Joined: {selectedUserModal.created_at ? new Date(selectedUserModal.created_at).toLocaleDateString() : 'N/A'}
+              </div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                Verified: {selectedUserModal.is_verified ? 'Yes' : 'No'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowEditUserModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">Edit User</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={editingUser.first_name || ''}
+                  onChange={(e) => setEditingUser({...editingUser, first_name: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                />
+              </div>
+              
+              {/* Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  value={editingUser.last_name || ''}
+                  onChange={(e) => setEditingUser({...editingUser, last_name: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                />
+              </div>
+              
+              {/* Email */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editingUser.email || ''}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                />
+              </div>
+              
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                <select
+                  value={editingUser.role || ''}
+                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                >
+                  <option value="entrepreneur">Entrepreneur</option>
+                  <option value="investor">Investor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={editingUser.location || ''}
+                  onChange={(e) => setEditingUser({...editingUser, location: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                />
+              </div>
+              
+              {/* Industry */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+                <input
+                  type="text"
+                  value={editingUser.industry || ''}
+                  onChange={(e) => setEditingUser({...editingUser, industry: e.target.value})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                />
+              </div>
+              
+              {/* Verification Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Verification Status</label>
+                <select
+                  value={editingUser.is_verified ? 'true' : 'false'}
+                  onChange={(e) => setEditingUser({...editingUser, is_verified: e.target.value === 'true'})}
+                  className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+                >
+                  <option value="false">Not Verified</option>
+                  <option value="true">Verified</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-orange-700 dark:text-orange-400 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={() => setShowEditUserModal(false)}
+              >Cancel</button>
+              <button
+                className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
+                onClick={handleSaveUserEdit}
+              >Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteUserConfirmModal && userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowDeleteUserConfirmModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">Delete User</h3>
+            <div className="mb-4 w-full">
+              <div className="font-semibold text-lg text-black dark:text-white mb-1">
+                {(userToDelete.first_name && userToDelete.last_name && 
+                  `${userToDelete.first_name} ${userToDelete.last_name}`) ||
+                userToDelete.full_name || userToDelete.email}
+              </div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Email: {userToDelete.email}</div>
+              <div className="text-sm text-red-600 dark:text-red-400 mb-1">
+                Are you sure you want to delete this user? This action cannot be undone.
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-orange-700 dark:text-orange-400 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={() => setShowDeleteUserConfirmModal(false)}
+              >Cancel</button>
+              <button
+                className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition font-semibold"
+                onClick={() => handleDeleteUser(userToDelete.id)}
+              >Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk User Action Modal */}
+      {showBulkUserActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-lg p-8 w-full max-w-2xl relative animate-fadeIn flex flex-col gap-6">
+            <button className="absolute top-2 right-2 text-xl text-orange-500 hover:text-orange-700" onClick={() => setShowBulkUserActionModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-2 text-orange-700 dark:text-orange-400 text-center">Bulk User Action</h3>
+            <div className="mb-4 w-full">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Action</label>
+              <select
+                value={bulkUserAction}
+                onChange={(e) => setBulkUserAction(e.target.value)}
+                className="w-full p-3 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-[#1b1b1b] text-black dark:text-white"
+              >
+                <option value="">Select Action</option>
+                <option value="suspend">Suspend</option>
+                <option value="reactivate">Reactivate</option>
+                <option value="verify">Verify</option>
+                <option value="delete">Delete</option>
+              </select>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                This action will be applied to {selectedUserIds.length} selected user(s).
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-orange-700 dark:text-orange-400 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={() => setShowBulkUserActionModal(false)}
+              >Cancel</button>
+              <button
+                className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold"
+                onClick={handleBulkUserAction}
+                disabled={!bulkUserAction}
+              >Confirm</button>
             </div>
           </div>
         </div>

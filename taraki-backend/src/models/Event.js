@@ -27,6 +27,23 @@ class Event {
     );
     return rows[0];
   }
+
+  static async update(id, eventData) {
+    const { title, description, event_date, location, status, rsvp_link, tags } = eventData;
+    const [result] = await pool.execute(
+      'UPDATE events SET title = ?, description = ?, event_date = ?, location = ?, status = ?, rsvp_link = ?, tags = ? WHERE id = ?',
+      [title, description, event_date, location, status, rsvp_link, tags, id]
+    );
+    return result.affectedRows > 0;
+  }
+
+  static async delete(id) {
+    const [result] = await pool.execute(
+      'DELETE FROM events WHERE id = ?',
+      [id]
+    );
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = Event; 
