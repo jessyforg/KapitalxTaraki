@@ -812,6 +812,21 @@ app.get("/api/users/cofounders", authenticateToken, async (req, res) => {
 			[req.user.id]
 		);
 
+		// Fetch skills for each user
+		const userIds = rows.map(u => u.id);
+		let skillsMap = {};
+		if (userIds.length > 0) {
+			const [skillsRows] = await pool.query(
+				`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
+				userIds
+			);
+			skillsMap = skillsRows.reduce((acc, skill) => {
+				if (!acc[skill.user_id]) acc[skill.user_id] = [];
+				acc[skill.user_id].push(skill.skill_name);
+				return acc;
+			}, {});
+		}
+
 		const cofounders = rows.map((u) => ({
 			id: u.id,
 			name: `${u.first_name} ${u.last_name}`,
@@ -825,6 +840,7 @@ app.get("/api/users/cofounders", authenticateToken, async (req, res) => {
 				? JSON.parse(u.preferred_industries)
 				: [],
 			preferred_startup_stage: u.preferred_startup_stage,
+			skills: skillsMap[u.id] || [],
 		}));
 
 		res.json(cofounders);
@@ -849,6 +865,21 @@ app.get("/api/users/role/investor", authenticateToken, async (req, res) => {
       AND u.show_in_search = 1
     `);
 
+		// Fetch skills for each investor
+		const investorIds = rows.map(u => u.id);
+		let skillsMap = {};
+		if (investorIds.length > 0) {
+			const [skillsRows] = await pool.query(
+				`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${investorIds.map(() => '?').join(',')})`,
+				investorIds
+			);
+			skillsMap = skillsRows.reduce((acc, skill) => {
+				if (!acc[skill.user_id]) acc[skill.user_id] = [];
+				acc[skill.user_id].push(skill.skill_name);
+				return acc;
+			}, {});
+		}
+
 		const investors = rows.map((u) => ({
 			id: u.id,
 			name: `${u.first_name} ${u.last_name}`,
@@ -867,6 +898,7 @@ app.get("/api/users/role/investor", authenticateToken, async (req, res) => {
 			funding_stage_preferences: u.funding_stage_preferences
 				? JSON.parse(u.funding_stage_preferences)
 				: [],
+			skills: skillsMap[u.id] || [],
 		}));
 
 		res.json(investors);
