@@ -62,9 +62,19 @@ function Messages() {
   // Add state for toggling info sidebar
   const [showInfoSidebar, setShowInfoSidebar] = useState(true);
 
+  // Dynamic API URL that works for both localhost and network access
+  const getApiUrl = () => {
+    // If we're accessing from localhost, use localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Otherwise, use the same hostname as the frontend (for network access)
+    return `http://${window.location.hostname}:5000/api`;
+  };
+
   // API Configuration
   const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: getApiUrl(),
     headers: {
       'Authorization': `Bearer ${token}`
     }

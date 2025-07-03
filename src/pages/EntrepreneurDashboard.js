@@ -13,7 +13,6 @@ const sidebarLinks = [
   { key: 'investors', label: 'Investors', icon: 'fa-hand-holding-usd' },
   { key: 'ecosystem', label: 'Ecosystem', icon: 'fa-globe' },
   { key: 'events', label: 'Events', icon: 'fa-calendar' },
-  { key: 'settings', label: 'Settings', icon: 'fa-cog' },
 ];
 
 const industries = {
@@ -464,7 +463,7 @@ const EntrepreneurDashboard = () => {
         .map((coFounder, idx) => (
           <div
             key={coFounder.id || idx}
-            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
             style={{ minWidth: '260px' }}
           >
             {/* Profile image */}
@@ -478,7 +477,7 @@ const EntrepreneurDashboard = () => {
               )}
             </div>
             {/* Info section */}
-            <div className="w-full px-5 py-4 flex flex-col items-start">
+            <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
               <div className="flex justify-between items-center w-full mb-1">
                 <div className="font-bold text-lg text-gray-900">{coFounder.name}</div>
                 <MatchScoreBadge score={coFounder.match_score} />
@@ -499,11 +498,16 @@ const EntrepreneurDashboard = () => {
                 <div className="text-sm text-gray-500 mb-4">
                   <span className="font-semibold">Skills:</span>{' '}
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {coFounder.skills.map((skill, index) => (
+                    {coFounder.skills.slice(0, 4).map((skill, index) => (
                       <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                         {skill}
                       </span>
                     ))}
+                    {coFounder.skills.length > 4 && (
+                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                        +{coFounder.skills.length - 4} more
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -538,7 +542,7 @@ const EntrepreneurDashboard = () => {
         .map((investor, idx) => (
           <div
             key={investor.id || idx}
-            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+            className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
             style={{ minWidth: '260px' }}
           >
             {/* Profile image */}
@@ -552,7 +556,7 @@ const EntrepreneurDashboard = () => {
               )}
             </div>
             {/* Info section */}
-            <div className="w-full px-5 py-4 flex flex-col items-start">
+            <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
               <div className="flex justify-between items-center w-full mb-1">
                 <div className="font-bold text-lg text-gray-900">{investor.name}</div>
                 <MatchScoreBadge score={investor.match_score} />
@@ -573,11 +577,16 @@ const EntrepreneurDashboard = () => {
                 <div className="text-sm text-gray-500 mb-4">
                   <span className="font-semibold">Skills:</span>{' '}
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {investor.skills.map((skill, index) => (
+                    {investor.skills.slice(0, 4).map((skill, index) => (
                       <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                         {skill}
                       </span>
                     ))}
+                    {investor.skills.length > 4 && (
+                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                        +{investor.skills.length - 4} more
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -835,7 +844,7 @@ const EntrepreneurDashboard = () => {
                     {startups.map((startup) => (
                       <div
                         key={startup.startup_id}
-                        className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+                        className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
                         style={{ minWidth: '260px' }}
                       >
                         {/* Logo or placeholder */}
@@ -849,7 +858,7 @@ const EntrepreneurDashboard = () => {
                           )}
                         </div>
                         {/* Info section */}
-                        <div className="w-full px-5 py-4 flex flex-col items-start">
+                        <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
                           <div className="font-bold text-lg text-gray-900 mb-1">{startup.name}</div>
                           <div className="text-sm text-gray-500 mb-2">
                             <span className="font-semibold">Industry:</span>{' '}
@@ -865,7 +874,7 @@ const EntrepreneurDashboard = () => {
                           </div>
                           <div className="text-sm text-gray-500 mb-2">
                             <span className="font-semibold">Description:</span>{' '}
-                            {startup.description && startup.description.length > 80 ? `${startup.description.slice(0, 80)}...` : startup.description}
+                            {startup.description && startup.description.length > 60 ? `${startup.description.slice(0, 60)}...` : startup.description}
                           </div>
                           <div className="text-sm text-gray-500 mb-2">
                             <span className="font-semibold">Status:</span>{' '}

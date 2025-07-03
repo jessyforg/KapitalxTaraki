@@ -13,6 +13,16 @@ import { getNotifications, markNotificationAsRead, getUnreadNotificationCount } 
 import NotificationDropdown from './NotificationDropdown';
 
 function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActiveTab, setAdminActiveTab }) {
+  // Dynamic API URL that works for both localhost and network access
+  const getApiUrl = () => {
+    // If we're accessing from localhost, use localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Otherwise, use the same hostname as the frontend (for network access)
+    return `http://${window.location.hostname}:5000/api`;
+  };
+
   const form = useRef();
   const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
@@ -340,7 +350,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         return;
       }
 
-      const res = await axios.get('http://localhost:5000/api/messages/preview', {
+      const res = await axios.get(`${getApiUrl()}/messages/preview`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -429,7 +439,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`, {
+        const response = await axios.get(`${getApiUrl()}/search?q=${encodeURIComponent(query)}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

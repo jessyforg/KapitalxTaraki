@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail, FiChevronLeft, FiChevronRight, FiMoreVertical, FiEye, FiPause, FiPlay, FiTrash2, FiCheck, FiMenu, FiX } from 'react-icons/fi';
-import { FaTicketAlt } from 'react-icons/fa'; // Add ticket icon
+import { FiHome, FiUsers, FiBarChart2, FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiEye, FiPause, FiPlay, FiX, FiMenu, FiSettings } from 'react-icons/fi';
+import { FaTicketAlt } from 'react-icons/fa';
+import { BsThreeDots } from 'react-icons/bs';
+import { HiOutlineDocumentText, HiOutlineLocationMarker } from 'react-icons/hi';
+import { MdOutlineEvent, MdEventAvailable } from 'react-icons/md';
+import UserDetailsModal from './UserDetailsModal';
+import Navbar from './Navbar';
+import { useBreakpoint, useScreenSize } from '../hooks/useScreenSize';
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
-import Navbar from './Navbar'; // Add Navbar import
 import { getTickets, updateTicket } from '../api/tickets';
-import { useBreakpoint, useScreenSize } from '../hooks/useScreenSize';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { calculateMatchScore, matchStartupsWithInvestors, matchEntrepreneursWithInvestors } from '../utils/matchmaking';
+
 
 
 const initialTabs = [
@@ -19,7 +23,6 @@ const initialTabs = [
   { id: 'startup', label: 'Startup', icon: <FiBarChart2 size={20} /> },
   { id: 'events', label: 'Events', icon: <FiCalendar size={20} /> },
   { id: 'tickets', label: 'Tickets', icon: <FaTicketAlt size={20} /> },
-  { id: 'matchmaking', label: 'Matchmaking Test', icon: <FiUsers size={20} /> },
   { id: 'sitePerformance', label: 'Site Performance', icon: <FiBarChart2 size={20} /> },
   // Removed Profile tab
 ];
@@ -200,16 +203,7 @@ function AdminDashboard() {
   const userStatusCounts = getUserStatusCounts();
   const startupStatusCounts = getStartupStatusCounts();
 
-  // Add state for matchmaking testing
-  const [matchmakingData, setMatchmakingData] = useState({
-    entrepreneurs: [],
-    investors: [],
-    startups: [],
-    matches: [],
-    loading: false,
-    error: null
-  });
-  const [matchmakingTestResults, setMatchmakingTestResults] = useState(null);
+
 
   const filteredUsers = users.filter(u => {
     // Search query filter
@@ -967,9 +961,19 @@ function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Dynamic API URL that works for both localhost and network access
+  const getApiUrl = () => {
+    // If we're accessing from localhost, use localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Otherwise, use the same hostname as the frontend (for network access)
+    return `http://${window.location.hostname}:5000/api`;
+  };
+
   // Fetch dashboard analytics
   const fetchDashboardStats = () => {
-    fetch('http://localhost/Taraki(2025)/KapitalxTaraki/src/api/get_stats.php')
+    fetch(`${getApiUrl()}/admin/dashboard-stats`)
       .then(response => response.json())
       .then(data => {
         if (!data.error) {
@@ -3044,7 +3048,7 @@ case 'sitePerformance':
         aria-label="actions"
         title="More actions"
       >
-        <FiMoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        <BsThreeDots className="w-4 h-4 text-gray-600 dark:text-gray-300" />
       </button>
     </div>
   );
@@ -3082,7 +3086,7 @@ case 'sitePerformance':
         aria-label="user-actions"
         title="More actions"
       >
-        <FiMoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        <BsThreeDots className="w-4 h-4 text-gray-600 dark:text-gray-300" />
       </button>
     </div>
   );
@@ -3111,7 +3115,7 @@ case 'sitePerformance':
           }}
           className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 rounded-t-lg"
         >
-          <FiEye className="w-4 h-4" />
+          <HiOutlineDocumentText className="w-4 h-4" />
           View Details
         </button>
         
@@ -3123,7 +3127,7 @@ case 'sitePerformance':
           }}
           className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2"
         >
-          <FiEdit2 className="w-4 h-4" />
+          <HiOutlineDocumentText className="w-4 h-4" />
           Edit User
         </button>
 
@@ -3195,7 +3199,7 @@ case 'sitePerformance':
           }}
           className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 rounded-t-lg"
         >
-          <FiEye className="w-4 h-4" />
+          <HiOutlineLocationMarker className="w-4 h-4" />
           View Details
         </button>
         
@@ -3207,7 +3211,7 @@ case 'sitePerformance':
           }}
           className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2"
         >
-          <FiEdit2 className="w-4 h-4" />
+          <MdOutlineEvent className="w-4 h-4" />
           Edit Startup
         </button>
 
@@ -3234,7 +3238,7 @@ case 'sitePerformance':
             }}
             className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-green-600"
           >
-            <FiPlay className="w-4 h-4" />
+            <MdEventAvailable className="w-4 h-4" />
             Reactivate
           </button>
         )}
@@ -3300,32 +3304,33 @@ case 'sitePerformance':
             : 'mobile-sidebar fixed left-0 top-0 h-full w-64 z-[70]'
           }
           bg-white dark:bg-[#232323] flex flex-col 
-          ${isDesktop ? 'pt-4 pb-8' : 'pt-2 pb-4'} 
+          ${isDesktop ? 'pt-3 pb-3' : 'pt-2 pb-2'} 
           border border-orange-100 dark:border-orange-700 
           ${isDesktop ? 'rounded-2xl' : 'rounded-none'} 
           shadow-xl transform transition-transform duration-300 ease-in-out
           ${!isDesktop && !isMobileSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+          overflow-hidden
         `}>
           {/* Mobile header spacer */}
-          {!isDesktop && <div className="h-8 w-full"></div>}
+          {!isDesktop && <div className="h-8 w-full flex-shrink-0"></div>}
           
           {/* Profile Section */}
-          <div className="flex flex-col items-center px-6 mb-6">
-            <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
+          <div className="flex flex-col items-center px-4 mb-4 flex-shrink-0">
+            <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white text-lg font-bold mb-2">
               A
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">ADMIN</div>
-              <div className="text-gray-800 dark:text-white font-medium">Admin User</div>
+              <div className="text-gray-800 dark:text-white font-medium text-sm">Admin User</div>
             </div>
           </div>
           
           {/* Navigation */}
-          <nav className="flex-1 flex flex-col gap-2 px-6">
+          <nav className="flex-1 flex flex-col gap-1 px-4 overflow-y-auto min-h-0">
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium ${
                   activeTab === tab.id
                     ? 'bg-orange-500 text-white'
                     : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -3338,16 +3343,16 @@ case 'sitePerformance':
                   }
                 }}
               >
-                <span className="text-xl">{tab.icon}</span>
-                <span className="sidebar-text">{tab.label}</span>
+                <span className="text-lg flex-shrink-0">{tab.icon}</span>
+                <span className="sidebar-text truncate">{tab.label}</span>
               </button>
             ))}
           </nav>
           
           {/* Bottom Section - Settings & Logout */}
-          <div className="px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="px-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <button
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium w-full mb-1 ${
                 activeTab === 'settings'
                   ? 'bg-orange-500 text-white'
                   : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -3360,20 +3365,20 @@ case 'sitePerformance':
                 }
               }}
             >
-              <FiSettings className="text-xl" />
-              <span className="sidebar-text">Settings</span>
+              <FiSettings className="text-lg flex-shrink-0" />
+              <span className="sidebar-text truncate">Settings</span>
             </button>
             
             <button
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
               onClick={() => {
                 // Handle logout
                 localStorage.removeItem('token');
                 window.location.href = '/login';
               }}
             >
-              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
-              <span className="sidebar-text">Logout</span>
+              <div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div>
+              <span className="sidebar-text truncate">Logout</span>
             </button>
           </div>
         </aside>

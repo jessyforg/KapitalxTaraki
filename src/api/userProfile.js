@@ -1,4 +1,14 @@
-const API_URL = 'http://localhost:5000/api';
+// Dynamic API URL that works for both localhost and network access
+const getApiUrl = () => {
+  // If we're accessing from localhost, use localhost
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:5000/api';
+  }
+  // Otherwise, use the same hostname as the frontend (for network access)
+  return typeof window !== 'undefined' ? `http://${window.location.hostname}:5000/api` : 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
 
 const getHeaders = () => {
   try {

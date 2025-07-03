@@ -11,10 +11,10 @@ START TRANSACTION;
 -- Create test users with complete profile data
 -- Test Entrepreneurs (101-110)
 INSERT INTO users (
-  id, first_name, last_name, full_name, email, password, role, 
+    id, first_name, last_name, full_name, email, password, role, 
   is_verified, verification_status, location, industry, introduction,
   gender, birthdate, contact_number, created_at
-) VALUES 
+) VALUES
 -- Technology Entrepreneurs in Baguio
 (101, 'Juan Carlos', 'De Leon', 'Juan Carlos De Leon', 'juan.deleon@test.com', '$2b$10$encrypted_password', 'entrepreneur', 1, 'verified', 'Baguio City', 'Technology', 'Passionate tech entrepreneur focused on AI and machine learning solutions for local businesses.', 'male', '1992-03-15', '+639171234567', NOW()),
 (102, 'Maria Sofia', 'Reyes', 'Maria Sofia Reyes', 'maria.reyes@test.com', '$2b$10$encrypted_password', 'entrepreneur', 1, 'verified', 'Baguio City', 'Technology', 'Full-stack developer turned entrepreneur, building EdTech solutions for rural communities.', 'female', '1990-07-22', '+639181234568', NOW()),
@@ -32,8 +32,8 @@ INSERT INTO users (
 
 -- Insert user preferences
 INSERT INTO user_preferences (
-  user_id, position_desired, preferred_industries, preferred_startup_stage, preferred_location
-) VALUES 
+    user_id, position_desired, preferred_industries, preferred_startup_stage, preferred_location
+) VALUES
 -- Entrepreneur preferences
 (101, 'technical_co-founder', '["Technology", "AI/ML", "Software Development"]', 'mvp', 'Baguio City'),
 (102, 'product_co-founder', '["Technology", "EdTech", "Educational Technology"]', 'mvp', 'Baguio City'),
@@ -48,7 +48,7 @@ INSERT INTO user_preferences (
 (204, 'investor', '["Agriculture", "AgTech", "Food Processing"]', 'scaling', 'Baguio City');
 
 -- Insert user skills
-INSERT INTO user_skills (user_id, skill_name, skill_level) VALUES 
+INSERT INTO user_skills (user_id, skill_name, skill_level) VALUES
 -- Juan Carlos (101) - AI/ML Tech Entrepreneur
 (101, 'Python Programming', 'expert'),
 (101, 'Machine Learning', 'expert'), 
@@ -88,7 +88,7 @@ INSERT INTO user_skills (user_id, skill_name, skill_level) VALUES
 INSERT INTO startups (
   startup_id, name, description, industry, location, startup_stage, 
   entrepreneur_id, approval_status, created_at
-) VALUES 
+) VALUES
 (501, 'MindBridge AI', 'AI-powered mental health platform for rural communities in the Philippines', 'Technology', 'Baguio City', 'mvp', 101, 'approved', NOW()),
 (502, 'EduKonnect', 'Interactive learning platform connecting students in remote areas with quality education', 'Technology', 'Baguio City', 'mvp', 102, 'approved', NOW()),
 (503, 'FarmSense', 'IoT-based smart farming solution for sustainable agriculture in mountain provinces', 'Agriculture', 'La Trinidad', 'scaling', 105, 'approved', NOW()),
@@ -134,7 +134,7 @@ COMMIT;
 -- 6. Expected results:
 --    - High matches (80-95%): Same industry + same location + compatible stage
 --    - Medium matches (60-80%): Same industry + nearby location OR different stage
---    - Lower matches (40-60%): Different industry but same location OR same industry but distant location
+--    - Lower matches (40-60%): Different industry but same location OR same industry but distant location 
 --    
 -- Debug Tips:
 -- - Check browser console for "Enhanced user for matching" and "Match calculation details" logs

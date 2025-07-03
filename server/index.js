@@ -11,7 +11,13 @@ const app = express();
 // Middleware
 app.use(
 	cors({
-		origin: "http://localhost:3000",
+		origin: [
+			"http://localhost:3000",
+			"http://192.168.0.24:3000",
+			"http://localhost:5000",
+			"http://192.168.0.24:5000",
+			/^http:\/\/192\.168\.\d+\.\d+:(3000|5000)$/  // Allow any device on local network for both ports
+		],
 		credentials: true,
 	})
 );
@@ -2316,6 +2322,51 @@ app.post(
 	}
 );
 
+// Dashboard stats endpoint
+app.get("/api/admin/dashboard-stats", async (req, res) => {
+	try {
+		// Get total users count
+		const [usersResult] = await pool.query("SELECT COUNT(*) as count FROM users");
+		const total_users = usersResult[0].count;
+
+		// Get total startups count
+		const [startupsResult] = await pool.query("SELECT COUNT(*) as count FROM startups WHERE approval_status = 'approved'");
+		const total_startups = startupsResult[0].count;
+
+		// Get total entrepreneurs count
+		const [entrepreneursResult] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'entrepreneur'");
+		const total_entrepreneurs = entrepreneursResult[0].count;
+
+		// Get total investors count
+		const [investorsResult] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'investor'");
+		const total_investors = investorsResult[0].count;
+
+		// Get upcoming events count (if events table exists)
+		let total_upcoming_events = 0;
+		try {
+			const [eventsResult] = await pool.query(`
+				SELECT COUNT(*) as count FROM events 
+				WHERE event_date >= CURDATE() OR status IN ('upcoming', 'ongoing')
+			`);
+			total_upcoming_events = eventsResult[0].count;
+		} catch (error) {
+			// Events table might not exist, default to 0
+			console.warn("Events table not found, setting upcoming events to 0");
+		}
+
+		res.json({
+			total_users,
+			total_startups,
+			total_entrepreneurs,
+			total_investors,
+			total_upcoming_events
+		});
+	} catch (error) {
+		console.error("Error fetching dashboard stats:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
 const ticketsRouter = require("./routes/tickets")(pool);
 app.use("/api/tickets", authenticateToken, ticketsRouter);
 
@@ -2323,6 +2374,8 @@ const notificationsRouter = require("./routes/notifications")(pool);
 app.use("/api/notifications", authenticateToken, notificationsRouter);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
 	console.log(`Server running on port ${PORT}`);
+	console.log(`Local access: http://localhost:${PORT}`);
+	console.log(`Network access: http://192.168.0.24:${PORT}`);
 });

@@ -489,7 +489,7 @@ const InvestorDashboard = () => {
       {startups.map((startup) => (
         <div
           key={startup.startup_id}
-          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
           style={{ minWidth: '260px' }}
         >
           {/* Logo or placeholder */}
@@ -503,7 +503,7 @@ const InvestorDashboard = () => {
             )}
           </div>
           {/* Info section */}
-          <div className="w-full px-5 py-4 flex flex-col items-start">
+          <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
             <div className="flex justify-between items-center w-full mb-1">
               <div className="font-bold text-lg text-gray-900">{startup.name}</div>
               <MatchScoreBadge score={startup.match_score} />
@@ -561,7 +561,7 @@ const InvestorDashboard = () => {
       {entrepreneurs.map((entrepreneur) => (
         <div
           key={entrepreneur.id}
-          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
           style={{ minWidth: '260px' }}
         >
           {/* Profile image */}
@@ -575,7 +575,7 @@ const InvestorDashboard = () => {
             )}
           </div>
           {/* Info section */}
-          <div className="w-full px-5 py-4 flex flex-col items-start">
+          <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
             <div className="flex justify-between items-center w-full mb-1">
               <div className="font-bold text-lg text-gray-900">{entrepreneur.name}</div>
               <MatchScoreBadge score={entrepreneur.match_score} />
@@ -596,11 +596,16 @@ const InvestorDashboard = () => {
               <div className="text-sm text-gray-500 mb-4">
                 <span className="font-semibold">Skills:</span>{' '}
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {entrepreneur.skills.map((skill, index) => (
+                  {entrepreneur.skills.slice(0, 4).map((skill, index) => (
                     <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                       {skill}
                     </span>
                   ))}
+                  {entrepreneur.skills.length > 4 && (
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                      +{entrepreneur.skills.length - 4} more
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -630,7 +635,7 @@ const InvestorDashboard = () => {
       {investors.map((investor) => (
         <div
           key={investor.id}
-          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto"
+          className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden flex flex-col items-center max-w-xs w-full mx-auto h-[500px]"
           style={{ minWidth: '260px' }}
         >
           {/* Profile image */}
@@ -644,7 +649,7 @@ const InvestorDashboard = () => {
             )}
           </div>
           {/* Info section */}
-          <div className="w-full px-5 py-4 flex flex-col items-start">
+          <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
             <div className="font-bold text-lg text-gray-900 mb-1">{investor.name || investor.full_name || investor.email}</div>
             <div className="text-sm text-gray-500 mb-2">
               <span className="font-semibold">Industry:</span>{' '}
@@ -662,11 +667,16 @@ const InvestorDashboard = () => {
               <div className="text-sm text-gray-500 mb-4">
                 <span className="font-semibold">Skills:</span>{' '}
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {investor.skills.map((skill, index) => (
+                  {investor.skills.slice(0, 4).map((skill, index) => (
                     <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                       {skill}
                     </span>
                   ))}
+                  {investor.skills.length > 4 && (
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                      +{investor.skills.length - 4} more
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -735,42 +745,43 @@ const InvestorDashboard = () => {
             : 'mobile-sidebar fixed left-0 top-0 h-full w-64 z-[70]'
           }
           bg-white dark:bg-[#232323] flex flex-col 
-          ${isDesktop ? 'pt-4 pb-8' : 'pt-2 pb-4'} 
+          ${isDesktop ? 'pt-4 pb-3' : 'pt-4 pb-2'} 
           border border-orange-100 dark:border-orange-700 
           ${isDesktop ? 'rounded-2xl' : 'rounded-none'} 
           shadow-xl transform transition-transform duration-300 ease-in-out
           ${!isDesktop && !isMobileSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+          overflow-hidden
         `}>
           {/* Mobile header spacer */}
-          {!isDesktop && <div className="h-8 w-full"></div>}
+          {!isDesktop && <div className="h-8 w-full flex-shrink-0"></div>}
           
           {/* Profile Section */}
-          <div className="flex flex-col items-center px-6 mb-6">
+          <div className="flex flex-col items-center px-4 mb-4 flex-shrink-0">
             {user && user.profile_image ? (
               <img
                 src={user.profile_image}
                 alt="Profile"
-                className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 mb-3"
+                className="w-12 h-12 rounded-full object-cover border-2 border-orange-500 mb-2"
               />
             ) : (
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
+              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white text-lg font-bold mb-2">
                 {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : 'I'}
               </div>
             )}
             <div className="text-center">
               <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">INVESTOR</div>
-              <div className="text-gray-800 dark:text-white font-medium">
+              <div className="text-gray-800 dark:text-white font-medium text-sm">
                 {user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}
               </div>
             </div>
           </div>
           
           {/* Navigation */}
-          <nav className="flex-1 flex flex-col gap-2 px-6">
+          <nav className="flex-1 flex flex-col gap-1 px-4 overflow-y-auto min-h-0">
             {sidebarLinks.map(link => (
               <button
                 key={link.key}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium ${
                   activeSection === link.key
                     ? 'bg-orange-500 text-white'
                     : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -787,16 +798,16 @@ const InvestorDashboard = () => {
                   }
                 }}
               >
-                <i className={`fas ${link.icon} text-xl`}></i>
-                <span className="sidebar-text">{link.label}</span>
+                <i className={`fas ${link.icon} text-lg flex-shrink-0`}></i>
+                <span className="sidebar-text truncate">{link.label}</span>
               </button>
             ))}
           </nav>
           
           {/* Bottom Section - Settings & Logout */}
-          <div className="px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="px-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <button
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium w-full mb-1 ${
                 activeSection === 'settings'
                   ? 'bg-orange-500 text-white'
                   : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -808,12 +819,12 @@ const InvestorDashboard = () => {
                 }
               }}
             >
-              <FiSettings className="text-xl" />
-              <span className="sidebar-text">Settings</span>
+              <FiSettings className="text-lg flex-shrink-0" />
+              <span className="sidebar-text truncate">Settings</span>
             </button>
             
             <button
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
               onClick={() => {
                 // Handle logout
                 localStorage.removeItem('token');
@@ -821,8 +832,8 @@ const InvestorDashboard = () => {
                 window.location.href = '/login';
               }}
             >
-              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
-              <span className="sidebar-text">Logout</span>
+              <div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div>
+              <span className="sidebar-text truncate">Logout</span>
             </button>
           </div>
         </aside>
