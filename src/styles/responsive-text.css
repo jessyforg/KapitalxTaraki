@@ -1,0 +1,164 @@
+/* Responsive Text Styles */
+
+/* Method 2: Fluid Typography using CSS clamp() */
+.fluid-heading {
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  line-height: clamp(1.6, 4.5vw, 3.2);
+}
+
+.fluid-text {
+  font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+  line-height: clamp(1.4, 3vw, 1.6);
+}
+
+/* Method 3: Component-specific responsive patterns */
+.dashboard-card {
+  @apply p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow border border-gray-200;
+}
+
+.card-title {
+  @apply text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-2;
+}
+
+.card-description {
+  @apply text-sm sm:text-base md:text-lg text-gray-600;
+}
+
+/* Method 4: Navigation responsive text */
+.nav-responsive {
+  @apply flex flex-col md:flex-row gap-2 md:gap-4;
+}
+
+.nav-item {
+  @apply px-3 py-2 md:px-4 md:py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors;
+}
+
+.nav-text {
+  @apply text-sm md:text-base lg:text-lg font-medium;
+}
+
+/* Responsive table text */
+.table-responsive {
+  @apply text-xs sm:text-sm md:text-base;
+}
+
+/* Responsive button text */
+.btn-responsive {
+  @apply text-sm md:text-base px-3 py-2 md:px-4 md:py-2;
+}
+
+/* Responsive form labels */
+.label-responsive {
+  @apply text-sm md:text-base font-medium;
+}
+
+/* Responsive modal titles */
+.modal-title-responsive {
+  @apply text-lg sm:text-xl md:text-2xl font-bold;
+}
+
+/* Responsive sidebar text */
+.sidebar-text {
+  @apply text-sm md:text-base font-medium;
+}
+
+/* High-DPI/Retina display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-text {
+    font-weight: 400; /* Slightly reduce font weight on high-DPI */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom responsive breakpoints for extreme high resolution */
+@media (min-width: 2560px) {
+  .ultra-wide-text {
+    font-size: clamp(1rem, 1.2vw, 1.5rem);
+  }
+}
+
+/* Additional responsive utilities */
+.hamburger-btn {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  /* Improved touch interaction */
+  -webkit-tap-highlight-color: rgba(255, 193, 7, 0.2);
+  user-select: none;
+}
+
+/* Mobile header optimizations */
+.mobile-header {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve button interactions on mobile */
+  button:active {
+    transform: scale(0.95);
+  }
+  
+  /* Better spacing for mobile interfaces */
+  .mobile-header .flex {
+    gap: 0.5rem;
+  }
+}
+
+.mobile-sidebar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Responsive grid layouts */
+.responsive-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+}
+
+.responsive-card-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+}
+
+/* Responsive spacing */
+.responsive-spacing {
+  @apply p-4 md:p-6 lg:p-8;
+}
+
+.responsive-margin {
+  @apply m-4 md:m-6 lg:m-8;
+}
+
+/* Responsive text sizes for components */
+.dashboard-title {
+  @apply text-2xl sm:text-3xl md:text-4xl font-bold;
+}
+
+.card-title-responsive {
+  @apply text-lg sm:text-xl md:text-2xl font-semibold;
+}
+
+.body-text-responsive {
+  @apply text-sm sm:text-base md:text-lg;
+}
+
+/* Fix high-DPI display issues */
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+       screen and (min-resolution: 192dpi) {
+  /* Ensure crisp text rendering on high-DPI displays */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Prevent blurry borders */
+  .border {
+    transform: translateZ(0);
+  }
+} 

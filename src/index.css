@@ -1,6 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import responsive text styles */
+@import './styles/responsive-text.css';
 @font-face {
   font-family: "Satoshi-Variable";
   src: url("../src/Satoshi-Variable.ttf");

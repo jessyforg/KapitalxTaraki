@@ -282,7 +282,7 @@ function EventsPage() {
                         {events.map(event => (
                           <button
                             key={event.id}
-                            className={`mb-8 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded transition relative ${
+                            className={`mb-8 p-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0 w-full text-left hover:bg-orange-50 dark:hover:bg-[#232526] rounded-lg transition relative shadow-sm ${
                               tab === 'upcoming' ? 'bg-white text-gray-800' : 
                               tab === 'ongoing' ? 'bg-green-50 dark:bg-green-900/20 text-gray-800 dark:text-white border-l-4 border-l-green-500' :
                               'bg-gray-100 dark:bg-[#232526] text-black dark:text-white'
@@ -291,8 +291,10 @@ function EventsPage() {
                           >
                             {/* Live indicator for ongoing events */}
                             {event.status === 'ongoing' && (
-                              <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
+                                <svg className="w-4 h-4 text-white animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="8"/>
+                                </svg>
                                 LIVE
                               </div>
                             )}
@@ -388,8 +390,10 @@ function EventsPage() {
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-2xl font-bold text-[#ea580c] dark:text-orange-300">{selectedEvent.title}</h2>
                 {selectedEvent.status === 'ongoing' && (
-                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <span className="bg-red-500 text-white px-3 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
+                    <svg className="w-4 h-4 text-white animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="8"/>
+                    </svg>
                     LIVE
                   </span>
                 )}

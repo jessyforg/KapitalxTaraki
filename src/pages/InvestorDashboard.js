@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
-import { calculateMatchScore } from '../utils/matchmaking';
+import { calculateMatchScore, enhanceUserForMatching } from '../utils/matchmaking';
 import { getEntrepreneurs, getUserPreferences, getInvestors } from '../api/users';
+import { useBreakpoint } from '../hooks/useScreenSize';
+import { FiSettings, FiMenu, FiX } from 'react-icons/fi';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
@@ -68,6 +70,7 @@ const InvestorDashboard = () => {
       return null;
     }
   });
+  const [enhancedUser, setEnhancedUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [filters, setFilters] = useState({ industry: '', location: '', startup_stage: '' });
@@ -84,6 +87,165 @@ const InvestorDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  
+  // Import responsive hooks
+  const { isMobile, isDesktop } = useBreakpoint();
+
+  // Mock data for testing matchmaking
+  const mockAvailableStartups = [
+    {
+      startup_id: 1,
+      name: "Sana All Tech",
+      industry: "Technology", // Match investor's preferred industry
+      location: "Baguio City", // Match location
+      startup_stage: "mvp", // Match stage preferences
+      description: "Making everyone's tech dreams come true - sana all may startup!",
+      approval_status: "approved",
+      entrepreneur_id: 99,
+      logo_url: null
+    },
+    {
+      startup_id: 2,
+      name: "Edi Wow Solutions",
+      industry: "Technology", // Match industry
+      location: "Baguio City", // Match location
+      startup_stage: "mvp", // Match stage
+      description: "Edi wow nalang, we solve everything! Tech solutions para sa lahat.",
+      approval_status: "approved",
+      entrepreneur_id: 98,
+      logo_url: null
+    },
+    {
+      startup_id: 4,
+      name: "Petmalu Pets",
+      industry: "E-commerce", // Different industry for variety
+      location: "Baguio City", // Match location
+      startup_stage: "growth", // Different stage
+      description: "Petmalu pet supplies and services - para sa mga fur babies na bet na bet!",
+      approval_status: "approved",
+      entrepreneur_id: 96,
+      logo_url: null
+    },
+    {
+      startup_id: 5,
+      name: "Lodi Learning",
+      industry: "Technology", // Match industry (EdTech as Technology)
+      location: "La Trinidad", // Close to Baguio
+      startup_stage: "validation", // Different stage
+      description: "Educational technology platform na magiging lodi mo sa pag-aaral!",
+      approval_status: "approved",
+      entrepreneur_id: 95,
+      logo_url: null
+    }
+  ];
+
+  const mockMatchedStartups = [
+    {
+      startup_id: 3,
+      name: "Charot Inc",
+      industry: "Technology", // Match industry (FinTech as Technology)
+      location: "Baguio City", // Match location for better score
+      startup_stage: "mvp", // Match stage
+      description: "Charot lang pero serious tayo sa financial technology solutions!",
+      approval_status: "approved",
+      entrepreneur_id: 97,
+      logo_url: null
+    }
+  ];
+
+  const mockEntrepreneurs = [
+    {
+      id: 301,
+      name: "Bossing Vic Sotto",
+      industry: "Technology", // Match investor's preferred industry
+      location: "Baguio City", // Match location
+      preferred_location: "Baguio City",
+      skills: ["Product Development", "Team Leadership", "Business Strategy", "Innovation"],
+      role: "entrepreneur",
+      startup_stage: "mvp", // Match stage preferences
+      profile_image: null
+    },
+    {
+      id: 302,
+      name: "Ate Shawie Magdayao",
+      industry: "Technology", // Match industry
+      location: "Baguio City", // Match location
+      preferred_location: "Baguio City",
+      skills: ["UI/UX Design", "Brand Management", "Digital Marketing", "Product Strategy"],
+      role: "entrepreneur",
+      startup_stage: "mvp", // Match stage
+      profile_image: null
+    },
+    {
+      id: 303,
+      name: "Kuya Jobert Austria",
+      industry: "Technology", // Match industry
+      location: "La Trinidad", // Close to Baguio
+      preferred_location: "Baguio City",
+      skills: ["Software Engineering", "System Architecture", "Team Building", "Technical Leadership"],
+      role: "entrepreneur",
+      startup_stage: "growth", // Different stage for variety
+      profile_image: null
+    },
+    {
+      id: 304,
+      name: "Manong Fishball",
+      industry: "E-commerce", // Different industry for variety
+      location: "Baguio City", // Match location
+      preferred_location: "Baguio City",
+      skills: ["E-commerce", "Customer Acquisition", "Operations", "Market Development"],
+      role: "entrepreneur",
+      startup_stage: "mvp", // Match stage
+      profile_image: null
+    },
+    {
+      id: 305,
+      name: "Ate Girl Jackque",
+      industry: "Technology", // Match industry (HealthTech as Technology)
+      location: "Baguio City", // Match location
+      preferred_location: "Baguio City",
+      skills: ["Healthcare Technology", "Product Management", "Data Analysis", "Medical Innovation"],
+      role: "entrepreneur",
+      startup_stage: "validation", // Different stage
+      profile_image: null
+    }
+  ];
+
+  const mockInvestors = [
+    {
+      id: 401,
+      name: "Tita Cory Millionaire",
+      industry: "Technology",
+      location: "Baguio City",
+      skills: ["Angel Investing", "Mentorship", "Tita Powers", "Financial Wisdom"],
+      profile_image: null
+    },
+    {
+      id: 402,
+      name: "Mang Kanor Ventures",
+      industry: "E-commerce",
+      location: "La Trinidad",
+      skills: ["Retail Business", "Supply Chain", "Negotiation", "Diskarte"],
+      profile_image: null
+    },
+    {
+      id: 403,
+      name: "Boss Toyo Capital",
+      industry: "Finance",
+      location: "Tabuk City",
+      skills: ["Investment Banking", "Risk Management", "Flex Moves", "Money Talks"],
+      profile_image: null
+    },
+    {
+      id: 404,
+      name: "Lola Nidora Funds",
+      industry: "Healthcare",
+      location: "Lagawe",
+      skills: ["Healthcare Investment", "Strategic Planning", "Life Advice", "Herbal Medicine"],
+      profile_image: null
+    }
+  ];
 
   // Add a helper for verification
   const isUserVerified = user && user.verification_status === 'verified';
@@ -103,6 +265,35 @@ const InvestorDashboard = () => {
     const newUrl = `/investor-dashboard?section=${section}`;
     navigate(newUrl, { replace: true });
   };
+
+    // Enhanced user loading with preferences
+  useEffect(() => {
+    const loadEnhancedUser = async () => {
+      if (user) {
+        try {
+          const userWithPrefs = await enhanceUserForMatching(user, null, getUserPreferences);
+          setEnhancedUser(userWithPrefs);
+          console.log('Enhanced user for matching:', userWithPrefs);
+        } catch (error) {
+          console.error('Error enhancing user for matching:', error);
+          // Create a basic enhanced user with fallback data for testing
+          const basicEnhancedUser = {
+            ...user,
+            industry: user.industry || 'Technology',
+            location: user.location || 'Baguio City',
+            preferred_startup_stage: 'mvp',
+            preferred_location: user.location || 'Baguio City',
+            skills: [],
+            role: user.role || 'investor'
+          };
+          setEnhancedUser(basicEnhancedUser);
+          console.log('Using basic enhanced user:', basicEnhancedUser);
+        }
+      }
+    };
+    
+    loadEnhancedUser();
+  }, [user]);
 
   useEffect(() => {
     // Fetch available startups with match scores
@@ -156,11 +347,12 @@ const InvestorDashboard = () => {
         );
         
         // Calculate match scores for each entrepreneur
+        const currentUser = enhancedUser || user || {};
         const entrepreneursWithMatches = entrepreneursWithPreferences
           .filter(entrepreneur => entrepreneur.id !== user?.id) // Exclude current user
           .map(entrepreneur => ({
             ...entrepreneur,
-            match_score: calculateMatchScore(user, entrepreneur)
+            match_score: calculateMatchScore(currentUser, entrepreneur)
           }));
         
         setEntrepreneurs(entrepreneursWithMatches);
@@ -170,15 +362,17 @@ const InvestorDashboard = () => {
     };
 
     if (user) {
+      // Fetch real data from database
       fetchAvailableStartups();
       fetchMatchedStartups();
       fetchEntrepreneurs();
     }
-  }, [user]);
+  }, [user, enhancedUser]);
 
   // Fetch investors when 'investors' tab is active
   useEffect(() => {
     if (activeSection === 'investors') {
+      // Fetch real data from database
       const fetchInvestors = async () => {
         try {
           const investorsData = await getInvestors();
@@ -193,17 +387,18 @@ const InvestorDashboard = () => {
 
   // Filter out matched startups from availableStartups
   const matchedIds = new Set(matchedStartups.map(s => s.startup_id));
+  const currentUserForStartups = enhancedUser || user || {};
   const filteredAvailableStartups = availableStartups
     .filter(startup => startup.approval_status === 'approved' && !matchedIds.has(startup.startup_id))
     .map(startup => ({
       ...startup,
-      match_score: calculateMatchScore(user, startup)
+      match_score: calculateMatchScore(currentUserForStartups, startup)
     }));
 
   const filteredMatchedStartups = matchedStartups
     .map(startup => ({
       ...startup,
-      match_score: calculateMatchScore(user, startup)
+      match_score: calculateMatchScore(currentUserForStartups, startup)
     }));
 
   const handleViewStartup = (startupId) => {
@@ -498,35 +693,87 @@ const InvestorDashboard = () => {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-gray-50 text-gray-800 lg:pl-72">
-        {/* Sidebar */}
-        <aside 
-          className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white flex flex-col items-center py-8 border-r border-gray-200 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:left-8 lg:top-28 lg:bottom-2 lg:rounded-2xl
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
-          }
+      <div className={`flex min-h-screen bg-gray-50 text-gray-800 ${isDesktop ? 'pl-72' : 'pl-0'}`}>
+        {/* Circular Hamburger Menu - Bottom Right (Mobile Only) */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className={`
+            fixed bottom-6 right-6 z-[80] w-14 h-14 rounded-full shadow-2xl
+            transition-all duration-300 hover:shadow-3xl active:scale-95
+            flex items-center justify-center
+            ${isDesktop ? 'hidden' : 'flex'}
+            ${isMobileSidebarOpen 
+              ? 'bg-red-500 hover:bg-red-600 rotate-180' 
+              : 'bg-orange-500 hover:bg-orange-600 rotate-0'
+            }
+          `}
+          aria-label="Toggle menu"
+          style={{
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
         >
-          <div className="flex flex-col items-center mb-8">
+          {isMobileSidebarOpen ? (
+            <FiX size={28} className="text-white" />
+          ) : (
+            <FiMenu size={28} className="text-white" />
+          )}
+        </button>
+
+        {/* Mobile Overlay - Only show on mobile when sidebar is open */}
+        {isMobile && isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[60] transition-opacity duration-300"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Floating Sidebar */}
+        <aside className={`
+          ${isDesktop 
+            ? 'fixed left-8 top-24 bottom-8 z-30 w-64' 
+            : 'mobile-sidebar fixed left-0 top-0 h-full w-64 z-[70]'
+          }
+          bg-white dark:bg-[#232323] flex flex-col 
+          ${isDesktop ? 'pt-4 pb-8' : 'pt-2 pb-4'} 
+          border border-orange-100 dark:border-orange-700 
+          ${isDesktop ? 'rounded-2xl' : 'rounded-none'} 
+          shadow-xl transform transition-transform duration-300 ease-in-out
+          ${!isDesktop && !isMobileSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+        `}>
+          {/* Mobile header spacer */}
+          {!isDesktop && <div className="h-8 w-full"></div>}
+          
+          {/* Profile Section */}
+          <div className="flex flex-col items-center px-6 mb-6">
             {user && user.profile_image ? (
               <img
                 src={user.profile_image}
                 alt="Profile"
-                className="w-20 h-20 rounded-full object-cover border-4 border-orange-500 mb-3"
+                className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 mb-3"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-5xl text-white font-bold mb-3">
-                {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
+              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
+                {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : 'I'}
               </div>
             )}
-            <div className="font-semibold text-lg text-gray-800 dark:text-white">{user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}</div>
+            <div className="text-center">
+              <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">INVESTOR</div>
+              <div className="text-gray-800 dark:text-white font-medium">
+                {user ? user.first_name + ' ' + user.last_name : 'Demo Investor'}
+              </div>
+            </div>
           </div>
-          <nav className="flex flex-col gap-0.5 w-full px-6">
+          
+          {/* Navigation */}
+          <nav className="flex-1 flex flex-col gap-2 px-6">
             {sidebarLinks.map(link => (
               <button
                 key={link.key}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors text-base font-medium ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
                   activeSection === link.key
-                    ? 'bg-orange-100 text-orange-600'
-                    : 'hover:bg-orange-100 hover:text-orange-600 text-gray-700'
+                    ? 'bg-orange-500 text-white'
+                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
                 onClick={() => {
                   if (['ecosystem', 'events', 'settings'].includes(link.key)) {
@@ -534,26 +781,57 @@ const InvestorDashboard = () => {
                   } else {
                     handleSectionChange(link.key);
                   }
-                  setIsSidebarOpen(false);
+                  // Close mobile sidebar after navigation
+                  if (isMobile) {
+                    setIsMobileSidebarOpen(false);
+                  }
                 }}
               >
-                <i className={`fas ${link.icon}`}></i>
-                <span>{link.label}</span>
+                <i className={`fas ${link.icon} text-xl`}></i>
+                <span className="sidebar-text">{link.label}</span>
               </button>
             ))}
           </nav>
+          
+          {/* Bottom Section - Settings & Logout */}
+          <div className="px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full ${
+                activeSection === 'settings'
+                  ? 'bg-orange-500 text-white'
+                  : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => {
+                navigate('/settings');
+                if (isMobile) {
+                  setIsMobileSidebarOpen(false);
+                }
+              }}
+            >
+              <FiSettings className="text-xl" />
+              <span className="sidebar-text">Settings</span>
+            </button>
+            
+            <button
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
+              onClick={() => {
+                // Handle logout
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+              }}
+            >
+              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+              <span className="sidebar-text">Logout</span>
+            </button>
+          </div>
         </aside>
 
-        {/* Overlay for mobile when sidebar is open */}
-        {isSidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black opacity-50 z-40"
-            onClick={() => setIsSidebarOpen(false)}
-          ></div>
-        )}
-
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-10 mt-16 lg:mt-24">
+        <main className={`
+          flex-1 transition-all duration-300 min-w-0 max-w-full overflow-hidden
+          ${isDesktop ? 'p-6 lg:p-10 mt-24' : 'p-3 pt-24'}
+        `}>
           {/* Verification Banner */}
           {user && user.verification_status !== 'verified' && (
             <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-6 sm:p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">

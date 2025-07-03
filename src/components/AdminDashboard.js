@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail, FiChevronLeft, FiChevronRight, FiMoreVertical, FiEye, FiPause, FiPlay, FiTrash2, FiCheck } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiUsers, FiBarChart2, FiSettings, FiEdit2, FiPlus, FiBell, FiMail, FiChevronLeft, FiChevronRight, FiMoreVertical, FiEye, FiPause, FiPlay, FiTrash2, FiCheck, FiMenu, FiX } from 'react-icons/fi';
 import { FaTicketAlt } from 'react-icons/fa'; // Add ticket icon
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
 import Navbar from './Navbar'; // Add Navbar import
 import { getTickets, updateTicket } from '../api/tickets';
+import { useBreakpoint, useScreenSize } from '../hooks/useScreenSize';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { calculateMatchScore, matchStartupsWithInvestors, matchEntrepreneursWithInvestors } from '../utils/matchmaking';
 
 
 const initialTabs = [
@@ -17,6 +19,7 @@ const initialTabs = [
   { id: 'startup', label: 'Startup', icon: <FiBarChart2 size={20} /> },
   { id: 'events', label: 'Events', icon: <FiCalendar size={20} /> },
   { id: 'tickets', label: 'Tickets', icon: <FaTicketAlt size={20} /> },
+  { id: 'matchmaking', label: 'Matchmaking Test', icon: <FiUsers size={20} /> },
   { id: 'sitePerformance', label: 'Site Performance', icon: <FiBarChart2 size={20} /> },
   // Removed Profile tab
 ];
@@ -33,8 +36,16 @@ function AdminDashboard() {
   const [startupModalOpen, setStartupModalOpen] = useState(false);
   const [tabs] = useState(initialTabs); // Remove setTabs since it's unused
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('admin-dashboard-dark-mode');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [showSidebar, setShowSidebar] = useState(true);
+  
+  // Add responsive state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { isDesktop, isMobile, isTablet } = useBreakpoint();
+  const screenSize = useScreenSize();
   const [eventModal, setEventModal] = useState({ open: false, event: null, date: null });
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarAnim, setCalendarAnim] = useState(''); // For animation
@@ -78,6 +89,7 @@ function AdminDashboard() {
   // Add state for ticket filters and search
   const [ticketStatusFilter, setTicketStatusFilter] = useState('All Status');
   const [ticketTypeFilter, setTicketTypeFilter] = useState('All Types');
+  const [ticketSort, setTicketSort] = useState('Newest');
   const [ticketSearch, setTicketSearch] = useState('');
   const [chatAnim, setChatAnim] = useState(false);
   const [selectedStartup, setSelectedStartup] = React.useState(null);
@@ -188,6 +200,17 @@ function AdminDashboard() {
   const userStatusCounts = getUserStatusCounts();
   const startupStatusCounts = getStartupStatusCounts();
 
+  // Add state for matchmaking testing
+  const [matchmakingData, setMatchmakingData] = useState({
+    entrepreneurs: [],
+    investors: [],
+    startups: [],
+    matches: [],
+    loading: false,
+    error: null
+  });
+  const [matchmakingTestResults, setMatchmakingTestResults] = useState(null);
+
   const filteredUsers = users.filter(u => {
     // Search query filter
     const matchesSearch = !searchQuery || 
@@ -275,6 +298,43 @@ function AdminDashboard() {
     }
     localStorage.setItem('admin-dashboard-dark-mode', darkMode);
   }, [darkMode]);
+
+  // Responsive sidebar effects
+  useEffect(() => {
+    // Close mobile sidebar when switching to desktop
+    if (isDesktop) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [isDesktop]);
+
+  // Close mobile sidebar when clicking outside
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleClickOutside = (event) => {
+      if (isMobileSidebarOpen && 
+          !event.target.closest('.mobile-sidebar') && 
+          !event.target.closest('.hamburger-btn')) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileSidebarOpen, isMobile]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isMobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileSidebarOpen, isMobile]);
 
   // Helper to get events for a specific date
   const getEventsForDate = (dateStr) => events.filter(e => {
@@ -1219,19 +1279,48 @@ function AdminDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className={`text-xs md:text-sm ${day && day.getMonth() === calendarDate.getMonth() ? 'text-orange-700' : 'text-gray-400'}`}>{day ? day.getDate() : ''}</span>
                                   </div>
-                                  <div className="flex-1 flex flex-col gap-1 mt-1 justiffy-end items-center">
-                                    {day && getEventsForDate(day.toISOString().split('T')[0]).length > 0 && (
-                                      <span className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white mt-2 block"></span>
-                                    )}
-                                    {day && getEventsForDate(day.toISOString().split('T')[0]).map(event => (
-                                      <div
-                                        key={event.id}
-                                        className="text-xs p-1 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition"
-                                        onClick={() => handleEditEvent(event)}
-                                      >
-                                        {event.title}
-                                      </div>
-                                    ))}
+                                  <div className="flex-1 flex flex-col gap-0.5 mt-1 overflow-hidden">
+                                    {day && (() => {
+                                      const dayEvents = getEventsForDate(day.toISOString().split('T')[0]);
+                                      if (dayEvents.length === 0) return null;
+                                      
+                                      // If 3+ events, show only 1 event + count indicator for better readability
+                                      if (dayEvents.length >= 3) {
+                                        return (
+                                          <>
+                                            <div
+                                              className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition w-full text-center"
+                                              onClick={() => handleEditEvent(dayEvents[0])}
+                                              title={`${dayEvents[0].title} ${dayEvents[0].start_time ? `at ${dayEvents[0].start_time}` : ''}`}
+                                            >
+                                              {dayEvents[0].title}
+                                            </div>
+                                            <div 
+                                              className="text-[9px] px-1 py-0.5 rounded bg-orange-500 text-white cursor-pointer hover:bg-orange-600 transition w-full text-center font-medium"
+                                              title={`${dayEvents.length} total events: ${dayEvents.map(e => e.title).join(', ')}`}
+                                            >
+                                              {dayEvents.length} events
+                                            </div>
+                                          </>
+                                        );
+                                      }
+                                      
+                                      // For 1-2 events, show them normally
+                                      return (
+                                        <>
+                                          {dayEvents.map(event => (
+                                            <div
+                                              key={event.id}
+                                              className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 truncate cursor-pointer hover:bg-orange-200 transition w-full text-center"
+                                              onClick={() => handleEditEvent(event)}
+                                              title={`${event.title} ${event.start_time ? `at ${event.start_time}` : ''}`}
+                                            >
+                                              {event.title}
+                                            </div>
+                                          ))}
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               </div>
@@ -1395,7 +1484,7 @@ function AdminDashboard() {
               );
             case 'users':
               return (
-                <div className={`flex flex-col gap-6 w-full border border-orange-100 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
+                <div className={`flex flex-col gap-4 sm:gap-6 w-full min-w-0 border border-orange-100 dark:border-orange-700 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
                   {/* User Action Notification */}
                   {userActionNotification && (
                     <div className={`fixed top-24 right-8 z-50 p-4 rounded-lg shadow-lg animate-fadeIn ${
@@ -1415,63 +1504,64 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>User Management</h1>
+                  <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-black dark:text-white'>User Management</h1>
                   
                   {/* Tab Buttons */}
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-1 sm:gap-2 mb-4 overflow-x-auto scrollbar-hide">
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'active' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${userTab === 'active' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setUserTab('active');
                         setSelectedUserIds([]);
                       }}
                     >
                       Active
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'active' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'active' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {userStatusCounts.active}
                       </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${userTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setUserTab('pending');
                         setSelectedUserIds([]);
                       }}
                     >
                       Pending
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {userStatusCounts.pending}
                       </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${userTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${userTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setUserTab('suspended');
                         setSelectedUserIds([]);
                       }}
                     >
                       Suspended
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${userTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {userStatusCounts.suspended}
                       </span>
                     </button>
                   </div>
 
                   {/* Search and Filters */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+                  <div className="flex flex-col gap-3 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <input
                         type="text"
                       placeholder="Search users..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="rounded-lg px-4 py-2 w-full md:w-1/2 focus:outline-none border placeholder-gray-400 
+                        className="rounded-lg px-4 py-3 w-full focus:outline-none border placeholder-gray-400 
                       bg-white text-black border-orange-300 
                      dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
                       />
                       <select
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
-                        className="rounded-lg px-4 py-2 focus:outline-none border 
+                        className="rounded-lg px-4 py-3 pr-8 focus:outline-none border w-full sm:w-auto
                        bg-white text-black border-orange-300 
                        dark:bg-[#1b1b1b] dark:text-white dark:border-orange-700"
                         >
@@ -1480,6 +1570,7 @@ function AdminDashboard() {
                         <option value="entrepreneur">Entrepreneur</option>
                         <option value="investor">Investor</option>
                       </select>
+                    </div>
                     </div>
 
                   {/* Bulk Actions */}
@@ -1503,20 +1594,83 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  {/* Table */}
-                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
+                  {/* Mobile/Desktop Table */}
+                  <div className="bg-white dark:bg-[#1b1b1b] p-3 sm:p-4 lg:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {loading ? (
-                      <div className="flex justify-center">
+                      <div className="flex justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                       </div>
                     ) : error ? (
-                      <div className="text-red-500 text-center">{error}</div>
+                      <div className="text-red-500 text-center py-8 text-sm sm:text-base">{error}</div>
                     ) : (
-                      <div className="overflow-x-auto w-full rounded-lg">
-                        <table className="min-w-full w-full min-w-[900px] table-fixed divide-y divide-orange-100">
+                      <>
+                        {/* Mobile Card Layout */}
+                        <div className="block lg:hidden space-y-4">
+                          {filteredUsers.length === 0 ? (
+                            <div className="text-center text-gray-400 py-8 text-sm">
+                              No {userTab} users found.
+                            </div>
+                          ) : (
+                            filteredUsers.map((user) => (
+                              <div
+                                key={user.id}
+                                className="bg-white rounded-lg border border-orange-100 shadow-sm p-4 mb-3"
+                                onClick={() => { setSelectedUserModal(user); setShowUserDetailsModal(true); }}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedUserIds.includes(user.id)}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectUser(user.id, e.target.checked);
+                                      }}
+                                      className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                    />
+                                    <div>
+                                      <div className="font-medium text-black dark:text-white text-sm">
+                                        {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
+                                        user.full_name || user.email}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
+                                    </div>
+                                  </div>
+                                  <div onClick={e => e.stopPropagation()}>
+                                    {renderUserActionDropdown(user)}
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Role:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {roleLabels[user.role] || user.role}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                                    <div className="font-medium text-black dark:text-white">{user.location || 'N/A'}</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="mt-3 flex justify-between items-center">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400 text-xs">Status:</span>
+                                    <div className="mt-1">{renderUserStatusBadge(user)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Desktop Table Layout */}
+                        <div className="hidden lg:block overflow-x-auto w-full rounded-lg">
+                          <table className="min-w-full w-full table-fixed divide-y divide-orange-100">
                           <thead>
                             <tr className="bg-orange-100">
-                              <th className="px-4 py-3 font-semibold w-[50px]">
+                                <th className="px-4 py-3 font-semibold w-[50px] text-xs xl:text-sm">
                                 <input
                                   type="checkbox"
                                   checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
@@ -1524,18 +1678,18 @@ function AdminDashboard() {
                                   className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
                                 />
                               </th>
-                              <th className="px-4 py-3 font-semibold w-[200px]">Name</th>
-                              <th className="px-4 py-3 font-semibold w-[200px]">Email</th>
-                              <th className="px-4 py-3 font-semibold w-[120px]">Role</th>
-                              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
-                              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
-                              <th className="px-4 py-3 font-semibold w-[110px] text-center">Actions</th>
+                                <th className="px-4 py-3 font-semibold w-[200px] text-xs xl:text-sm">Name</th>
+                                <th className="px-4 py-3 font-semibold w-[200px] text-xs xl:text-sm">Email</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Role</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Location</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">Status</th>
+                                <th className="px-4 py-3 font-semibold w-[110px] text-center text-xs xl:text-sm">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
                             {filteredUsers.length === 0 ? (
                               <tr>
-                                <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-lg">
+                                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm lg:text-base">
                                   No {userTab} users found.
                                 </td>
                               </tr>
@@ -1546,7 +1700,6 @@ function AdminDashboard() {
                                   className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer"
                                   onClick={() => { setSelectedUserModal(user); setShowUserDetailsModal(true); }}
                                 >
-                                  {/* Checkbox */}
                                   <td className="px-4 py-3 w-[50px]" onClick={e => e.stopPropagation()}>
                                     <input
                                       type="checkbox"
@@ -1556,37 +1709,31 @@ function AdminDashboard() {
                                     />
                                   </td>
                                   
-                                  {/* Name */}
                                   <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
                           {(user.first_name && user.last_name && `${user.first_name} ${user.last_name}`) ||
                           user.full_name || user.email}
                                     </div>
                           </td>
                                   
-                                  {/* Email */}
                                   <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.email}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.email}</div>
                           </td>
                                   
-                                  {/* Role */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
                           {roleLabels[user.role] || user.role}
                                     </div>
                           </td>
                                   
-                                  {/* Location */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.location || 'N/A'}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.location || 'N/A'}</div>
                             </td>
                                   
-                                  {/* Status */}
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
                                     {renderUserStatusBadge(user)}
                                   </td>
                                   
-                                  {/* Actions */}
                                   <td className="px-4 py-3 w-[110px] text-center" onClick={e => e.stopPropagation()}>
                                     {renderUserActionDropdown(user)}
                                   </td>
@@ -1596,6 +1743,7 @@ function AdminDashboard() {
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1608,33 +1756,78 @@ function AdminDashboard() {
               );
             case 'settings':
               return (
-                <div className="bg-[#232323] rounded-xl shadow p-6 w-full min-h-[300px] flex flex-col gap-4">
-                  <span className="font-semibold text-lg mb-2">Settings</span>
+                <div className={`rounded-xl shadow p-6 w-full min-h-[300px] flex flex-col gap-6 border border-orange-100 dark:border-orange-700 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}>
+                  <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Settings</h1>
+                  
+                  {/* Dark Mode Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                    <div>
+                      <h3 className="text-lg font-medium text-black dark:text-white">Dark Mode</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Toggle between light and dark theme</p>
+                    </div>
+                    <button
+                      onClick={() => setDarkMode(!darkMode)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        darkMode ? 'bg-orange-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          darkMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  {/* Profile Settings */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h3 className="text-lg font-medium text-black dark:text-white mb-4">Profile Settings</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
+                        <input
+                          type="text"
+                          value="Admin User"
+                          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                          readOnly
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value="admin@taraki.com"
+                          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-black dark:text-white"
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
 case 'sitePerformance':
   return (
     <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
       {/* Filters */}
-      <div className="flex gap-2 mb-4">
-        <select value={reportType} onChange={e => setReportType(e.target.value)} className="border rounded px-2 py-1">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
           <option value="startups">Startups</option>
           <option value="users">Users</option>
         </select>
-        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="border rounded px-2 py-1">
+        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
           <option value="">All Industries</option>
           {allIndustries.map(ind => (
             <option key={ind} value={ind}>{ind}</option>
           ))}
         </select>
-        <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="border rounded px-2 py-1">
+        <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
           <option value="">All Locations</option>
           {allLocations.map(loc => (
             <option key={loc} value={loc}>{loc}</option>
           ))}
         </select>
         {reportType === 'users' && (
-          <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="border rounded px-2 py-1">
+          <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
             <option value="entrepreneur">Entrepreneur</option>
@@ -1659,63 +1852,137 @@ case 'sitePerformance':
         }}>Export to PDF</button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg">
-        <table className="min-w-full w-full min-w-[720px] table-fixed divide-y divide-orange-100">
+      {/* Mobile/Desktop Content */}
+      <div className="bg-white dark:bg-[#1b1b1b] p-3 sm:p-4 lg:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
+        {(reportType === 'startups' ? filteredStartups : filteredUsers).length === 0 ? (
+          <div className="text-center text-gray-400 py-8 text-sm">
+            No results found.
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card Layout */}
+            <div className="block lg:hidden space-y-4">
+              {(reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
+                <div
+                  key={item.startup_id || item.id}
+                  className="bg-white rounded-lg border border-orange-100 shadow-sm p-4 mb-3"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-black dark:text-white text-sm mb-1">
+                        {item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.full_name || item.email}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {reportType === 'startups' ? item.industry : item.email}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Industry:</span>
+                      <div className="font-medium text-black dark:text-white">{item.industry || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                      <div className="font-medium text-black dark:text-white">{item.location || 'N/A'}</div>
+                    </div>
+                    {reportType === 'startups' && (
+                      <>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Founder:</span>
+                          <div className="font-medium text-black dark:text-white">{item.entrepreneur_name || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Stage:</span>
+                          <div className="font-medium text-black dark:text-white">{formatStartupStage(item.startup_stage) || 'N/A'}</div>
+                        </div>
+                      </>
+                    )}
+                    {reportType === 'users' && (
+                      <>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Role:</span>
+                          <div className="font-medium text-black dark:text-white">{roleLabels[item.role] || item.role || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                          <div className="font-medium text-black dark:text-white">{renderUserStatusBadge(item)}</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {reportType === 'startups' && item.approval_status && (
+                    <div className="mt-3 flex justify-between items-center">
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">Status:</span>
+                        <div className="mt-1">{renderStatusBadge(item.approval_status)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden lg:block overflow-x-auto w-full rounded-lg">
+              <table className="min-w-full w-full table-fixed divide-y divide-orange-100">
           <thead>
             <tr className="bg-orange-100">
-              <th className="px-4 py-3 font-semibold w-[180px]">Name</th>
-              <th className="px-4 py-3 font-semibold w-[180px]">Industry</th>
-              <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
-              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
-              <th className="px-4 py-3 font-semibold w-[120px] text-center">Stage</th>
-              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
+                    <th className="px-4 py-3 font-semibold w-[180px] text-xs xl:text-sm">Name</th>
+                    <th className="px-4 py-3 font-semibold w-[180px] text-xs xl:text-sm">Industry</th>
+                    <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">{reportType === 'startups' ? 'Founder' : 'Role'}</th>
+                    <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Location</th>
+                    <th className="px-4 py-3 font-semibold w-[120px] text-center text-xs xl:text-sm">{reportType === 'startups' ? 'Stage' : 'Email'}</th>
+                    <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">Status</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
-            {(reportType === 'startups' ? filteredStartups : filteredUsers).length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-lg">
-                  No results found.
-                </td>
-              </tr>
-            ) : (
-              (reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
+                  {(reportType === 'startups' ? filteredStartups : filteredUsers).map(item => (
                 <tr key={item.startup_id || item.id} className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition cursor-pointer">
                   {/* Name */}
                   <td className="px-4 py-3 w-[180px] truncate overflow-hidden whitespace-nowrap">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.name}</div>
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                          {item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.full_name || item.email}
+                        </div>
                   </td>
 
                   {/* Industry */}
-                  <td className="px-4 py-3 w-[180px] truncate">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.industry}</div>
+                      <td className="px-4 py-3 w-[180px] truncate overflow-hidden whitespace-nowrap">
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.industry || 'N/A'}</div>
                   </td>
 
-                  {/* Founder */}
-                  <td className="px-4 py-3 w-[120px] truncate">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.entrepreneur_name}</div>
+                      {/* Founder/Role */}
+                      <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                          {reportType === 'startups' ? (item.entrepreneur_name || 'N/A') : (roleLabels[item.role] || item.role || 'N/A')}
+                        </div>
                   </td>
 
                   {/* Location */}
-                  <td className="px-4 py-3 w-[120px] truncate">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.location}</div>
+                      <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.location || 'N/A'}</div>
                   </td>
 
-                  {/* Stage */}
-                  <td className="px-4 py-3 w-[120px] truncate text-center">
-                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(item.startup_stage)}</div>
+                      {/* Stage/Email */}
+                      <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap text-center">
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">
+                          {reportType === 'startups' ? (formatStartupStage(item.startup_stage) || 'N/A') : (item.email || 'N/A')}
+                        </div>
                   </td>
 
                   {/* Status */}
-                  <td className="px-4 py-3 w-[100px] truncate">
-                    {renderStatusBadge(item.approval_status)}
+                      <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                        {reportType === 'startups' ? renderStatusBadge(item.approval_status) : renderUserStatusBadge(item)}
                   </td>
                 </tr>
-              ))
-            )}
+                  ))}
           </tbody>
         </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1741,43 +2008,43 @@ case 'sitePerformance':
                     </div>
                   )}
 
-                  <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Startup Management</h1>
+                  <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-black dark:text-white'>Startup Management</h1>
                   
                   {/* Tab Buttons */}
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-1 sm:gap-2 mb-4 overflow-x-auto scrollbar-hide">
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'approved' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${startupTab === 'approved' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setStartupTab('approved');
                         setSelectedStartupIds([]);
                       }}
                     >
                       Approved
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'approved' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'approved' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {startupStatusCounts.approved}
                       </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${startupTab === 'pending' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setStartupTab('pending');
                         setSelectedStartupIds([]);
                       }}
                     >
                       Pending
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'pending' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {startupStatusCounts.pending}
                       </span>
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-2 ${startupTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
+                      className={`px-2 sm:px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${startupTab === 'suspended' ? 'border-orange-500 text-orange-700 bg-orange-50' : 'border-transparent text-gray-500 bg-white hover:bg-orange-50'}`}
                       onClick={() => {
                         setStartupTab('suspended');
                         setSelectedStartupIds([]);
                       }}
                     >
                       Suspended
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold ${startupTab === 'suspended' ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-600'}`}>
                         {startupStatusCounts.suspended}
                       </span>
                     </button>
@@ -1803,20 +2070,104 @@ case 'sitePerformance':
                       </button>
                     </div>
                   )}
-                  {/* Table */}
-                  <div className="bg-white dark:bg-[#1b1b1b] p-4 md:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
+                  {/* Mobile/Desktop Table */}
+                  <div className="bg-white dark:bg-[#1b1b1b] p-3 sm:p-4 lg:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {startupLoading ? (
-                      <div className="flex justify-center">
+                      <div className="flex justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                       </div>
                     ) : startupError ? (
-                      <div className="text-red-500 text-center">{startupError}</div>
+                      <div className="text-red-500 text-center py-8 text-sm sm:text-base">{startupError}</div>
                     ) : (
-                      <div className="overflow-x-auto w-full rounded-lg">
-                        <table className="min-w-full w-full min-w-[930px] table-fixed divide-y divide-orange-100">
+                      <>
+                        {/* Mobile Card Layout */}
+                        <div className="block lg:hidden space-y-4">
+                          {startups.filter(startup => startup.approval_status === startupTab).length === 0 ? (
+                            <div className="text-center text-gray-400 py-8 text-sm">
+                              No {startupTab === 'pending' ? 'pending' : startupTab === 'suspended' ? 'suspended' : 'approved'} startups found.
+                            </div>
+                          ) : (
+                            startups.filter(startup => startup.approval_status === startupTab).map((startup) => (
+                              <div
+                                key={startup.startup_id}
+                                className="bg-white rounded-lg border border-orange-100 shadow-sm p-4 mb-3"
+                                onClick={() => { setSelectedStartupModal(startup); setStartupModalOpen(true); }}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedStartupIds.includes(startup.startup_id)}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectStartup(startup.startup_id, e.target.checked);
+                                      }}
+                                      className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-black dark:text-white text-sm mb-1">
+                                        {startup.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{startup.industry}</div>
+                                    </div>
+                                  </div>
+                                  <div onClick={e => e.stopPropagation()}>
+                                    {startupTab === 'pending' ? (
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => handleAcceptStartup(startup.startup_id)}
+                                          className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
+                                          title="Approve"
+                                        >
+                                          <FiCheck className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeclineStartup(startup.startup_id)}
+                                          className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                                          title="Reject"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      renderStartupActionDropdown(startup)
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Founder:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {startup.entrepreneur_name || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                                    <div className="font-medium text-black dark:text-white">{startup.location || 'N/A'}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Stage:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {formatStartupStage(startup.startup_stage) || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                    <div className="mt-1">{renderStatusBadge(startup.approval_status)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Desktop Table Layout */}
+                        <div className="hidden lg:block overflow-x-auto w-full rounded-lg">
+                          <table className="min-w-full w-full table-fixed divide-y divide-orange-100">
                           <thead>
                             <tr className="bg-orange-100">
-                              <th className="px-4 py-3 font-semibold w-[50px]">
+                                <th className="px-4 py-3 font-semibold w-[50px] text-xs xl:text-sm">
                                 <input
                                   type="checkbox"
                                   checked={selectedStartupIds.length === startups.filter(startup => startup.approval_status === startupTab).length && startups.filter(startup => startup.approval_status === startupTab).length > 0}
@@ -1824,19 +2175,19 @@ case 'sitePerformance':
                                   className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
                                 />
                               </th>
-                              <th className="px-4 py-3 font-semibold w-[160px]">Name</th>
-                              <th className="px-4 py-3 font-semibold w-[160px]">Industry</th>
-                              <th className="px-4 py-3 font-semibold w-[120px]">Founder</th>
-                              <th className="px-4 py-3 font-semibold w-[120px]">Location</th>
-                              <th className="px-4 py-3 font-semibold w-[100px] text-center">Stage</th>
-                              <th className="px-4 py-3 font-semibold w-[100px]">Status</th>
-                              <th className="px-4 py-3 font-semibold w-[120px] text-center">Actions</th>
+                                <th className="px-4 py-3 font-semibold w-[160px] text-xs xl:text-sm">Name</th>
+                                <th className="px-4 py-3 font-semibold w-[160px] text-xs xl:text-sm">Industry</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Founder</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Location</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-center text-xs xl:text-sm">Stage</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">Status</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-center text-xs xl:text-sm">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
                             {startups.filter(startup => startup.approval_status === startupTab).length === 0 ? (
                               <tr>
-                                <td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-lg">No {startupTab === 'pending' ? 'pending' : startupTab === 'suspended' ? 'suspended' : 'approved'} startups found.</td>
+                                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm lg:text-base">No {startupTab === 'pending' ? 'pending' : startupTab === 'suspended' ? 'suspended' : 'approved'} startups found.</td>
                               </tr>
                             ) : (
                               startups.filter(startup => startup.approval_status === startupTab).map((startup) => (
@@ -1857,30 +2208,27 @@ case 'sitePerformance':
                                   
                                   {/* Name */}
                                   <td className="px-4 py-3 w-[160px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="flex flex-col">
-                                      <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.name}</div>
-                                      <div className="text-sm text-gray-500 md:hidden truncate overflow-hidden whitespace-nowrap">{startup.industry}</div>
-                                    </div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.name}</div>
                                   </td>
                                   
                                   {/* Industry */}
                                   <td className="px-4 py-3 w-[160px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.industry}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.industry}</div>
                                   </td>
                                   
                                   {/* Founder */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.entrepreneur_name}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.entrepreneur_name}</div>
                                   </td>
                                   
                                   {/* Location */}
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.location}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{startup.location}</div>
                                   </td>
                                   
                                   {/* Stage */}
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap text-center">
-                                    <div className="text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(startup.startup_stage)}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatStartupStage(startup.startup_stage)}</div>
                                   </td>
                                   
                                   {/* Status */}
@@ -1917,63 +2265,264 @@ case 'sitePerformance':
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 </div>
               );
             case 'tickets':
+              // Add these mappings at the top of the Tickets section (before the return):
+              const ticketStatusOptions = [
+                { value: 'All Status', label: 'All Status' },
+                { value: 'open', label: 'Open' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'resolved', label: 'Resolved' },
+                { value: 'closed', label: 'Closed' },
+              ];
+              const ticketTypeOptions = [
+                { value: 'All Types', label: 'All Types' },
+                { value: 'bug', label: 'Bug' },
+                { value: 'suggestion', label: 'Suggestion' },
+                { value: 'other', label: 'Other' },
+              ];
+
+              // Filtering and sorting logic
+              const filteredTickets = tickets
+                .filter(ticket =>
+                  (ticketStatusFilter === 'All Status' || ticket.status === ticketStatusFilter) &&
+                  (ticketTypeFilter === 'All Types' || ticket.type === ticketTypeFilter) &&
+                  (
+                    (ticket.title && ticket.title.toLowerCase().includes(ticketSearch.toLowerCase())) ||
+                    (ticket.ticket_id && ticket.ticket_id.toString().includes(ticketSearch))
+                  )
+                )
+                .sort((a, b) => {
+                  if (ticketSort === 'Newest') {
+                    return new Date(b.created_at) - new Date(a.created_at);
+                  } else {
+                    return new Date(a.created_at) - new Date(b.created_at);
+                  }
+                });
               return (
                 <div className="flex flex-col gap-6">
                   {activeTab === 'tickets' && (
                     <h1 className='text-3xl font-bold mb-6 text-black dark:text-white'>Support Tickets</h1>
                   )}
-                  <div className="bg-white dark:bg-[#232323] p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm">
+                  {/* Ticket Filters & Sorting */}
+                  <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                    <select
+                      value={ticketStatusFilter}
+                      onChange={e => setTicketStatusFilter(e.target.value)}
+                      className="w-full sm:w-auto border rounded px-2 py-1 pr-6"
+                    >
+                      {ticketStatusOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={ticketTypeFilter}
+                      onChange={e => setTicketTypeFilter(e.target.value)}
+                      className="w-full sm:w-auto border rounded px-2 py-1 pr-6"
+                    >
+                      {ticketTypeOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={ticketSort}
+                      onChange={e => setTicketSort(e.target.value)}
+                      className="w-full sm:w-auto border rounded px-2 py-1 pr-6"
+                    >
+                      <option value="Newest">Newest</option>
+                      <option value="Oldest">Oldest</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Search tickets..."
+                      value={ticketSearch}
+                      onChange={e => setTicketSearch(e.target.value)}
+                      className="w-full sm:w-auto border rounded px-2 py-1"
+                    />
+                  </div>
+                  <div className="bg-white dark:bg-[#1b1b1b] p-3 sm:p-4 lg:p-8 rounded-xl border border-orange-100 dark:border-orange-700 shadow-sm w-full">
                     {ticketsLoading ? (
-                      <div className="flex-1 flex items-center justify-center">
+                      <div className="flex justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                       </div>
                     ) : ticketsError ? (
-                      <div className="flex-1 flex items-center justify-center text-red-500">{ticketsError}</div>
-                    ) : tickets.length === 0 ? (
-                      <div className="text-gray-400 text-center mt-8">No tickets found.</div>
+                      <div className="text-red-500 text-center py-8 text-sm sm:text-base">{ticketsError}</div>
+                    ) : filteredTickets.length === 0 ? (
+                      <div className="text-center text-gray-400 py-8 text-sm">No tickets found.</div>
                     ) : (
-                      <div className="overflow-x-auto rounded-lg">
-                        <table className="min-w-full text-left text-sm text-gray-700">
+                      <>
+                        {/* Mobile Card Layout */}
+                        <div className="block lg:hidden space-y-4">
+                          {filteredTickets.map(ticket => (
+                            <React.Fragment key={ticket.ticket_id}>
+                              <div className="bg-white rounded-lg border border-orange-100 shadow-sm p-4 mb-3">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-black dark:text-white text-sm mb-1">
+                                      #{ticket.ticket_id} - {ticket.title}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      Submitted by User #{ticket.user_id}
+                                    </div>
+                                  </div>
+                                  <button
+                                    className="px-2 py-1 bg-orange-200 text-orange-800 rounded hover:bg-orange-300 text-xs font-medium"
+                                    onClick={() => {
+                                      setEditingTicket(ticket.ticket_id);
+                                      setAdminResponse(ticket.admin_response || '');
+                                      setAdminNotes(ticket.admin_notes || '');
+                                      setUpdateMessage('');
+                                    }}
+                                  >
+                                    Respond
+                                  </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 text-xs mb-3">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {toTitleCase(ticket.type)}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {toTitleCase(ticket.status)}
+                                    </div>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <span className="text-gray-500 dark:text-gray-400">Created:</span>
+                                    <div className="font-medium text-black dark:text-white">
+                                      {new Date(ticket.created_at).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {(ticket.admin_response || ticket.admin_notes) && (
+                                  <div className="border-t border-gray-200 pt-2 mt-2">
+                                    {ticket.admin_response && (
+                                      <div className="text-xs mb-1">
+                                        <span className="text-gray-500 dark:text-gray-400">Response:</span>
+                                        <div className="text-black dark:text-white">{ticket.admin_response}</div>
+                                      </div>
+                                    )}
+                                    {ticket.admin_notes && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-500 dark:text-gray-400">Notes:</span>
+                                        <div className="text-black dark:text-white">{ticket.admin_notes}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {editingTicket === ticket.ticket_id && (
+                                <div className="bg-orange-50 dark:bg-[#2a2a2a] rounded-lg p-4 mb-3">
+                                  <div className="flex flex-col gap-2">
+                                    <textarea
+                                      className="w-full border border-gray-300 dark:border-orange-700 bg-white dark:bg-[#232323] text-black dark:text-white rounded px-3 py-2 mb-2 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
+                                      placeholder="Admin Response"
+                                      value={adminResponse}
+                                      onChange={e => setAdminResponse(e.target.value)}
+                                      rows={3}
+                                    />
+                                    <textarea
+                                      className="w-full border border-gray-300 dark:border-orange-700 bg-white dark:bg-[#232323] text-black dark:text-white rounded px-3 py-2 mb-2 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
+                                      placeholder="Admin Notes"
+                                      value={adminNotes}
+                                      onChange={e => setAdminNotes(e.target.value)}
+                                      rows={2}
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        className="flex-1 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm font-medium"
+                                        onClick={async () => {
+                                          try {
+                                            await updateTicket(ticket.ticket_id, { admin_response: adminResponse, admin_notes: adminNotes });
+                                            setUpdateMessage('Ticket updated!');
+                                            setEditingTicket(null);
+                                            setTicketsLoading(true);
+                                            getTickets()
+                                              .then(data => setTickets(data))
+                                              .catch(err => setTicketsError(err.message))
+                                              .finally(() => setTicketsLoading(false));
+                                          } catch {
+                                            setUpdateMessage('Failed to update ticket.');
+                                          }
+                                        }}
+                                      >Save</button>
+                                      <button
+                                        className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium"
+                                        onClick={() => setEditingTicket(null)}
+                                      >Cancel</button>
+                                    </div>
+                                    {updateMessage && <div className="text-sm text-orange-700 dark:text-orange-400 mt-2">{updateMessage}</div>}
+                                  </div>
+                                </div>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+
+                        {/* Desktop Table Layout */}
+                        <div className="hidden lg:block overflow-x-auto w-full rounded-lg">
+                          <table className="min-w-full w-full table-fixed divide-y divide-orange-100">
                           <thead>
                             <tr className="bg-orange-100 text-orange-700">
-                              <th className="px-4 py-3 font-semibold">ID</th>
-                              <th className="px-4 py-3 font-semibold">Title</th>
-                              <th className="px-4 py-3 font-semibold">Type</th>
-                              <th className="px-4 py-3 font-semibold">Status</th>
-                              <th className="px-4 py-3 font-semibold">Submitted By</th>
-                              <th className="px-4 py-3 font-semibold">Created At</th>
-                              <th className="px-4 py-3 font-semibold">Admin Response</th>
-                              <th className="px-4 py-3 font-semibold">Admin Notes</th>
-                              <th className="px-4 py-3 font-semibold">Actions</th>
+                                <th className="px-4 py-3 font-semibold w-[60px] text-xs xl:text-sm">ID</th>
+                                <th className="px-4 py-3 font-semibold w-[200px] text-xs xl:text-sm">Title</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">Type</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">Status</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-xs xl:text-sm">User ID</th>
+                                <th className="px-4 py-3 font-semibold w-[120px] text-xs xl:text-sm">Created</th>
+                                <th className="px-4 py-3 font-semibold w-[150px] text-xs xl:text-sm">Response</th>
+                                <th className="px-4 py-3 font-semibold w-[150px] text-xs xl:text-sm">Notes</th>
+                                <th className="px-4 py-3 font-semibold w-[100px] text-center text-xs xl:text-sm">Actions</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            {tickets.map(ticket => (
+                            <tbody className="bg-white dark:bg-[#1b1b1b] divide-y divide-orange-100">
+                              {filteredTickets.map(ticket => (
                               <React.Fragment key={ticket.ticket_id}>
-                                <tr className="border-b border-orange-100 text-black dark:text-white hover:bg-orange-50 hover:text-orange-600 transition">
-                                  <td className="px-4 py-3">{ticket.ticket_id}</td>
-                                  <td className="px-4 py-3">{ticket.title}</td>
-                                  <td className="px-4 py-3">{toTitleCase(ticket.type)}</td>
-                                  <td className="px-4 py-3">{toTitleCase(ticket.status)}</td>
-                                  <td className="px-4 py-3">{ticket.user_id}</td>
-                                  <td className="px-4 py-3">{ticket.created_at}</td>
-                                  <td className="px-4 py-3">{ticket.admin_response || ''}</td>
-                                  <td className="px-4 py-3">{ticket.admin_notes || ''}</td>
-                                  <td className="px-4 py-3">
+                                  <tr className="group border-b border-orange-100 hover:bg-orange-50 dark:hover:bg-white transition">
+                                    <td className="px-4 py-3 w-[60px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">#{ticket.ticket_id}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[200px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{ticket.title}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{toTitleCase(ticket.type)}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{toTitleCase(ticket.status)}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{ticket.user_id}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{new Date(ticket.created_at).toLocaleDateString()}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[150px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{ticket.admin_response || ''}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[150px] truncate overflow-hidden whitespace-nowrap">
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{ticket.admin_notes || ''}</div>
+                                    </td>
+                                    <td className="px-4 py-3 w-[100px] text-center">
                                     <button
-                                      className="px-2 py-1 bg-orange-200 text-orange-800 rounded hover:bg-orange-300"
+                                        className="px-2 py-1 bg-orange-200 text-orange-800 rounded hover:bg-orange-300 text-xs font-medium"
                                       onClick={() => {
                                         setEditingTicket(ticket.ticket_id);
                                         setAdminResponse(ticket.admin_response || '');
                                         setAdminNotes(ticket.admin_notes || '');
                                         setUpdateMessage('');
                                       }}
-                                    >Respond/Note</button>
+                                      >Respond</button>
                                   </td>
                                 </tr>
                                 {editingTicket === ticket.ticket_id && (
@@ -2025,6 +2574,7 @@ case 'sitePerformance':
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -2708,29 +3258,130 @@ case 'sitePerformance':
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-gray-50 text-gray-800 pl-72">
+      <div className={`flex min-h-screen bg-gray-50 text-gray-800 ${isDesktop ? 'pl-72' : 'pl-0'}`}>
+        {/* Circular Hamburger Menu - Bottom Right (Mobile Only) */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className={`
+            fixed bottom-6 right-6 z-[80] w-14 h-14 rounded-full shadow-2xl
+            transition-all duration-300 hover:shadow-3xl active:scale-95
+            flex items-center justify-center
+            ${isDesktop ? 'hidden' : 'flex'}
+            ${isMobileSidebarOpen 
+              ? 'bg-red-500 hover:bg-red-600 rotate-180' 
+              : 'bg-orange-500 hover:bg-orange-600 rotate-0'
+            }
+          `}
+          aria-label="Toggle menu"
+          style={{
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          {isMobileSidebarOpen ? (
+            <FiX size={28} className="text-white" />
+          ) : (
+            <FiMenu size={28} className="text-white" />
+          )}
+        </button>
+
+        {/* Mobile Overlay - Only show on mobile when sidebar is open */}
+        {isMobile && isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[60] transition-opacity duration-300"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* Floating Sidebar */}
-        <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white dark:bg-[#232323] flex flex-col items-center py-8 border border-orange-100 dark:border-orange-700 rounded-2xl shadow-xl">
-          {/* TARAKI logo removed from sidebar */}
-          <nav className="flex flex-col gap-2 w-full px-6">
+        <aside className={`
+          ${isDesktop 
+            ? 'fixed left-8 top-24 bottom-8 z-30 w-64' 
+            : 'mobile-sidebar fixed left-0 top-0 h-full w-64 z-[70]'
+          }
+          bg-white dark:bg-[#232323] flex flex-col 
+          ${isDesktop ? 'pt-4 pb-8' : 'pt-2 pb-4'} 
+          border border-orange-100 dark:border-orange-700 
+          ${isDesktop ? 'rounded-2xl' : 'rounded-none'} 
+          shadow-xl transform transition-transform duration-300 ease-in-out
+          ${!isDesktop && !isMobileSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+        `}>
+          {/* Mobile header spacer */}
+          {!isDesktop && <div className="h-8 w-full"></div>}
+          
+          {/* Profile Section */}
+          <div className="flex flex-col items-center px-6 mb-6">
+            <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
+              A
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">ADMIN</div>
+              <div className="text-gray-800 dark:text-white font-medium">Admin User</div>
+            </div>
+          </div>
+          
+          {/* Navigation */}
+          <nav className="flex-1 flex flex-col gap-2 px-6">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium ${
                   activeTab === tab.id
-                    ? 'bg-orange-50 text-orange-600'
-                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700'
+                    ? 'bg-orange-500 text-white'
+                    : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  // Close mobile sidebar after navigation
+                  if (isMobile) {
+                    setIsMobileSidebarOpen(false);
+                  }
+                }}
               >
                 <span className="text-xl">{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="sidebar-text">{tab.label}</span>
               </button>
             ))}
           </nav>
+          
+          {/* Bottom Section - Settings & Logout */}
+          <div className="px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full ${
+                activeTab === 'settings'
+                  ? 'bg-orange-500 text-white'
+                  : 'hover:bg-gray-50 hover:text-orange-600 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => {
+                // Handle settings click
+                setActiveTab('settings');
+                if (isMobile) {
+                  setIsMobileSidebarOpen(false);
+                }
+              }}
+            >
+              <FiSettings className="text-xl" />
+              <span className="sidebar-text">Settings</span>
+            </button>
+            
+            <button
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-base font-medium w-full hover:bg-red-50 text-red-500 hover:text-red-600 dark:hover:bg-red-900/20"
+              onClick={() => {
+                // Handle logout
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+              }}
+            >
+              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+              <span className="sidebar-text">Logout</span>
+            </button>
+          </div>
         </aside>
         {/* Main Content */}
-        <main className="flex-1 p-10 mt-24">
+        <main className={`
+          flex-1 transition-all duration-300 min-w-0 max-w-full overflow-hidden
+          ${isDesktop ? 'p-6 lg:p-10 mt-24' : 'p-3 pt-24'}
+        `}>
           {renderContent()}
         </main>
         {/* Verification Modal */}
