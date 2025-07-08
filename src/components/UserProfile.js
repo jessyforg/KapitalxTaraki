@@ -4,8 +4,84 @@ import Navbar from './Navbar';
 import api from '../services/api';
 import userProfileAPI from '../api/userProfile';
 import {
-  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap
+  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit
 } from 'react-icons/fa';
+
+// Add SKILLS array and TagMultiSelect component at the top after the imports
+const SKILLS = [
+  'JavaScript',
+  'Python',
+  'Java',
+  'React',
+  'Node.js',
+  'UI/UX Design',
+  'Product Management',
+  'Marketing',
+  'Sales',
+  'Business Development',
+  'Operations',
+  'Finance',
+  'Legal',
+  'Other'
+];
+
+// Tag-based MultiSelect component
+function TagMultiSelect({ id, name, options, selected, onChange, placeholder }) {
+  const [input, setInput] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const filtered = options.filter(
+    (opt) =>
+      opt.toLowerCase().includes(input.toLowerCase()) && !selected.includes(opt)
+  );
+
+  const handleAdd = (opt) => {
+    onChange([...selected, opt]);
+    setInput('');
+    setShowDropdown(false);
+  };
+  const handleRemove = (opt) => {
+    onChange(selected.filter((s) => s !== opt));
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex flex-wrap gap-2 mb-2">
+        {selected.map((tag) => (
+          <span key={tag} className="flex items-center bg-[#FF7A1A] text-white rounded-full px-3 py-1 text-sm font-medium shadow">
+            {tag}
+            <button type="button" className="ml-2 text-white hover:text-[#FFB26B] focus:outline-none" onClick={() => handleRemove(tag)}>
+              &times;
+            </button>
+          </span>
+        ))}
+      </div>
+      <input
+        id={id}
+        name={name}
+        type="text"
+        className="w-full p-2 rounded-full border border-slate-200 bg-gray-100 dark:bg-[#232526] dark:text-white text-black focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+        placeholder={placeholder}
+        value={input}
+        onChange={e => { setInput(e.target.value); setShowDropdown(true); }}
+        onFocus={() => setShowDropdown(true)}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+      />
+      {showDropdown && filtered.length > 0 && (
+        <ul className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-auto">
+          {filtered.map((opt) => (
+            <li
+              key={opt}
+              className="px-4 py-2 cursor-pointer hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all rounded-xl"
+              onMouseDown={() => handleAdd(opt)}
+            >
+              {opt}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // Format date to YYYY-MM-DD to avoid timezone issues
 const formatDate = (dateString) => {
@@ -141,7 +217,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
 
 function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) {
   return (
-    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 h-auto min-h-0 mb-12">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-bold text-orange-600">About</h2>
         {!isEditingAbout && isOwnProfile && (
@@ -149,9 +225,16 @@ function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleS
         )}
       </div>
       {isEditingAbout ? (
-        <textarea value={about} onChange={e => setAbout(e.target.value)} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line" />
+        <textarea 
+          value={about} 
+          onChange={e => setAbout(e.target.value)} 
+          className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-[120px] resize-none" 
+          placeholder="Tell us about yourself..."
+        />
       ) : (
-        <div className="bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-0 h-auto break-words whitespace-pre-line">{about}</div>
+        <div className="bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 whitespace-pre-line min-h-[120px]">
+          {about || 'No description provided.'}
+        </div>
       )}
       {isEditingAbout && (
         <div className="flex gap-2 mt-4">
@@ -686,6 +769,40 @@ function formatStartupStage(stage) {
   return formatPreferenceText(stage);
 }
 
+// Update the parseArrayField function
+const parseArrayField = (field) => {
+  if (!field) return [];
+  if (Array.isArray(field)) {
+    return field.map(item => {
+      if (typeof item === 'string') {
+        return item.replace(/[\[\]"'\\]/g, '').trim();
+      }
+      return item;
+    });
+  }
+  try {
+    if (typeof field === 'string') {
+      // Remove all brackets, quotes, and escape characters
+      const cleaned = field.replace(/[\[\]"'\\]/g, '').trim();
+      if (!cleaned) return [];
+      
+      // Split by comma if it's a comma-separated string
+      if (cleaned.includes(',')) {
+        return cleaned.split(',').map(item => item.trim()).filter(Boolean);
+      }
+      
+      return [cleaned];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing array field:', error);
+    if (typeof field === 'string') {
+      return [field.replace(/[\[\]"'\\]/g, '').trim()];
+    }
+    return [];
+  }
+};
+
 function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPreferences, setIsEditingPreferences, handleSavePreferences, user, isOwnProfile }) {
   const [localPreferences, setLocalPreferences] = useState(preferences || {
     position_desired: '',
@@ -697,12 +814,9 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
   // Update local state when preferences change and not editing
   useEffect(() => {
     if (!isEditingPreferences) {
-      // Parse preferred_industries if it's a string
       const parsedPreferences = preferences ? {
         ...preferences,
-        preferred_industries: typeof preferences.preferred_industries === 'string' 
-          ? JSON.parse(preferences.preferred_industries) 
-          : (preferences.preferred_industries || [])
+        preferred_industries: parseArrayField(preferences.preferred_industries)
       } : {
         position_desired: '',
         preferred_industries: [],
@@ -728,9 +842,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
   const handleCancel = () => {
     const parsedPreferences = preferences ? {
       ...preferences,
-      preferred_industries: typeof preferences.preferred_industries === 'string' 
-        ? JSON.parse(preferences.preferred_industries) 
-        : (preferences.preferred_industries || [])
+      preferred_industries: parseArrayField(preferences.preferred_industries)
     } : {
       position_desired: '',
       preferred_industries: [],
@@ -742,11 +854,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
   };
 
   // Ensure preferred_industries is always an array
-  const industries = Array.isArray(localPreferences.preferred_industries) 
-    ? localPreferences.preferred_industries 
-    : (typeof localPreferences.preferred_industries === 'string' 
-      ? JSON.parse(localPreferences.preferred_industries) 
-      : []);
+  const industries = parseArrayField(localPreferences.preferred_industries);
 
   return (
     <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
@@ -775,24 +883,27 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
           </div>
           <div>
             <div className="text-gray-600 mb-1">Preferred Industries</div>
-            <select
-              multiple
-              value={industries}
-              onChange={e => {
-                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                setLocalPreferences({ ...localPreferences, preferred_industries: selected });
-              }}
-              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
-            >
-              <option value="Technology">Technology</option>
-              <option value="Healthcare">Healthcare</option>
-              <option value="Finance">Finance</option>
-              <option value="Education">Education</option>
-              <option value="Retail">Retail</option>
-              <option value="Manufacturing">Manufacturing</option>
-              <option value="Agriculture">Agriculture</option>
-              <option value="Transportation">Transportation</option>
-            </select>
+            <TagMultiSelect
+              id="preferred-industries"
+              name="preferred_industries"
+              options={[
+                'Technology',
+                'Healthcare',
+                'Finance',
+                'Education',
+                'Retail',
+                'Manufacturing',
+                'Agriculture',
+                'Transportation',
+                'Real Estate',
+                'Energy',
+                'Entertainment',
+                'Food & Beverage'
+              ]}
+              selected={industries}
+              onChange={selected => setLocalPreferences({ ...localPreferences, preferred_industries: selected })}
+              placeholder="Select or type industries..."
+            />
           </div>
           <div>
             <div className="text-gray-600 mb-1">Preferred Startup Stage</div>
@@ -831,10 +942,16 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
           </div>
           <div>
             <div className="text-gray-600 mb-1">Preferred Industries</div>
-            <div className="font-semibold">
-              {industries.length > 0
-                ? industries.map(formatPreferenceText).join(', ')
-                : 'Not specified'}
+            <div className="flex flex-wrap gap-2">
+              {industries.length > 0 ? (
+                industries.map((industry, index) => (
+                  <span key={index} className="bg-gray-100 rounded-full px-3 py-1 text-sm">
+                    {industry.replace(/[\[\]"'\\]/g, '').trim()}
+                  </span>
+                ))
+              ) : (
+                <div className="font-semibold">Not specified</div>
+              )}
             </div>
           </div>
           <div>
@@ -851,6 +968,45 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
   );
 }
 
+// Replace the SkillsCard component with this updated version
+function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkills, handleSaveSkills, user, isOwnProfile }) {
+  return (
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-orange-600">Skills</h2>
+        {!isEditingSkills && isOwnProfile && (
+          <button onClick={() => setIsEditingSkills(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+      {isEditingSkills ? (
+        <div>
+          <TagMultiSelect
+            id="user-skills"
+            name="skills"
+            options={SKILLS}
+            selected={skills}
+            onChange={setSkills}
+            placeholder="Type or select skills..."
+          />
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSaveSkills} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+            <button onClick={() => { setIsEditingSkills(false); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {skills.length === 0 && <div className="text-gray-500">No skills added yet.</div>}
+          {skills.map((skill, index) => (
+            <div key={index} className="bg-gray-100 rounded-full px-3 py-1">
+              {skill}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserProfile() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
@@ -858,6 +1014,7 @@ export default function UserProfile() {
   const fileInputRef = useRef();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('personal');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // Determine if viewing own profile
   const loggedInUser = JSON.parse(localStorage.getItem('user'));
   const isOwnProfile = loggedInUser && user && String(loggedInUser.id) === String(user.id);
@@ -894,6 +1051,10 @@ export default function UserProfile() {
     whatsapp_url: '',
     telegram_url: ''
   });
+
+  // Add skills state
+  const [skills, setSkills] = useState([]);
+  const [isEditingSkills, setIsEditingSkills] = useState(false);
 
   // Fetch profile and social links only when id changes
   useEffect(() => {
@@ -1206,13 +1367,148 @@ export default function UserProfile() {
     }
   };
 
-  if (!user) {
-    return <div className="flex flex-col min-h-screen"><Navbar /><div className="flex-1 flex justify-center items-center text-gray-200 bg-[#181818]">Please log in to view your profile.</div></div>;
-  }
+  // Add skills save handler
+  const handleSaveSkills = async (updatedSkills) => {
+    try {
+      await userProfileAPI.updateUserProfile(user.id, {
+        ...user,
+        skills: updatedSkills
+      });
+      setSkills(updatedSkills);
+      setIsEditingSkills(false);
+      fetchProfile(user.id);
+    } catch (err) {
+      alert('Failed to update skills.');
+    }
+  };
 
-  // Sidebar
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // Add this before the MobileSidebar component
+  const Overlay = () => (
+    <div 
+      className={`lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      onClick={() => setIsSidebarOpen(false)}
+    />
+  );
+
+  // Update the MobileSidebar component
+  const MobileSidebar = () => (
+    <>
+      <Overlay />
+      <div 
+        className={`lg:hidden fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64 bg-white dark:bg-[#232526] shadow-lg transition-transform duration-300 ease-in-out z-50`}
+      >
+        <nav className="flex-1 px-4 py-6 h-full overflow-y-auto">
+          {user && (
+            <div className="flex flex-col items-center mb-8">
+              <div className="mb-3 relative group">
+                {user.profile_image && user.profile_image.trim() !== '' ? (
+                  <img src={user.profile_image} alt="Profile" className="w-28 h-28 rounded-full object-cover border-4 border-orange-500 bg-gray-100 mb-2" />
+                ) : (
+                  <div className="w-28 h-28 rounded-full bg-orange-500 flex items-center justify-center mb-2">
+                    <FaUser className="text-white" size={60} />
+                  </div>
+                )}
+                {isOwnProfile && (
+                  <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (!file.type.startsWith('image/')) {
+                            alert('Please select an image file');
+                            return;
+                          }
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('Image size must be less than 5MB');
+                            return;
+                          }
+                          try {
+                            const reader = new window.FileReader();
+                            reader.onloadend = async () => {
+                              try {
+                                const base64Image = reader.result;
+                                await userProfileAPI.updateProfileImage(user.id, base64Image);
+                                await fetchProfile(user.id);
+                                alert('Profile image updated successfully');
+                              } catch (error) {
+                                console.error('Error updating profile image:', error);
+                                alert(error.message || 'Failed to update profile image. Please try again.');
+                              }
+                            };
+                            reader.onerror = () => {
+                              alert('Error reading the image file. Please try again.');
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (error) {
+                            console.error('Error processing image:', error);
+                            alert('Error processing the image. Please try again.');
+                          }
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-orange-500 font-semibold">Edit</span>
+                  </label>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-xl text-gray-800 dark:text-white">{user.first_name} {user.last_name}</div>
+                <div className="text-xs text-gray-500">{user.email}</div>
+              </div>
+            </div>
+          )}
+          <ul className="space-y-6">
+            <li 
+              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`} 
+              onClick={() => { setActiveSection('personal'); setIsSidebarOpen(false); }}
+            >
+              <FaUser /> Personal Details
+            </li>
+            <li 
+              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+              onClick={() => { setActiveSection('academic'); setIsSidebarOpen(false); }}
+            >
+              <FaGraduationCap /> Academic Profile
+            </li>
+            <li 
+              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+              onClick={() => { setActiveSection('matchmaking'); setIsSidebarOpen(false); }}
+            >
+              <FaHandshake /> Matchmaking Preferences
+            </li>
+            {isOwnProfile && (
+              <li 
+                className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                onClick={() => { setActiveSection('privacy'); setIsSidebarOpen(false); }}
+              >
+                <FaLock /> Privacy Settings
+              </li>
+            )}
+          </ul>
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <button 
+              onClick={() => { navigate('/login'); localStorage.clear(); }} 
+              className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"
+            >
+              <FaSignOutAlt /> Logout
+            </button>
+          </div>
+        </nav>
+      </div>
+    </>
+  );
+
+  // Update the Sidebar component
   const Sidebar = () => (
     <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow w-full lg:w-[270px] lg:h-[calc(100vh-110px)] flex flex-col items-center py-6 px-6 pb-8 lg:mr-8 border border-gray-200 overflow-y-auto min-h-0">
+      {user && (
       <div className="flex flex-col items-center mb-8">
         <div className="mb-3 relative group">
           {user.profile_image && user.profile_image.trim() !== '' ? (
@@ -1222,7 +1518,6 @@ export default function UserProfile() {
               <FaUser className="text-white" size={60} />
             </div>
           )}
-          {/* Profile picture upload button - only show for profile owner */}
           {isOwnProfile && (
             <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
               <input
@@ -1232,18 +1527,14 @@ export default function UserProfile() {
                 onChange={async (e) => {
                   const file = e.target.files[0];
                   if (file) {
-                    // Validate file type
                     if (!file.type.startsWith('image/')) {
                       alert('Please select an image file');
                       return;
                     }
-
-                    // Validate file size (5MB)
                     if (file.size > 5 * 1024 * 1024) {
                       alert('Image size must be less than 5MB');
                       return;
                     }
-
                     try {
                       const reader = new window.FileReader();
                       reader.onloadend = async () => {
@@ -1251,7 +1542,6 @@ export default function UserProfile() {
                           const base64Image = reader.result;
                           await userProfileAPI.updateProfileImage(user.id, base64Image);
                           await fetchProfile(user.id);
-                          // Show success message
                           alert('Profile image updated successfully');
                         } catch (error) {
                           console.error('Error updating profile image:', error);
@@ -1278,6 +1568,7 @@ export default function UserProfile() {
           <div className="text-xs text-gray-500">{user.email}</div>
         </div>
       </div>
+      )}
       <nav className="flex-1 w-full">
         <ul className="space-y-6 text-left">
           <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('personal')}><FaUser /> Personal Details</li>
@@ -1294,29 +1585,168 @@ export default function UserProfile() {
     </div>
   );
 
-  // Header
-  const Header = () => (
-    <div className="flex items-center justify-between w-full px-8 py-4 bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow mb-8">
-      <div className="flex items-center gap-4 w-1/2">
-        <input type="text" placeholder="Search" className="w-full px-4 py-2 rounded border border-gray-300 bg-gray-50 focus:outline-none" />
-      </div>
-      <div className="flex items-center gap-6">
-        <FaBell className="text-orange-500 text-xl cursor-pointer" />
-        <FaEnvelope className="text-orange-500 text-xl cursor-pointer" />
+  // Update the PersonalSection component
+  const PersonalSection = () => (
+    <>
+      {/* Mobile Profile Section */}
+      {user && (
+        <div className="lg:hidden bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
+          <div className="flex flex-col items-center">
+            <div className="mb-6 relative group">
         {user.profile_image && user.profile_image.trim() !== '' ? (
-          <img src={user.profile_image} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-orange-500 bg-gray-100" />
+                <img src={user.profile_image} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
-            <FaUser className="text-white text-xl" />
+                <div className="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center">
+                  <FaUser className="text-white" size={64} />
           </div>
+              )}
+              {isOwnProfile && (
+                <div className="absolute -bottom-2 right-0 flex gap-2">
+                  <label className="bg-white rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-50 transition-colors border-2 border-orange-500">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (!file.type.startsWith('image/')) {
+                            alert('Please select an image file');
+                            return;
+                          }
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('Image size must be less than 5MB');
+                            return;
+                          }
+                          try {
+                            const reader = new window.FileReader();
+                            reader.onloadend = async () => {
+                              try {
+                                const base64Image = reader.result;
+                                await userProfileAPI.updateProfileImage(user.id, base64Image);
+                                await fetchProfile(user.id);
+                                alert('Profile image updated successfully');
+                              } catch (error) {
+                                console.error('Error updating profile image:', error);
+                                alert(error.message || 'Failed to update profile image. Please try again.');
+                              }
+                            };
+                            reader.onerror = () => {
+                              alert('Error reading the image file. Please try again.');
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (error) {
+                            console.error('Error processing image:', error);
+                            alert('Error processing the image. Please try again.');
+                          }
+                        }
+                      }}
+                    />
+                    <FaEdit className="w-4 h-4 text-orange-500" />
+                  </label>
+                  {user.profile_image && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await userProfileAPI.updateProfileImage(user.id, '');
+                          await fetchProfile(user.id);
+                          alert('Profile image removed successfully');
+                        } catch (error) {
+                          console.error('Error removing profile image:', error);
+                          alert(error.message || 'Failed to remove profile image. Please try again.');
+                        }
+                      }}
+                      className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors border-2 border-red-500"
+                    >
+                      <FaTimes className="w-4 h-4 text-red-500" />
+                    </button>
         )}
       </div>
+              )}
     </div>
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">{user.first_name} {user.last_name}</h2>
+              <p className="text-sm text-gray-500">{user.email}</p>
+            </div>
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-orange-600">About</h3>
+                {!isEditingAbout && isOwnProfile && (
+                  <button onClick={() => setIsEditingAbout(true)} className="text-orange-500 text-sm font-semibold hover:underline">
+                    Edit
+                  </button>
+                )}
+              </div>
+              {isEditingAbout ? (
+                <div>
+                  <textarea 
+                    value={about} 
+                    onChange={e => setAbout(e.target.value)} 
+                    className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-[120px] resize-none" 
+                    placeholder="Tell us about yourself..."
+                  />
+                  <div className="flex gap-2 mt-4">
+                    <button onClick={handleSaveAbout} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+                    <button onClick={() => { setIsEditingAbout(false); setAbout(user?.introduction || ''); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                  {about || 'No description provided.'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      <GeneralInfo 
+        generalInfo={generalInfo} 
+        setGeneralInfo={setGeneralInfo} 
+        isEditingGeneral={isEditingGeneral} 
+        setIsEditingGeneral={setIsEditingGeneral} 
+        handleSaveGeneral={handleSaveGeneral} 
+        user={user} 
+        isOwnProfile={isOwnProfile}
+      />
+      <div className="hidden lg:block">
+        <AboutCard 
+          about={about} 
+          setAbout={setAbout} 
+          isEditingAbout={isEditingAbout} 
+          setIsEditingAbout={setIsEditingAbout} 
+          handleSaveAbout={handleSaveAbout} 
+          user={user} 
+          isOwnProfile={isOwnProfile}
+        />
+      </div>
+      <SkillsCard 
+        skills={skills}
+        setSkills={setSkills}
+        isEditingSkills={isEditingSkills}
+        setIsEditingSkills={setIsEditingSkills}
+        handleSaveSkills={handleSaveSkills}
+        user={user}
+        isOwnProfile={isOwnProfile}
+      />
+      <div className="lg:hidden">
+        <ProfessionalBackgroundCard 
+          employments={employments} 
+          setEmployments={setEmployments} 
+          isEditingProfessional={isEditingProfessional} 
+          setIsEditingProfessional={setIsEditingProfessional} 
+          handleSaveProfessional={handleSaveProfessional} 
+          user={user} 
+          isOwnProfile={isOwnProfile}
+        />
+      </div>
+    </>
   );
 
-  // Right Panel
+  // Update the RightPanel component
   const RightPanel = () => (
     <div className="flex flex-col gap-6 min-h-[700px] max-w-[420px] w-full">
+      {user && (
+        <>
       <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 flex items-center gap-4 mb-2">
         {user.profile_image && user.profile_image.trim() !== '' ? (
           <img src={user.profile_image} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
@@ -1339,15 +1769,8 @@ export default function UserProfile() {
         user={user} 
         isOwnProfile={isOwnProfile}
       />
-      <AboutCard 
-        about={about} 
-        setAbout={setAbout} 
-        isEditingAbout={isEditingAbout} 
-        setIsEditingAbout={setIsEditingAbout} 
-        handleSaveAbout={handleSaveAbout} 
-        user={user} 
-        isOwnProfile={isOwnProfile}
-      />
+        </>
+      )}
     </div>
   );
 
@@ -1375,41 +1798,12 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#181818] flex flex-col">
       <Navbar />
-      <div className="flex flex-col lg:flex-row w-full gap-8 px-4 sm:px-8 pt-24 pb-8">
+      <div className="flex flex-col lg:flex-row w-full gap-8 px-4 sm:px-8 pt-24 lg:pt-24 pb-8">
+        <div className="hidden lg:block">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          {activeSection === 'personal' && <>
-            <GeneralInfo 
-              generalInfo={generalInfo} 
-              setGeneralInfo={setGeneralInfo} 
-              isEditingGeneral={isEditingGeneral} 
-              setIsEditingGeneral={setIsEditingGeneral} 
-              handleSaveGeneral={handleSaveGeneral} 
-              user={user} 
-              isOwnProfile={isOwnProfile}
-            />
-            {/* Show Professional Background and About on mobile */}
-            <div className="lg:hidden">
-              <ProfessionalBackgroundCard 
-                employments={employments} 
-                setEmployments={setEmployments} 
-                isEditingProfessional={isEditingProfessional} 
-                setIsEditingProfessional={setIsEditingProfessional} 
-                handleSaveProfessional={handleSaveProfessional} 
-                user={user} 
-                isOwnProfile={isOwnProfile}
-              />
-              <AboutCard 
-                about={about} 
-                setAbout={setAbout} 
-                isEditingAbout={isEditingAbout} 
-                setIsEditingAbout={setIsEditingAbout} 
-                handleSaveAbout={handleSaveAbout} 
-                user={user} 
-                isOwnProfile={isOwnProfile}
-              />
             </div>
-          </>}
+        <div className="flex-1 flex flex-col min-w-0">
+          {activeSection === 'personal' && <PersonalSection />}
           {activeSection === 'academic' && <AcademicProfile />}
           {activeSection === 'matchmaking' && (
             <MatchmakingPreferencesCard

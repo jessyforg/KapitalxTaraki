@@ -68,8 +68,8 @@ const SKILLS = [
 
 const steps = [
   { label: 'Basic Information' },
-  { label: 'Professional Background' },
-  { label: 'Bio & Social Links' },
+  { label: 'Background & Experience' },
+  { label: 'Social Links' },
   { label: 'Matchmaking Preferences' },
   { label: 'Privacy Settings' },
 ];
@@ -138,11 +138,10 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     birthdate: '',
     location: '',
     contact_number: '',
-    public_email: '',
     industry: '',
-    education: '',
-    employment: '',
-    accomplishments: '',
+    employment: [],
+    academic_profile: [],
+    accomplishments: [],
     introduction: '',
     facebook_url: '',
     instagram_url: '',
@@ -175,14 +174,12 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       api.getUserProfile(user.id).then(data => {
         setFormData(prev => ({
           ...prev,
-          ...Object.fromEntries(
-            Object.entries(data).map(([k, v]) => [
-              k,
-              v === null || v === undefined
-                ? (Array.isArray(prev[k]) ? [] : typeof prev[k] === 'boolean' ? false : '')
-                : v
-            ])
-          )
+          ...data,
+          employment: Array.isArray(data.employment) ? data.employment : data.employment ? [data.employment] : [],
+          academic_profile: Array.isArray(data.academic_profile) ? data.academic_profile : data.academic_profile ? [data.academic_profile] : [],
+          accomplishments: Array.isArray(data.accomplishments) ? data.accomplishments : data.accomplishments ? [data.accomplishments] : [],
+          skills: Array.isArray(data.skills) ? data.skills : [],
+          preferred_industries: Array.isArray(data.preferred_industries) ? data.preferred_industries : []
         }));
       }).catch(() => {});
     }
@@ -296,80 +293,278 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                   autoComplete="tel"
                 />
               </div>
-              <div>
-                <label htmlFor="user-public_email" className="block text-sm font-medium text-black mb-1">Public Email</label>
-                <input
-                  type="email"
-                  id="user-public_email"
-                  name="public_email"
-                  value={formData.public_email ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  placeholder="Public email address"
-                  autoComplete="email"
-                />
-              </div>
             </div>
           </div>
         );
       case 1:
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
-            <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Professional Background</h3>
-            <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+            <h3 className="text-2xl font-bold text-[#F04F06] mb-6">Professional Background</h3>
+            <div className="flex flex-col gap-y-8 flex-1 justify-evenly">
               <div>
-                <label htmlFor="user-industry" className="block text-sm font-medium text-black mb-1">Industry</label>
-                <select
-                  id="user-industry"
-                  name="industry"
-                  value={formData.industry ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  autoComplete="off"
-                >
-                  {INDUSTRIES.map((ind) => (
-                    <option key={ind} value={ind}>{ind ? ind : 'Select industry'}</option>
+                <label htmlFor="user-employment" className="block text-lg font-medium text-black mb-3">Employment History</label>
+                <div className="space-y-6">
+                  {formData.employment?.map((emp, idx) => (
+                    <div key={idx} className="bg-[#e7e7e7] p-6 rounded-xl">
+                      <div className="grid grid-cols-3 gap-6 mb-4">
+                        <input
+                          type="text"
+                          value={emp.company || ''}
+                          onChange={e => {
+                            const newEmployment = [...formData.employment];
+                            newEmployment[idx] = { ...newEmployment[idx], company: e.target.value };
+                            setFormData({ ...formData, employment: newEmployment });
+                          }}
+                          placeholder="Company Name"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={emp.title || ''}
+                          onChange={e => {
+                            const newEmployment = [...formData.employment];
+                            newEmployment[idx] = { ...newEmployment[idx], title: e.target.value };
+                            setFormData({ ...formData, employment: newEmployment });
+                          }}
+                          placeholder="Job Title"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={emp.industry || ''}
+                          onChange={e => {
+                            const newEmployment = [...formData.employment];
+                            newEmployment[idx] = { ...newEmployment[idx], industry: e.target.value };
+                            setFormData({ ...formData, employment: newEmployment });
+                          }}
+                          placeholder="Industry"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-8">
+                          <input
+                            type="date"
+                            value={emp.hire_date || ''}
+                            onChange={e => {
+                              const newEmployment = [...formData.employment];
+                              newEmployment[idx] = { ...newEmployment[idx], hire_date: e.target.value };
+                              setFormData({ ...formData, employment: newEmployment });
+                            }}
+                            className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                          />
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={emp.is_current || false}
+                              onChange={e => {
+                                const newEmployment = [...formData.employment];
+                                newEmployment[idx] = { ...newEmployment[idx], is_current: e.target.checked };
+                                setFormData({ ...formData, employment: newEmployment });
+                              }}
+                              className="w-5 h-5 rounded text-[#FF7A1A] focus:ring-[#FF7A1A]"
+                            />
+                            <span className="text-base font-medium">Current Position</span>
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newEmployment = formData.employment.filter((_, i) => i !== idx);
+                            setFormData({ ...formData, employment: newEmployment });
+                          }}
+                          className="text-red-500 text-base hover:text-red-700 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newEmployment = [...(formData.employment || []), {
+                        company: '',
+                        title: '',
+                        industry: '',
+                        hire_date: '',
+                        is_current: false
+                      }];
+                      setFormData({ ...formData, employment: newEmployment });
+                    }}
+                    className="w-full p-3 bg-[#FF7A1A] text-white rounded-xl hover:bg-[#FFB26B] transition-colors text-base font-semibold"
+                  >
+                    Add Employment
+                  </button>
+                </div>
               </div>
+
               <div>
-                <label htmlFor="user-education" className="block text-sm font-medium text-black mb-1">Education</label>
-                <textarea
-                  id="user-education"
-                  name="education"
-                  value={formData.education ?? ''}
-                  onChange={handleChange}
-                  rows="2"
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  placeholder="Your educational background"
-                  autoComplete="off"
-                />
+                <label htmlFor="user-education" className="block text-lg font-medium text-black mb-3">Education History</label>
+                <div className="space-y-6">
+                  {formData.academic_profile?.map((edu, idx) => (
+                    <div key={idx} className="bg-[#e7e7e7] p-6 rounded-xl">
+                      <div className="grid grid-cols-2 gap-6 mb-4">
+                        <input
+                          type="text"
+                          value={edu.level || ''}
+                          onChange={e => {
+                            const newEducation = [...formData.academic_profile];
+                            newEducation[idx] = { ...newEducation[idx], level: e.target.value };
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          placeholder="Education Level"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={edu.course || ''}
+                          onChange={e => {
+                            const newEducation = [...formData.academic_profile];
+                            newEducation[idx] = { ...newEducation[idx], course: e.target.value };
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          placeholder="Course/Program"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-6 mb-4">
+                        <input
+                          type="text"
+                          value={edu.institution || ''}
+                          onChange={e => {
+                            const newEducation = [...formData.academic_profile];
+                            newEducation[idx] = { ...newEducation[idx], institution: e.target.value };
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          placeholder="Institution"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={edu.address || ''}
+                          onChange={e => {
+                            const newEducation = [...formData.academic_profile];
+                            newEducation[idx] = { ...newEducation[idx], address: e.target.value };
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          placeholder="Institution Address"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <input
+                          type="date"
+                          value={edu.graduation_date || ''}
+                          onChange={e => {
+                            const newEducation = [...formData.academic_profile];
+                            newEducation[idx] = { ...newEducation[idx], graduation_date: e.target.value };
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newEducation = formData.academic_profile.filter((_, i) => i !== idx);
+                            setFormData({ ...formData, academic_profile: newEducation });
+                          }}
+                          className="text-red-500 text-base hover:text-red-700 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newEducation = [...(formData.academic_profile || []), {
+                        level: '',
+                        course: '',
+                        institution: '',
+                        address: '',
+                        graduation_date: ''
+                      }];
+                      setFormData({ ...formData, academic_profile: newEducation });
+                    }}
+                    className="w-full p-3 bg-[#FF7A1A] text-white rounded-xl hover:bg-[#FFB26B] transition-colors text-base font-semibold"
+                  >
+                    Add Education
+                  </button>
+                </div>
               </div>
+
               <div>
-                <label htmlFor="user-employment" className="block text-sm font-medium text-black mb-1">Employment</label>
-                <textarea
-                  id="user-employment"
-                  name="employment"
-                  value={formData.employment ?? ''}
-                  onChange={handleChange}
-                  rows="2"
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  placeholder="Your work experience"
-                  autoComplete="off"
-                />
-              </div>
-              <div>
-                <label htmlFor="user-accomplishments" className="block text-sm font-medium text-black mb-1">Accomplishments</label>
-                <textarea
-                  id="user-accomplishments"
-                  name="accomplishments"
-                  value={formData.accomplishments ?? ''}
-                  onChange={handleChange}
-                  rows="2"
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded font-medium focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  placeholder="Your notable achievements"
-                  autoComplete="off"
-                />
+                <label htmlFor="user-accomplishments" className="block text-lg font-medium text-black mb-3">Accomplishments</label>
+                <div className="space-y-6">
+                  {formData.accomplishments?.map((acc, idx) => (
+                    <div key={idx} className="bg-[#e7e7e7] p-6 rounded-xl">
+                      <div className="grid grid-cols-2 gap-6 mb-4">
+                        <input
+                          type="text"
+                          value={acc.title || ''}
+                          onChange={e => {
+                            const newAccomplishments = [...formData.accomplishments];
+                            newAccomplishments[idx] = { ...newAccomplishments[idx], title: e.target.value };
+                            setFormData({ ...formData, accomplishments: newAccomplishments });
+                          }}
+                          placeholder="Accomplishment Title"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                        <input
+                          type="date"
+                          value={acc.date || ''}
+                          onChange={e => {
+                            const newAccomplishments = [...formData.accomplishments];
+                            newAccomplishments[idx] = { ...newAccomplishments[idx], date: e.target.value };
+                            setFormData({ ...formData, accomplishments: newAccomplishments });
+                          }}
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <textarea
+                          value={acc.description || ''}
+                          onChange={e => {
+                            const newAccomplishments = [...formData.accomplishments];
+                            newAccomplishments[idx] = { ...newAccomplishments[idx], description: e.target.value };
+                            setFormData({ ...formData, accomplishments: newAccomplishments });
+                          }}
+                          placeholder="Description"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                          rows="3"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newAccomplishments = formData.accomplishments.filter((_, i) => i !== idx);
+                            setFormData({ ...formData, accomplishments: newAccomplishments });
+                          }}
+                          className="text-red-500 text-base hover:text-red-700 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newAccomplishments = [...(formData.accomplishments || []), {
+                        title: '',
+                        date: '',
+                        description: ''
+                      }];
+                      setFormData({ ...formData, accomplishments: newAccomplishments });
+                    }}
+                    className="w-full p-3 bg-[#FF7A1A] text-white rounded-xl hover:bg-[#FFB26B] transition-colors text-base font-semibold"
+                  >
+                    Add Accomplishment
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -560,16 +755,16 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
 
   return (
     <div id="user-details-modal" className="fixed inset-0 z-50 bg-slate-50 bg-opacity-95 p-0 md:p-4 flex items-start md:items-center justify-center">
-      <div className="bg-white rounded-none md:rounded-3xl shadow-xl w-full h-full md:w-full md:max-w-2xl md:h-[620px] animate-fadeIn flex flex-col md:flex-row border-0 md:border-2 border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-none md:rounded-3xl shadow-xl w-full h-full md:w-full md:max-w-[1200px] md:h-[700px] animate-fadeIn flex flex-col md:flex-row border-0 md:border-2 border-slate-200 overflow-hidden">
         {/* Stepper Sidebar */}
-        <div className="w-full md:w-56 bg-slate-100 md:rounded-l-3xl py-4 px-4 flex flex-col items-center md:items-start h-auto md:h-full shadow-lg border-b md:border-r md:border-b-0 border-slate-200">
-          <h2 className="text-lg font-extrabold mb-4 text-[#F04F06] tracking-wide px-2 hidden md:block">Let us know you better</h2>
-          <ul className="w-full flex flex-row items-center justify-center md:flex-col md:items-start md:space-y-5">
+        <div className="w-full md:w-72 bg-slate-100 md:rounded-l-3xl py-4 px-4 flex flex-col items-center md:items-start h-auto md:h-full shadow-lg border-b md:border-r md:border-b-0 border-slate-200">
+          <h2 className="text-2xl font-extrabold mb-6 text-[#F04F06] tracking-wide px-2 hidden md:block">Let us know you better</h2>
+          <ul className="w-full flex flex-row items-center justify-center md:flex-col md:items-start md:space-y-8">
             {steps.map((s, idx) => (
-              <li key={s.label} className="flex-1 md:flex-none flex flex-col md:flex-row items-center gap-1 md:gap-3 px-1 md:px-2 text-center md:text-left">
-                <span className={`flex items-center justify-center w-8 h-8 md:w-6 md:h-6 rounded-full border-2 text-sm font-bold transition-all duration-200 
+              <li key={s.label} className="flex-1 md:flex-none flex flex-col md:flex-row items-center gap-1 md:gap-4 px-1 md:px-2 text-center md:text-left">
+                <span className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 text-sm md:text-base font-bold transition-all duration-200 
                   ${step === idx ? 'bg-[#FF7A1A] border-[#FF7A1A] text-white shadow-lg' : step > idx ? 'bg-[#FFB26B] border-[#FFB26B] text-[#FF7A1A]' : 'bg-slate-200 border-slate-200 text-slate-400'}`}>{idx + 1}</span>
-                <span className={`text-xs md:text-sm transition-all duration-200 ${step === idx ? 'font-bold text-[#FF7A1A]' : step > idx ? 'text-[#FF7A1A]' : 'text-slate-400'}`}>{s.label}</span>
+                <span className={`text-xs md:text-base transition-all duration-200 ${step === idx ? 'font-bold text-[#FF7A1A]' : step > idx ? 'text-[#FF7A1A]' : 'text-slate-400'}`}>{s.label}</span>
               </li>
             ))}
           </ul>
@@ -580,7 +775,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
             <div className="text-[#FF7A1A] text-sm text-center mb-3 font-semibold">{error}</div>
           )}
           <div className="flex-1 overflow-y-auto pr-2 -mr-2 md:pr-4 md:-mr-4 custom-scrollbar">
-            <div className="bg-slate-50 rounded-2xl shadow p-6 mb-6 border border-slate-200">
+            <div className="bg-slate-50 rounded-2xl shadow p-6 md:p-8 mb-6 border border-slate-200">
               {renderStep()}
             </div>
           </div>
@@ -588,18 +783,18 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
             <button
               type="button"
               onClick={handlePrev}
-              className={`px-5 py-2 rounded-full font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] text-sm
+              className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] text-base
                 ${step === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-[#FF7A1A] border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A]'}`}
               disabled={step === 0}
             >
               Previous
             </button>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {step === steps.length - 1 && (
                 <button
                   type="button"
                   onClick={handleSkip}
-                  className="px-5 py-2 rounded-full text-[#FF7A1A] bg-white border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A] font-semibold transition-all duration-200 shadow-md text-sm"
+                  className="px-6 py-2.5 rounded-full text-[#FF7A1A] bg-white border border-[#FF7A1A] hover:bg-[#FFB26B] hover:text-[#FF7A1A] font-semibold transition-all duration-200 shadow-md text-base"
                 >
                   Skip for now
                 </button>
@@ -607,7 +802,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 bg-[#FF7A1A] text-white rounded-full font-bold shadow-lg hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] disabled:opacity-50 text-sm"
+                className="px-6 py-2.5 bg-[#FF7A1A] text-white rounded-full font-bold shadow-lg hover:bg-[#FFB26B] hover:text-[#FF7A1A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] disabled:opacity-50 text-base"
               >
                 {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save Profile') : 'Next'}
               </button>
