@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaSearch, FaInbox, FaArchive, FaChevronDown, FaChevronUp, FaPaperclip, FaArrowLeft, FaInfoCircle, FaBell, FaBellSlash, FaFlag, FaUserCircle, FaTimes, FaEllipsisV, FaPlus } from 'react-icons/fa';
 import classNames from 'classnames';
 import axios from 'axios';
 
-function Messages() {
+const Messages = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  
+  // Initialize user and token first
   let initialUser = null, initialToken = null;
   try {
     initialUser = JSON.parse(localStorage.getItem('user'));
@@ -17,11 +19,18 @@ function Messages() {
     initialUser = null;
     initialToken = null;
   }
+
+  // Constants
+  const statusOptions = [
+    { value: 'online', label: 'Online', color: 'bg-green-200 text-green-800' },
+    { value: 'invisible', label: 'Invisible', color: 'bg-gray-200 text-gray-800' },
+    { value: 'offline', label: 'Offline', color: 'bg-red-200 text-red-800' },
+  ];
+
+  // State definitions
   const [user, setUser] = useState(initialUser);
   const [token, setToken] = useState(initialToken);
   const [storageError, setStorageError] = useState(false);
-
-  // State
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
@@ -36,31 +45,44 @@ function Messages() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Add new state for categories
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [openCategoryMenu, setOpenCategoryMenu] = useState(null);
-
-  // Add new state for user status
   const [status, setStatus] = useState(user?.status || 'online');
   const [statusDropdown, setStatusDropdown] = useState(false);
-  const statusOptions = [
-    { value: 'online', label: 'Online', color: 'bg-green-200 text-green-800' },
-    { value: 'invisible', label: 'Invisible', color: 'bg-gray-200 text-gray-800' },
-    { value: 'offline', label: 'Offline', color: 'bg-red-200 text-red-800' },
+  const [selectedChatUser, setSelectedChatUser] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showInfoSidebar, setShowInfoSidebar] = useState(true);
+
+  // Add file size and type validation
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_FILE_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
   ];
 
-  // Add new state for selected chat user object
-  const [selectedChatUser, setSelectedChatUser] = useState(null);
-
-  // Add selectedRequest state
-  const [selectedRequest, setSelectedRequest] = useState(null); // request object, only for requests
-
-  // Add state for toggling info sidebar
-  const [showInfoSidebar, setShowInfoSidebar] = useState(true);
+  // Add file validation helper
+  const validateFile = (file) => {
+    if (!file) return { valid: false, error: 'No file selected' };
+    
+    if (file.size > MAX_FILE_SIZE) {
+      return { valid: false, error: 'File size must be less than 5MB' };
+    }
+    
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return { valid: false, error: 'File type not supported. Please upload images, PDFs, Word documents, or text files.' };
+    }
+    
+    return { valid: true };
+  };
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
@@ -79,6 +101,61 @@ function Messages() {
       'Authorization': `Bearer ${token}`
     }
   });
+
+  // Helper function to extract filename from path
+  const getFileNameFromPath = (filePath) => {
+    if (!filePath) return '';
+    return filePath.split(/[/\\]/).pop() || '';
+  };
+
+  // Add URL cache and messages cache to prevent reconstructing data
+  const urlCache = useRef(new Map());
+  const messagesCache = useRef(new Map());
+
+  // Helper function to get or create cached URL
+  const getCachedFileUrl = (file) => {
+    const cacheKey = `${file.id || file.file_id}_${file.name || file.filename}_${file.path}`;
+    
+    if (urlCache.current.has(cacheKey)) {
+      return urlCache.current.get(cacheKey);
+    }
+    
+    let url;
+    if (file.url?.startsWith('/')) {
+      url = `${getApiUrl().replace('/api', '')}${file.url}`;
+    } else if (file.url?.startsWith('http')) {
+      url = file.url;
+    } else {
+      url = `${getApiUrl().replace('/api', '')}/uploads/messages/${file.filename || file.name || getFileNameFromPath(file.path)}`;
+    }
+    
+    urlCache.current.set(cacheKey, url);
+    return url;
+  };
+
+  // Helper function to get cached processed message
+  const getCachedMessage = (msg) => {
+    const cacheKey = `${msg.message_id}_${msg.content}_${msg.files?.length || 0}`;
+    
+    if (messagesCache.current.has(cacheKey)) {
+      return messagesCache.current.get(cacheKey);
+    }
+    
+    const processedMessage = {
+      ...msg,
+      timestamp: msg.created_at || msg.timestamp || msg.sent_at || new Date().toISOString(),
+      files: Array.isArray(msg.files) ? msg.files.map(file => ({
+        ...file,
+        url: getCachedFileUrl(file),
+        type: file.type || file.mimetype || 'application/octet-stream',
+        name: file.name || file.filename || 'Untitled',
+        size: file.size || 0
+      })) : []
+    };
+    
+    messagesCache.current.set(cacheKey, processedMessage);
+    return processedMessage;
+  };
 
   // Fetch conversations
   const fetchConversations = async () => {
@@ -105,16 +182,80 @@ function Messages() {
   };
 
   // Fetch messages for a conversation
-  const fetchMessages = async (userId) => {
+  const fetchMessages = async (userId, forceUpdate = false) => {
     try {
       const response = await api.get(`/messages/${userId}`);
       console.log('Fetched messages:', response.data);
-      setMessages(response.data);
-      scrollToBottom();
+      
+      // Create a unique signature for this batch of messages
+      const messageSignature = response.data.map(msg => 
+        `${msg.message_id}_${msg.content}_${msg.files?.length || 0}`
+      ).join('|');
+      
+      // Check if we've already processed this exact set of messages
+      const lastSignature = messagesCache.current.get('last_signature');
+      if (!forceUpdate && lastSignature === messageSignature && messages.length > 0) {
+        console.log('Messages signature unchanged - skipping update');
+        return;
+      }
+      
+      // Transform messages to ensure proper file handling and timestamps
+      const messagesWithFiles = response.data.map(msg => getCachedMessage(msg));
+      
+      // Store the signature
+      messagesCache.current.set('last_signature', messageSignature);
+      
+      // Only update if messages have actually changed or if it's a forced update
+      if (forceUpdate || !areMessagesEqual(messages, messagesWithFiles)) {
+        console.log('Messages updated - setting new messages');
+        setMessages(messagesWithFiles);
+        scrollToBottom();
+      } else {
+        console.log('Messages unchanged - skipping update');
+      }
     } catch (err) {
+      console.error('Error fetching messages:', err);
       setError('Failed to fetch messages');
-      console.error(err);
     }
+  };
+
+  // Improved message comparison that considers cached objects
+  const areMessagesEqual = (oldMessages, newMessages) => {
+    if (oldMessages.length !== newMessages.length) {
+      return false;
+    }
+    
+    for (let i = 0; i < oldMessages.length; i++) {
+      const oldMsg = oldMessages[i];
+      const newMsg = newMessages[i];
+      
+      // Compare essential message properties
+      if (
+        oldMsg.message_id !== newMsg.message_id ||
+        oldMsg.content !== newMsg.content ||
+        oldMsg.sender_id !== newMsg.sender_id ||
+        oldMsg.receiver_id !== newMsg.receiver_id ||
+        (oldMsg.files?.length || 0) !== (newMsg.files?.length || 0)
+      ) {
+        return false;
+      }
+      
+      // Compare files more carefully
+      if (oldMsg.files && newMsg.files) {
+        for (let j = 0; j < oldMsg.files.length; j++) {
+          const oldFile = oldMsg.files[j];
+          const newFile = newMsg.files[j];
+          if (
+            (oldFile?.id || oldFile?.file_id) !== (newFile?.id || newFile?.file_id) ||
+            oldFile?.name !== newFile?.name
+          ) {
+            return false;
+          }
+        }
+      }
+    }
+    
+    return true;
   };
 
   // Search users
@@ -157,38 +298,268 @@ function Messages() {
     }
   };
 
-  // Send message
+  // Add responsive image size helper
+  const useImageDimensions = () => {
+    const [dimensions, setDimensions] = useState({ width: 200, maxWidth: '60vw' });
+
+    useEffect(() => {
+      const updateDimensions = () => {
+        const isMobile = window.innerWidth < 768;
+        setDimensions({
+          width: isMobile ? 180 : 250,
+          maxWidth: isMobile ? '80vw' : '60vw'
+        });
+      };
+
+      updateDimensions();
+      window.addEventListener('resize', updateDimensions);
+      return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
+
+    return dimensions;
+  };
+
+  // Memoized ImagePreview component to prevent unnecessary re-renders
+  const ImagePreview = React.memo(({ src, alt, className, fileId }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const dimensions = useImageDimensions();
+
+    // Reset loading state when src changes
+    useEffect(() => {
+      setIsLoading(true);
+      setError(false);
+    }, [src]);
+
+    const handleLoad = useCallback(() => setIsLoading(false), []);
+    const handleError = useCallback((e) => {
+      console.error('Image load error:', e);
+      setError(true);
+      setIsLoading(false);
+    }, []);
+
+    return (
+      <div className={`relative ${className || ''}`} style={{ maxWidth: dimensions.maxWidth }}>
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
+          </div>
+        )}
+        <img
+          key={`img-${fileId}-${src}`} // Stable key to prevent remounting
+          src={src}
+          alt={alt}
+          className={`rounded-lg transition-opacity duration-200 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          style={{ maxWidth: '100%', height: 'auto', maxHeight: '300px', objectFit: 'contain' }}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+        {error && (
+          <div className="flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-gray-500">
+            Failed to load image
+          </div>
+        )}
+      </div>
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison function for better memoization
+    return (
+      prevProps.src === nextProps.src &&
+      prevProps.alt === nextProps.alt &&
+      prevProps.className === nextProps.className &&
+      prevProps.fileId === nextProps.fileId
+    );
+  });
+
+  // Update the messages display section
+  const renderMessages = () => {
+    if (!messages.length) {
+      return (
+        <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
+          <FaUserCircle size={40} className="md:w-15 md:h-15 mb-2 text-orange-500" />
+          <div className="text-base md:text-lg font-semibold text-center">No messages yet. Start the conversation!</div>
+        </div>
+      );
+    }
+
+    return messages.map(msg => {
+      const isOwnMessage = msg.sender_id === user?.id;
+      return (
+        <div
+          key={msg.message_id || msg.id}
+          className={classNames(
+            "max-w-[85%] md:max-w-[70%] px-4 md:px-5 py-3 rounded-2xl text-sm shadow-sm",
+            isOwnMessage
+              ? "bg-[#2d2d2d] text-white self-end rounded-br-md"
+              : "bg-[#1a1a1a] text-white self-start rounded-bl-md"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-xs">
+              {isOwnMessage ? 'You' : `${selectedChatUser?.first_name} ${selectedChatUser?.last_name}`}
+            </span>
+            <span className="text-[10px] text-gray-400 ml-2">
+              {formatMessageTime(msg.created_at || msg.timestamp || msg.sent_at)}
+            </span>
+          </div>
+          
+          {/* Message content - only show if it's not the default file attachment text */}
+          {msg.content && msg.content !== '[File attachment]' && (
+            <div className="text-sm md:text-base break-words mb-2">{msg.content}</div>
+          )}
+          
+          {/* Files display */}
+          {msg.files && msg.files.length > 0 && (
+            <div className="space-y-2">
+              {msg.files.map((file, index) => (
+                <div key={file.id || file.file_id || index} className="rounded-lg overflow-hidden">
+                  {file.type?.startsWith('image/') ? (
+                    <div className="group relative cursor-pointer">
+                      <ImagePreview
+                        src={file.url}
+                        alt={file.name || 'Attached image'}
+                        className="w-full"
+                        fileId={file.id}
+                      />
+                      {/* Overlay with actions */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => window.open(file.url, '_blank')}
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                            title="Open in new tab"
+                          >
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </button>
+                          <a
+                            href={file.url}
+                            download={file.name}
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                            title="Download"
+                          >
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <a 
+                      href={file.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="flex items-center gap-2 bg-black/20 p-2 rounded-lg hover:bg-black/30 transition-colors"
+                    >
+                      <FaPaperclip className="w-4 h-4 text-orange-500" />
+                      <span className="text-sm flex-1 truncate">
+                        {file.name || 'Attached file'}
+                      </span>
+                      {file.size && (
+                        <span className="text-xs text-gray-400">
+                          ({(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                      )}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  // Update handleSendMessage to include better file handling
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if ((!messageInput.trim() && !fileInput) || !selectedChat) return;
 
-    const formData = new FormData();
-    formData.append('content', messageInput);
+    // Validate file if present
     if (fileInput) {
-      formData.append('file', fileInput);
+      const validation = validateFile(fileInput);
+      if (!validation.valid) {
+        setError(validation.error);
+        return;
+      }
+    }
+
+    const formData = new FormData();
+    
+    // Only add content if there's actual text
+    if (messageInput.trim()) {
+      formData.append('content', messageInput.trim());
+    }
+    
+    // Add file if present
+    if (fileInput) {
+      try {
+        formData.append('file', fileInput);
+        formData.append('filename', fileInput.name);
+        formData.append('filetype', fileInput.type);
+        formData.append('filesize', fileInput.size.toString());
+        
+        // If no text content, add a placeholder
+        if (!messageInput.trim()) {
+          formData.append('content', '[File attachment]');
+        }
+      } catch (error) {
+        console.error('Error processing file:', error);
+        setError('Error processing file. Please try again.');
+        return;
+      }
     }
 
     try {
       setLoading(true);
-      await api.post(`/messages/${selectedChat}`, formData, {
+      
+      // Log formData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData:', pair[0], pair[1]);
+      }
+
+      const response = await api.post(`/messages/${selectedChat}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 seconds
+        maxContentLength: MAX_FILE_SIZE + 1000, // File size + some extra for metadata
       });
+
+      console.log('Message sent response:', response.data);
+
+      // Clear inputs
       setMessageInput('');
       setFileInput(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      // Re-fetch messages after sending
-      fetchMessages(selectedChat);
+
+      // Clear caches to ensure fresh data after sending
+      clearCaches(true);
+
+      // Fetch updated messages
+      await fetchMessages(selectedChat, true);
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.error === 'A message request is already pending') {
+      console.error('Error sending message:', err);
+      
+      if (err.response?.status === 413) {
+        setError('File is too large. Please upload a file smaller than 5MB.');
+      } else if (err.response?.status === 415) {
+        setError('File type not supported. Please upload images, PDFs, Word documents, or text files.');
+      } else if (err.response?.data?.error === 'A message request is already pending') {
         setError('You already have a pending message request with this user. Please wait for them to respond.');
+      } else if (err.code === 'ECONNABORTED') {
+        setError('Upload timed out. Please try again with a smaller file.');
+      } else if (err.response?.data?.sqlMessage?.includes("'content' cannot be null")) {
+        // This shouldn't happen now, but keep the check just in case
+        setError('Message content is required. Please try again.');
       } else {
-        setError('Failed to send message');
+        setError('Failed to send message. Please try again.');
       }
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -198,9 +569,25 @@ function Messages() {
   const handleRequestAction = async (requestId, action) => {
     try {
       await api.post(`/messages/requests/${requestId}/${action}`);
+      
+      // Remove from requests list
       setRequests(prev => prev.filter(req => req.id !== requestId));
+      
+      // If approved, refresh conversations and clear selected request state
       if (action === 'approve') {
-        fetchConversations();
+        await fetchConversations();
+        // Clear the selected request state to hide buttons
+        setSelectedRequest(null);
+        // Refresh messages for the current chat
+        if (selectedChat) {
+          await fetchMessages(selectedChat, true);
+        }
+      } else {
+        // If rejected, also clear the chat selection
+        setSelectedChat(null);
+        setSelectedChatUser(null);
+        setSelectedRequest(null);
+        setMessages([]);
       }
     } catch (err) {
       setError(`Failed to ${action} request`);
@@ -318,11 +705,29 @@ function Messages() {
     setUser({ ...user, status: newStatus });
   };
 
+  // Helper function to clear caches when needed (less aggressive)
+  const clearCaches = (clearAll = false) => {
+    if (clearAll) {
+      urlCache.current.clear();
+      messagesCache.current.clear();
+      console.log('All caches cleared');
+    } else {
+      // Only clear messages cache, keep URL cache for stability
+      messagesCache.current.clear();
+      console.log('Messages cache cleared');
+    }
+  };
+
   // Update the user selection handler to fetch user info if not present
   const handleSelectChat = async (userId) => {
     if (!userId) {
       console.error('No user ID provided to handleSelectChat');
       return;
+    }
+    
+    // Clear caches when switching to a different chat
+    if (selectedChat !== userId) {
+      clearCaches(true); // Only clear all caches when switching chats
     }
     
     setSelectedChat(userId);
@@ -360,6 +765,194 @@ function Messages() {
     }
     setSelectedChatUser(userObj);
   };
+
+  // Refactor chatUser logic to always find the correct user
+  const chatUser = selectedChat
+    ? conversations.find(c => c.id === selectedChat)
+      || searchResults.find(u => u.id === selectedChat)
+      || selectedChatUser
+    : null;
+
+  // Check if current chat is a pending request
+  const isPendingRequest = () => {
+    // Check if we're in requests view and have a selected request
+    if (selectedCategory === 'requests' && selectedRequest && selectedRequest.status === 'pending') {
+      return true;
+    }
+    
+    // Check if the selected chat has a pending request status
+    const conversation = conversations.find(c => c.id === selectedChat);
+    if (conversation && conversation.last_request_status === 'pending') {
+      return true;
+    }
+    
+    // Check if there's a pending request for this user in the requests list
+    const pendingRequest = requests.find(r => 
+      (r.sender_id === selectedChat || r.receiver_id === selectedChat) && 
+      r.status === 'pending'
+    );
+    
+    return !!pendingRequest;
+  };
+
+  // Get the current pending request data
+  const getCurrentPendingRequest = () => {
+    if (selectedCategory === 'requests' && selectedRequest && selectedRequest.status === 'pending') {
+      return selectedRequest;
+    }
+    
+    return requests.find(r => 
+      (r.sender_id === selectedChat || r.receiver_id === selectedChat) && 
+      r.status === 'pending'
+    );
+  };
+
+  const isRequest = selectedCategory === 'requests' && selectedRequest && selectedRequest.status === 'pending';
+  const currentPendingRequest = getCurrentPendingRequest();
+  const showAcceptDecline = isPendingRequest() && user.id === (currentPendingRequest?.receiver_id);
+
+  // Helper: Get shared files from messages
+  const sharedFiles = messages
+    .flatMap(msg => msg.files || [])
+    .filter((file, idx, arr) => file && arr.findIndex(f => f.id === file.id) === idx);
+
+  // Add a helper function for formatting dates
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    try {
+      // Handle different timestamp formats
+      const date = new Date(timestamp);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date:', timestamp);
+        return '';
+      }
+      
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      
+      if (isToday) {
+        return date.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+      } else {
+        return date.toLocaleDateString([], {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+
+  // Filter conversations by selected category
+  const filteredConversations = selectedCategory === 'all'
+    ? conversations
+    : conversations.filter(c => c.category_id === selectedCategory);
+
+  // Helper to get robust boolean state
+  const getBool = val => val === true || val === 1 || val === '1';
+
+  let chatsToShow = filteredConversations;
+  if (selectedCategory === 'requests') {
+    chatsToShow = requests.map(req => ({
+      ...req,
+      id: req.sender_id, // Use sender_id as the ID for requests
+      first_name: req.first_name,
+      last_name: req.last_name,
+      profile_picture_url: req.profile_picture_url,
+      last_message: req.intro_message || req.content,
+      last_message_time: req.sent_at,
+      last_request_status: 'pending'
+    }));
+  } else if (selectedCategory === 'archived') {
+    chatsToShow = conversations.filter(c => getBool(c.archived));
+  } else if (selectedCategory !== 'all') {
+    chatsToShow = conversations.filter(c => c.category_id === selectedCategory);
+  } else {
+    chatsToShow = conversations;
+  }
+  console.log('chatsToShow:', chatsToShow); // DEBUG
+
+  // Real-time polling for messages and conversations
+  useEffect(() => {
+    let messagePollingInterval;
+    let conversationPollingInterval;
+    
+    if (user && token) {
+      // Poll for new messages every 5 seconds when a chat is selected (reduced frequency)
+      if (selectedChat) {
+        messagePollingInterval = setInterval(() => {
+          fetchMessages(selectedChat);
+        }, 5000);
+      }
+      
+      // Poll for conversation updates every 15 seconds (reduced frequency)
+      conversationPollingInterval = setInterval(() => {
+        fetchConversations();
+        fetchRequests();
+      }, 15000);
+    }
+    
+    // Cleanup intervals
+    return () => {
+      if (messagePollingInterval) clearInterval(messagePollingInterval);
+      if (conversationPollingInterval) clearInterval(conversationPollingInterval);
+    };
+  }, [selectedChat, user, token]);
+
+  // Focus-based polling - poll more frequently when window is focused
+  useEffect(() => {
+    let focusPollingInterval;
+    
+    const handleFocus = () => {
+      if (user && token) {
+        // Immediate refresh when window gains focus
+        fetchConversations();
+        fetchRequests();
+        if (selectedChat) {
+          fetchMessages(selectedChat, true); // Force update when window gains focus
+        }
+        
+        // More frequent polling when focused (every 4 seconds - less aggressive)
+        focusPollingInterval = setInterval(() => {
+          if (selectedChat) {
+            fetchMessages(selectedChat); // Don't force update during polling
+          }
+          fetchConversations();
+        }, 4000);
+      }
+    };
+    
+    const handleBlur = () => {
+      if (focusPollingInterval) {
+        clearInterval(focusPollingInterval);
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    // Start focused polling if already focused
+    if (document.hasFocus()) {
+      handleFocus();
+    }
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      if (focusPollingInterval) clearInterval(focusPollingInterval);
+    };
+  }, [selectedChat, user, token]);
 
   // Effects
   useEffect(() => {
@@ -419,64 +1012,6 @@ function Messages() {
     }
   }, [selectedCategory]);
 
-  // Refactor chatUser logic to always find the correct user
-  const chatUser = selectedChat
-    ? conversations.find(c => c.id === selectedChat)
-      || searchResults.find(u => u.id === selectedChat)
-      || selectedChatUser
-    : null;
-
-  const isRequest = selectedCategory === 'requests' && selectedRequest && selectedRequest.status === 'pending';
-
-  // Helper: Get shared files from messages
-  const sharedFiles = messages
-    .flatMap(msg => msg.files || [])
-    .filter((file, idx, arr) => file && arr.findIndex(f => f.id === file.id) === idx);
-
-  // Helper: Format last message time
-  function formatLastMessageTime(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    if (isToday) {
-      // Show only time, no milliseconds
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      // Show only date
-      return date.toLocaleDateString();
-    }
-  }
-
-  // Filter conversations by selected category
-  const filteredConversations = selectedCategory === 'all'
-    ? conversations
-    : conversations.filter(c => c.category_id === selectedCategory);
-
-  // Helper to get robust boolean state
-  const getBool = val => val === true || val === 1 || val === '1';
-
-  let chatsToShow = filteredConversations;
-  if (selectedCategory === 'requests') {
-    chatsToShow = requests.map(req => ({
-      ...req,
-      id: req.sender_id, // Use sender_id as the ID for requests
-      first_name: req.first_name,
-      last_name: req.last_name,
-      profile_picture_url: req.profile_picture_url,
-      last_message: req.intro_message || req.content,
-      last_message_time: req.sent_at,
-      last_request_status: 'pending'
-    }));
-  } else if (selectedCategory === 'archived') {
-    chatsToShow = conversations.filter(c => getBool(c.archived));
-  } else if (selectedCategory !== 'all') {
-    chatsToShow = conversations.filter(c => c.category_id === selectedCategory);
-  } else {
-    chatsToShow = conversations;
-  }
-  console.log('chatsToShow:', chatsToShow); // DEBUG
-
   if (storageError) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -494,7 +1029,7 @@ function Messages() {
   return (
     <div className="trk-messages-page min-h-screen bg-white dark:bg-[#181818] flex flex-col w-full h-screen p-2 md:p-6">
       {/* Back Button */}
-      <div className="mb-4">
+      <div className="sticky top-0 z-20 bg-white dark:bg-[#181818] px-4 py-3 md:p-6 mb-2 md:mb-4 shadow-sm hidden md:block">
         <button
           onClick={() => {
             if (user?.role === 'entrepreneur') {
@@ -507,10 +1042,10 @@ function Messages() {
               navigate('/');
             }
           }}
-          className="flex items-center gap-2 text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+          className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 font-medium md:font-semibold transition-colors rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 py-1.5 px-2 -ml-2"
         >
-          <FaArrowLeft size={16} />
-          <span>Back to {user?.role === 'entrepreneur' ? 'Dashboard' : user?.role === 'investor' ? 'Dashboard' : user?.role === 'admin' ? 'Admin' : 'Home'}</span>
+          <FaArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+          <span className="text-sm md:text-base">Back to {user?.role === 'entrepreneur' ? 'Dashboard' : user?.role === 'investor' ? 'Dashboard' : user?.role === 'admin' ? 'Admin' : 'Home'}</span>
         </button>
       </div>
       
@@ -573,23 +1108,23 @@ function Messages() {
           </button>
         </aside>
         {/* Chat List Sidebar - responsive width */}
-        <aside className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-white dark:bg-[#181818] flex-col items-center py-4 md:py-8 px-2 md:px-4 h-full rounded-2xl shadow-xl border border-gray-200 dark:border-none`}>
+        <aside className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-white dark:bg-[#181818] flex-col items-center py-2 md:py-8 px-2 md:px-4 h-full rounded-2xl shadow-xl border border-gray-200 dark:border-none`}>
           {/* Mobile category tabs */}
-          <div className="md:hidden w-full flex gap-1 mb-4 px-2">
+          <div className="md:hidden w-full flex gap-1 mb-3 px-1">
             <button
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              className={`flex-1 px-3 py-2.5 rounded-xl text-sm font-medium ${selectedCategory === 'all' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-[#2d2d2d] text-gray-600 dark:text-gray-400'}`}
               onClick={() => { setSelectedCategory('all'); setShowArchived(false); }}
             >
               All
             </button>
             <button
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'requests' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              className={`flex-1 px-3 py-2.5 rounded-xl text-sm font-medium ${selectedCategory === 'requests' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-[#2d2d2d] text-gray-600 dark:text-gray-400'}`}
               onClick={() => { setSelectedCategory('requests'); setShowArchived(false); }}
             >
               Requests
             </button>
             <button
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${selectedCategory === 'archived' ? 'bg-orange-500 text-white' : 'bg-[#2d2d2d] text-gray-400'}`}
+              className={`flex-1 px-3 py-2.5 rounded-xl text-sm font-medium ${selectedCategory === 'archived' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-[#2d2d2d] text-gray-600 dark:text-gray-400'}`}
               onClick={() => { setSelectedCategory('archived'); setShowArchived(true); }}
             >
               Archived
@@ -629,10 +1164,10 @@ function Messages() {
             </div>
           </div>
           {/* Search */}
-          <form onSubmit={handleSearch} className="w-full mb-4">
+          <form onSubmit={handleSearch} className="w-full mb-3 px-1">
             <div className="relative">
               <input
-                className="w-full rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 pl-4 pr-10 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2.5 pl-10 pr-4 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm shadow-sm"
                 placeholder="Search chats..."
                 value={search}
                 onChange={e => { setSearch(e.target.value); console.log('Input changed:', e.target.value); }}
@@ -643,7 +1178,7 @@ function Messages() {
               />
               <button 
                 type="submit" 
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                 disabled={loading}
                 id="search-submit-btn"
               >
@@ -653,13 +1188,13 @@ function Messages() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <FaSearch />
+                  <FaSearch className="w-4 h-4" />
                 )}
               </button>
             </div>
           </form>
           {/* Search Results or Chat List */}
-          <div className="flex-1 w-full overflow-y-auto">
+          <div className="flex-1 w-full overflow-y-auto px-1">
             {search && (searchResults.length > 0 || searchResults.length === 0) ? (
               <>
                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 pt-2 pb-1 font-semibold uppercase tracking-wide">Search results</div>
@@ -707,8 +1242,8 @@ function Messages() {
                         )}
                         onClick={() => conv.id && handleSelectChat(conv.id)}
                       >
-                        <div className="w-full flex items-center gap-3 px-3 py-3 md:py-2 rounded-2xl mb-1 transition text-left">
-                          <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
+                        <div className="w-full flex items-start gap-3 px-3 py-3 md:py-2 rounded-2xl mb-1 transition text-left">
+                          <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden flex-shrink-0">
                             {conv.profile_picture_url ? (
                               <img src={conv.profile_picture_url} alt={`${conv.first_name} ${conv.last_name}`} className="w-10 h-10 rounded-full object-cover" />
                             ) : (
@@ -716,16 +1251,22 @@ function Messages() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-trkblack dark:text-white truncate text-sm">{conv.first_name} {conv.last_name}</div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <div className="font-semibold text-trkblack dark:text-white truncate text-sm">
+                                {conv.first_name} {conv.last_name}
+                              </div>
+                              {conv.last_request_status === 'pending' && (
+                                <span className="px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold whitespace-nowrap">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {lastMsgPrefix}{conv.last_message}
                             </div>
                           </div>
-                          {conv.last_request_status === 'pending' && (
-                            <span className="ml-2 px-2 py-0.5 text-xs bg-orange-200 text-orange-800 rounded-full font-semibold">Pending</span>
-                          )}
-                          <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                            {formatLastMessageTime(conv.last_message_time)}
+                          <div className="text-xs text-gray-400 whitespace-nowrap self-start mt-0.5">
+                            {formatMessageTime(conv.last_message_time)}
                           </div>
                         </div>
                       </div>
@@ -741,46 +1282,60 @@ function Messages() {
           {selectedChat && chatUser ? (
             <>
               {/* Chat Header */}
-              <div className="flex items-center gap-3 px-4 md:px-8 py-4 md:py-5 border-b border-trkblack/10 dark:border-white/10 bg-[#232323] dark:bg-[#232323] rounded-t-2xl">
+              <div className="flex items-center gap-3 px-4 md:px-8 py-3 md:py-5 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#232323] rounded-t-2xl shadow-sm">
                 {/* Mobile back button */}
                 <button 
-                  className="md:hidden p-2 text-gray-400 hover:text-orange-500"
-                  onClick={() => setSelectedChat(null)}
+                  className="md:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                  onClick={() => {
+                    setSelectedChat(null);
+                    setSelectedChatUser(null);
+                    setSelectedRequest(null);
+                    setMessages([]);
+                    setShowInfoSidebar(true); // Reset sidebar state
+                    // Update URL to remove chat_with parameter
+                    const newSearchParams = new URLSearchParams(searchParams);
+                    newSearchParams.delete('chat_with');
+                    setSearchParams(newSearchParams);
+                  }}
                 >
-                  <FaArrowLeft size={20} />
+                  <FaArrowLeft className="w-4 h-4" />
                 </button>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-600 overflow-hidden">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 overflow-hidden">
                   {chatUser.profile_picture_url || chatUser.profile_image ? (
-                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-orange-500" />
+                    <img src={chatUser.profile_picture_url || chatUser.profile_image} alt={`${chatUser.first_name} ${chatUser.last_name}`} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" />
                   ) : (
-                    <FaUser size={20} className="md:w-7 md:h-7" />
+                    <FaUser className="w-5 h-5 md:w-6 md:h-6" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-trkblack dark:text-white text-base md:text-lg truncate">{chatUser.first_name} {chatUser.last_name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${chatUser.status === 'online' ? 'bg-green-500' : chatUser.status === 'invisible' ? 'bg-gray-400' : 'bg-red-500'}`}></span>
                     {chatUser.status === 'invisible' ? 'Offline' : (chatUser.status ? (chatUser.status.charAt(0).toUpperCase() + chatUser.status.slice(1)) : 'Online')}
                   </div>
                 </div>
-                {/* Accept/Decline for pending requests (recipient only) */}
-                {isRequest && user.id === selectedRequest.receiver_id && (
-                  <div className="flex gap-2">
+                {/* Accept/Decline for pending requests (recipient only) - Show in all views */}
+                {showAcceptDecline && (
+                  <div className="flex gap-1.5">
                     <button
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg font-semibold text-sm"
-                      onClick={() => handleRequestAction(selectedRequest.sender_id, 'approve')}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-2 rounded-xl font-medium text-sm shadow-sm"
+                      onClick={() => handleRequestAction(currentPendingRequest?.sender_id || selectedChat, 'approve')}
                     >
-                      ✔ Accept
+                      Accept
                     </button>
                     <button
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 md:px-4 py-2 rounded-lg font-semibold text-sm"
-                      onClick={() => handleRequestAction(selectedRequest.sender_id, 'reject')}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 md:px-4 py-2 rounded-xl font-medium text-sm shadow-sm"
+                      onClick={() => handleRequestAction(currentPendingRequest?.sender_id || selectedChat, 'reject')}
                     >
-                      ❌ Decline
+                      Decline
                     </button>
                   </div>
                 )}
-                <button className="text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-full p-2" onClick={() => setShowInfoSidebar(v => !v)}>
-                  <FaInfoCircle size={20} className="md:w-6 md:h-6" />
+                <button 
+                  className="text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg p-2" 
+                  onClick={() => setShowInfoSidebar(v => !v)}
+                >
+                  <FaInfoCircle className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </div>
               {/* Main chat area: show request UI only for requests, otherwise show messages */}
@@ -797,66 +1352,50 @@ function Messages() {
                 <>
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 flex flex-col gap-4 bg-[#f5f6fa] dark:bg-[#181818]">
-                    {messages.length === 0 ? (
-                      <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 flex-col gap-2">
-                        <FaUserCircle size={40} className="md:w-15 md:h-15 mb-2 text-orange-500" />
-                        <div className="text-base md:text-lg font-semibold text-center">No messages yet. Start the conversation!</div>
-                      </div>
-                    ) : (
-                      messages.map(msg => (
-                        <div
-                          key={msg.message_id || msg.id}
-                          className={classNames(
-                            "max-w-[85%] md:max-w-[70%] px-4 md:px-5 py-3 rounded-2xl text-sm shadow-sm",
-                            msg.sender_id === user.id
-                              ? "bg-[#2d2d2d] text-white self-end rounded-br-md"
-                              : "bg-[#1a1a1a] text-white self-start rounded-bl-md"
-                          )}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-xs">
-                              {msg.sender_id === user.id ? 'You' : `${chatUser?.first_name} ${chatUser?.last_name}`}
-                            </span>
-                            <span className="text-[10px] text-gray-400 ml-2">{msg.time || ''}</span>
-                          </div>
-                          <div className="text-sm md:text-base">{msg.content}</div>
-                          {msg.files?.map(file => (
-                            <div key={file.id || file.file_id} className="mt-2">
-                              {file.type && file.type.startsWith('image/') ? (
-                                <img src={file.url} alt={file.name} className="max-w-[150px] md:max-w-[200px] rounded-lg" />
-                              ) : (
-                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline flex items-center gap-1">
-                                  <FaPaperclip className="inline" />
-                                  {file.name}
-                                </a>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))
-                    )}
+                    {renderMessages()}
                     <div ref={messagesEndRef} />
                   </div>
                   {/* Message Input */}
-                  <form className="flex items-center gap-2 px-4 md:px-8 py-4 md:py-5 border-t border-trkblack/10 dark:border-white/10 bg-white dark:bg-[#232323]" onSubmit={handleSendMessage}>
-                    <label className="cursor-pointer text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900 rounded p-2">
-                      <FaPaperclip size={18} className="md:w-5 md:h-5" />
+                  <form className="flex flex-col px-3 md:px-8 py-3 md:py-5 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-[#232323] rounded-b-2xl" onSubmit={handleSendMessage}>
+                    {fileInput && <ImagePreview src={URL.createObjectURL(fileInput)} alt={fileInput.name} className="w-full" fileId={fileInput.id} />}
+                    <div className="flex items-center gap-2 mt-2">
+                      <label className="cursor-pointer text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg p-2">
+                        <FaPaperclip className="w-5 h-5" />
+                        <input
+                          type="file"
+                          className="hidden"
+                          ref={fileInputRef}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const validation = validateFile(file);
+                              if (!validation.valid) {
+                                setError(validation.error);
+                                e.target.value = ''; // Clear the input
+                                return;
+                              }
+                              setFileInput(file);
+                            }
+                          }}
+                          accept={ALLOWED_FILE_TYPES.join(',')}
+                        />
+                      </label>
                       <input
-                        type="file"
-                        className="hidden"
-                        ref={fileInputRef}
-                        onChange={e => setFileInput(e.target.files[0])}
+                        className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2.5 px-4 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm shadow-sm"
+                        placeholder="Write your message..."
+                        value={messageInput}
+                        onChange={e => setMessageInput(e.target.value)}
                       />
-                    </label>
-                    <input
-                      className="flex-1 rounded-xl border border-trkblack/10 dark:border-white/10 bg-gray-50 dark:bg-[#232323] py-2 md:py-3 px-3 md:px-5 text-trkblack dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm md:text-base"
-                      placeholder="Write your message..."
-                      value={messageInput}
-                      onChange={e => setMessageInput(e.target.value)}
-                    />
-                    <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow">
-                      <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    </button>
+                      <button 
+                        type="submit" 
+                        className={`rounded-xl px-4 py-2.5 font-medium shadow-sm transition-colors ${messageInput.trim() || fileInput ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+                        disabled={!messageInput.trim() && !fileInput}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                    </div>
                   </form>
                 </>
               )}
@@ -948,6 +1487,6 @@ function Messages() {
       )}
     </div>
   );
-}
+};
 
 export default Messages; 

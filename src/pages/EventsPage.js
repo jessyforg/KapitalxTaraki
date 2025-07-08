@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendar } from 'react-icons/fa';
 import Calendar from "react-calendar";
 import 'react-calendar/dist/Calendar.css';
 import eventImg1 from '../components/imgs/rc1.webp';
@@ -38,6 +38,11 @@ function EventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(window.innerWidth >= 768); // Show calendar by default on desktop
+  // Add new state for day events modal
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+  const [showDayEventsModal, setShowDayEventsModal] = useState(false);
 
   const handleBack = () => {
     if (user?.role === 'entrepreneur') {
@@ -199,6 +204,29 @@ function EventsPage() {
     past: events.filter(e => e.status === 'completed' || e.status === 'past').length
   };
 
+  // Function to handle date click
+  const handleDateClick = (date) => {
+    if (!date) return;
+    const dateStr = date.toISOString().split('T')[0];
+    const dayEvents = events.filter(event => {
+      const eventDate = new Date(event.event_date);
+      return eventDate.toISOString().split('T')[0] === dateStr;
+    });
+    
+    if (dayEvents.length > 0) {
+      setSelectedDate(date);
+      setSelectedDateEvents(dayEvents);
+      setShowDayEventsModal(true);
+    }
+  };
+
+  // Function to format time
+  const formatEventTime = (startTime, endTime) => {
+    if (!startTime) return '';
+    const formattedStart = formatTime(startTime);
+    return endTime ? `${formattedStart} - ${formatTime(endTime)}` : formattedStart;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18191a]">
       <Navbar hideNavLinks />
@@ -221,21 +249,36 @@ function EventsPage() {
             <div className="w-full max-w-full bg-white dark:bg-[#232526] rounded-2xl shadow-xl flex flex-col md:flex-row p-4 md:p-8 lg:p-12 mt-0 md:mt-0 border border-gray-100 dark:border-gray-700">
               {/* Left: Filters, Tabs, Event List */}
               <div className="flex-[1_1_0%] md:pr-12">
-                <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
-                  <select
-                    className="border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-black dark:text-white focus:outline-none bg-gray-50 dark:bg-[#18191a]"
-                    value={filter}
-                    onChange={e => setFilter(e.target.value)}
-                  >
-                    <option>All Events</option>
-                    {/* Optionally, dynamically generate tag options from events */}
-                    {Array.from(new Set(events.flatMap(e => e.tags))).filter(Boolean).map(tag => (
-                      <option key={tag}>{tag}</option>
-                    ))}
-                  </select>
-                  <button className="bg-[#ea580c] text-white px-4 py-2 rounded ml-0 sm:ml-2 font-semibold shadow hover:bg-orange-700 transition">Filter</button>
-                  <div className="flex-1"></div>
-                  <div className="flex gap-2 mt-2 sm:mt-0 flex-wrap">
+                <div className="flex flex-col gap-4 mb-8">
+                  {/* Filter row */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 flex-1 md:flex-initial">
+                      <select
+                        className="flex-1 md:flex-initial border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-black dark:text-white focus:outline-none bg-gray-50 dark:bg-[#18191a]"
+                        value={filter}
+                        onChange={e => setFilter(e.target.value)}
+                      >
+                        <option>All Events</option>
+                        {Array.from(new Set(events.flatMap(e => e.tags))).filter(Boolean).map(tag => (
+                          <option key={tag}>{tag}</option>
+                        ))}
+                      </select>
+                      <button className="bg-[#ea580c] text-white px-4 py-2 rounded font-semibold shadow hover:bg-orange-700 transition whitespace-nowrap">
+                        Filter
+                      </button>
+                    </div>
+                    {/* Calendar toggle for mobile */}
+                    <button
+                      className="md:hidden flex items-center gap-2 px-4 py-2 rounded bg-gray-100 dark:bg-[#333] text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-[#444] transition"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                    >
+                      <FaCalendar />
+                      {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
+                    </button>
+                  </div>
+                  
+                  {/* Event type tabs */}
+                  <div className="flex flex-wrap gap-2">
                     <button
                       className={`px-4 py-2 rounded font-semibold transition flex items-center gap-2 ${tab === 'upcoming' ? 'bg-[#ea580c] text-white shadow' : 'bg-gray-100 dark:bg-[#232526] text-black dark:text-white hover:bg-orange-50 dark:hover:bg-[#333]'}`}
                       onClick={() => setTab('upcoming')}
@@ -339,13 +382,22 @@ function EventsPage() {
                   )}
                 </div>
               </div>
-              {/* Right: Calendar */}
-              <div className="w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center">
+              {/* Right: Calendar - Now toggleable on mobile */}
+              <div className={`w-full md:w-96 mt-8 md:mt-0 flex flex-col items-center transition-all duration-300 ${showCalendar ? 'block' : 'hidden md:block'}`}>
                 <div className="bg-white dark:bg-[#232526] rounded-lg shadow border border-[#ea580c]/30 p-4 w-full calendar-theme-fix">
                   <Calendar
                     value={calendarDate}
                     onChange={setCalendarDate}
                     tileContent={tileContent}
+                    onClickDay={handleDateClick}
+                    tileClassName={({ date }) => {
+                      const dateStr = date.toISOString().split('T')[0];
+                      const hasEvents = events.some(event => {
+                        const eventDate = new Date(event.event_date);
+                        return eventDate.toISOString().split('T')[0] === dateStr;
+                      });
+                      return hasEvents ? 'cursor-pointer hover:bg-orange-50 dark:hover:bg-[#2a2b2c]' : '';
+                    }}
                   />
                 </div>
                 
@@ -374,6 +426,82 @@ function EventsPage() {
           </div>
         </div>
       </div>
+      {/* Day Events Modal */}
+      {showDayEventsModal && selectedDate && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-[#232526] w-full md:w-[480px] rounded-t-2xl md:rounded-2xl shadow-xl animate-slideUp md:animate-fadeIn">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-[#ea580c]">
+                {selectedDate.toLocaleDateString(undefined, { 
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </h3>
+              <button
+                onClick={() => setShowDayEventsModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <FaArrowLeft className="rotate-90 md:rotate-0" size={20} />
+              </button>
+            </div>
+            <div className="p-4 max-h-[70vh] overflow-y-auto">
+              {selectedDateEvents.map(event => (
+                <div 
+                  key={event.id}
+                  className="mb-4 last:mb-0 p-4 bg-orange-50/50 dark:bg-[#2a2a2a] rounded-lg border border-orange-100 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-[#2d2d2d] transition-colors cursor-pointer"
+                  onClick={() => {
+                    setSelectedEvent(event);
+                    setModalOpen(true);
+                    setShowDayEventsModal(false);
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-[#ea580c] dark:text-orange-400">{event.title}</h4>
+                    {event.status === 'ongoing' && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold animate-pulse flex items-center gap-1">
+                        <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                        LIVE
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {event.time && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-4 h-4 text-[#ea580c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{event.time}</span>
+                      </div>
+                    )}
+                    {event.venue && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-4 h-4 text-[#ea580c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{event.venue}</span>
+                      </div>
+                    )}
+                  </div>
+                  {event.tags && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {event.tags.map((tag, idx) => (
+                        <span 
+                          key={idx}
+                          className="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Event Details Modal */}
       {modalOpen && selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
