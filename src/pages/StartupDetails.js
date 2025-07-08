@@ -10,6 +10,17 @@ export default function StartupDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Helper function to convert string to title case with special handling for MVP
+  const toTitleCase = (str) => {
+    if (!str) return 'Not Provided';
+    return str.split(' ')
+      .map(word => {
+        if (word.toLowerCase() === 'mvp') return 'MVP';
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
   useEffect(() => {
     const fetchStartup = async () => {
       try {
@@ -53,7 +64,13 @@ export default function StartupDetails() {
                 <div className="text-gray-700 font-semibold mb-1">Industry: <span className="font-normal">{startup.industry || 'Not Provided'}</span></div>
                 <div className="text-gray-700 font-semibold mb-1">Location: <span className="font-normal">{startup.location || 'Not Provided'}</span></div>
                 <div className="text-gray-700 font-semibold mb-1">Funding Stage: <span className="font-normal">{startup.funding_stage || 'Not Provided'}</span></div>
-                <div className="text-gray-700 font-semibold mb-4">Startup Stage: <span className="font-normal">{startup.startup_stage || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-4">Business Plan: <span className="font-normal">
+                  {startup.business_plan_url ? (
+                    <a href={startup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>
+                  ) : (
+                    'Not Provided'
+                  )}
+                </span></div>
                 {startup.website ? (
                   <a href={startup.website} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors">Visit Website</a>
                 ) : (
@@ -67,7 +84,13 @@ export default function StartupDetails() {
             </div>
           </div>
           {/* Back button */}
-          <button onClick={() => navigate(-1)} className="absolute top-6 right-8 text-orange-600 hover:underline font-semibold">Back</button>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="absolute top-6 right-8 bg-orange-100 text-orange-600 hover:bg-orange-200 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+          >
+            <i className="fas fa-arrow-left text-sm"></i>
+            Back
+          </button>
         </div>
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -76,17 +99,13 @@ export default function StartupDetails() {
             <div className="text-2xl font-bold text-orange-600">{typeof startup.funding_needed === 'number' ? `₱${startup.funding_needed.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Not Provided'}</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
+            <div className="text-gray-500 text-sm mb-1">Startup Stage</div>
+            <div className="text-xl font-semibold text-orange-600">{toTitleCase(startup.startup_stage)}</div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
             <div className="text-gray-500 text-sm mb-1">Pitch Deck</div>
             {startup.pitch_deck_url ? (
               <a href={startup.pitch_deck_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View</a>
-            ) : (
-              <span className="text-gray-400">Not Provided</span>
-            )}
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow p-6 flex flex-col items-center">
-            <div className="text-gray-500 text-sm mb-1">Business Plan</div>
-            {startup.business_plan_url ? (
-              <a href={startup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">View</a>
             ) : (
               <span className="text-gray-400">Not Provided</span>
             )}
