@@ -416,11 +416,25 @@ export const enhanceUserForMatching = async (user, preferences = null, getUserPr
   let preferredIndustries = [];
   if (userPrefs?.preferred_industries) {
     try {
-      preferredIndustries = typeof userPrefs.preferred_industries === 'string' 
-        ? JSON.parse(userPrefs.preferred_industries) 
-        : userPrefs.preferred_industries;
+      if (typeof userPrefs.preferred_industries === 'string') {
+        // Only parse if it's a non-empty string that looks like JSON
+        const trimmed = userPrefs.preferred_industries.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']') && trimmed.length > 2) {
+          const parsed = JSON.parse(trimmed);
+          preferredIndustries = Array.isArray(parsed) ? parsed : [];
+        } else if (trimmed && !trimmed.startsWith('[')) {
+          // If it's not a JSON array, treat as single industry (clean any quotes)
+          const cleaned = trimmed.replace(/^["']|["']$/g, '');
+          if (cleaned && cleaned !== 'null' && cleaned !== 'undefined') {
+            preferredIndustries = [cleaned];
+          }
+        }
+      } else if (Array.isArray(userPrefs.preferred_industries)) {
+        preferredIndustries = userPrefs.preferred_industries;
+      }
     } catch (error) {
       console.warn('Error parsing preferred_industries:', error);
+      preferredIndustries = [];
     }
   }
   

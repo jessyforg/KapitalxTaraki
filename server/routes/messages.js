@@ -219,20 +219,70 @@ module.exports = (pool) => {
       const { userId } = req.params;
       const currentUserId = req.user.id;
       const query = `
-        SELECT m.*, mf.file_name, mf.file_path
+        SELECT m.*, 
+               mf.id as file_id,
+               mf.file_name, 
+               mf.file_path,
+               mf.file_size,
+               mf.mime_type
         FROM messages m
         LEFT JOIN message_files mf ON m.message_id = mf.message_id
         WHERE (m.sender_id = ? AND m.receiver_id = ?)
         OR (m.sender_id = ? AND m.receiver_id = ?)
         ORDER BY m.sent_at ASC`;
-      const [messages] = await pool.query(query, [
+      const [rows] = await pool.query(query, [
         currentUserId, userId, userId, currentUserId
       ]);
+      
+      // Group messages with their files
+      const messagesMap = new Map();
+      
+      rows.forEach(row => {
+        const messageId = row.message_id;
+        
+        if (!messagesMap.has(messageId)) {
+          messagesMap.set(messageId, {
+            message_id: row.message_id,
+            sender_id: row.sender_id,
+            receiver_id: row.receiver_id,
+            content: row.content,
+            sent_at: row.sent_at,
+            created_at: row.sent_at, // Alias for consistency
+            status: row.status,
+            request_status: row.request_status,
+            is_intro_message: row.is_intro_message,
+            files: []
+          });
+        }
+        
+        // Add file if it exists
+        if (row.file_id) {
+          const message = messagesMap.get(messageId);
+          const fileUrl = `/uploads/messages/${path.basename(row.file_path)}`;
+          
+          message.files.push({
+            id: row.file_id,
+            file_id: row.file_id,
+            name: row.file_name,
+            filename: row.file_name,
+            path: row.file_path,
+            url: fileUrl,
+            size: row.file_size || 0,
+            type: row.mime_type || 'application/octet-stream',
+            mimetype: row.mime_type || 'application/octet-stream'
+          });
+        }
+      });
+      
+      const messages = Array.from(messagesMap.values());
+      
       // Mark messages as read
       await pool.query(
         'UPDATE messages SET status = "read" WHERE receiver_id = ? AND sender_id = ? AND status = "unread"',
         [currentUserId, userId]
       );
+      
+      console.log('Fetched messages with files:', JSON.stringify(messages, null, 2));
       res.json(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -247,6 +297,7 @@ module.exports = (pool) => {
       const receiverId = req.params.userId;
       const content = req.body.content;
       const file = req.file;
+      
       // Debug log
       console.log('Send message debug:', {
         body: req.body,
@@ -254,11 +305,14 @@ module.exports = (pool) => {
         senderId,
         receiverId
       });
+      
       // Allow messages with either content or file
       if ((!content || !content.trim()) && !file) {
         return res.status(400).json({ error: 'Message content or file is required' });
       }
+      
       await pool.query('START TRANSACTION');
+      
       const [existingMessages] = await pool.query(
         `SELECT COUNT(*) as count FROM messages 
          WHERE ((sender_id = ? AND receiver_id = ?) 
@@ -266,17 +320,20 @@ module.exports = (pool) => {
          AND request_status = 'approved'`,
         [senderId, receiverId, receiverId, senderId]
       );
+      
       if (existingMessages[0].count > 0) {
         const [result] = await pool.query(
           'INSERT INTO messages (sender_id, receiver_id, content, request_status) VALUES (?, ?, ?, ?)',
-          [senderId, receiverId, content, 'approved']
+          [senderId, receiverId, content || '[File attachment]', 'approved']
         );
+        
         if (file) {
           await pool.query(
-            'INSERT INTO message_files (message_id, file_name, file_path) VALUES (?, ?, ?)',
-            [result.insertId, file.originalname, file.path]
+            'INSERT INTO message_files (message_id, file_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
+            [result.insertId, file.originalname, file.path, file.size, file.mimetype]
           );
         }
+        
         await pool.query('COMMIT');
         res.json({ message: 'Message sent successfully' });
       } else {
@@ -284,6 +341,7 @@ module.exports = (pool) => {
           'SELECT * FROM conversation_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)',
           [senderId, receiverId, receiverId, senderId]
         );
+        
         if (existingRequests.length > 0) {
           const request = existingRequests[0];
           if (request.status === 'pending') {
@@ -292,20 +350,24 @@ module.exports = (pool) => {
           }
           await pool.query('DELETE FROM conversation_requests WHERE request_id = ?', [request.request_id]);
         }
+        
         const [requestResult] = await pool.query(
           'INSERT INTO conversation_requests (sender_id, receiver_id) VALUES (?, ?)',
           [senderId, receiverId]
         );
+        
         const [messageResult] = await pool.query(
           'INSERT INTO messages (sender_id, receiver_id, content, is_intro_message, request_status) VALUES (?, ?, ?, TRUE, ?)',
-          [senderId, receiverId, content, 'pending']
+          [senderId, receiverId, content || '[File attachment]', 'pending']
         );
+        
         if (file) {
           await pool.query(
-            'INSERT INTO message_files (message_id, file_name, file_path) VALUES (?, ?, ?)',
-            [messageResult.insertId, file.originalname, file.path]
+            'INSERT INTO message_files (message_id, file_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
+            [messageResult.insertId, file.originalname, file.path, file.size, file.mimetype]
           );
         }
+        
         await pool.query('COMMIT');
         res.json({ message: 'Message request sent successfully' });
       }

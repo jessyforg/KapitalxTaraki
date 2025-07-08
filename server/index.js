@@ -37,14 +37,21 @@ const JWT_SECRET = "your-secret-key"; // In production, use environment variable
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
 	try {
+		let token = null;
+		
+		// First try to get token from Authorization header
 		const authHeader = req.headers["authorization"];
-		if (!authHeader) {
-			return res.status(401).json({ error: "No authorization header" });
+		if (authHeader) {
+			token = authHeader.split(" ")[1];
 		}
-
-		const token = authHeader.split(" ")[1];
+		
+		// If no token in header, try to get from query parameter (for file viewing/downloading)
+		if (!token && req.query.token) {
+			token = req.query.token;
+		}
+		
 		if (!token) {
-			return res.status(401).json({ error: "No token provided" });
+			return res.status(401).json({ error: "No authorization header or token provided" });
 		}
 
 		jwt.verify(token, JWT_SECRET, (err, decoded) => {
@@ -91,8 +98,12 @@ app.use("/api/users", userRouter);
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "uploads");
+const messagesUploadsDir = path.join(__dirname, "uploads", "messages");
 if (!fs.existsSync(uploadsDir)) {
 	fs.mkdirSync(uploadsDir);
+}
+if (!fs.existsSync(messagesUploadsDir)) {
+	fs.mkdirSync(messagesUploadsDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -804,10 +815,15 @@ app.get("/api/startups", authenticateToken, async (req, res) => {
 // Get all co-founders (exclude logged-in user)
 app.get("/api/users/cofounders", authenticateToken, async (req, res) => {
 	try {
+		console.log('Fetching cofounders for user:', req.user.id);
+		
 		// Only return entrepreneurs with verification_status = 'verified'
+		// Use COALESCE and IFNULL to handle NULL values gracefully
 		const [rows] = await pool.query(
 			`
-      SELECT u.*, up.preferred_location, up.preferred_industries, up.preferred_startup_stage
+      SELECT u.id, u.first_name, u.last_name, u.email, u.introduction, u.profile_image, 
+             u.industry, u.location, u.role, u.verification_status,
+             up.preferred_location, up.preferred_industries, up.preferred_startup_stage
       FROM users u
       LEFT JOIN user_preferences up ON u.id = up.user_id
       WHERE u.role = 'entrepreneur' 
@@ -817,42 +833,93 @@ app.get("/api/users/cofounders", authenticateToken, async (req, res) => {
     `,
 			[req.user.id]
 		);
+		
+		console.log('Found cofounders count:', rows.length);
+		console.log('Cofounders data:', rows.map(r => ({ 
+			id: r.id, 
+			name: `${r.first_name || ''} ${r.last_name || ''}`.trim(), 
+			role: r.role, 
+			verified: r.verification_status,
+			preferences: !!r.preferred_industries 
+		})));
 
-		// Fetch skills for each user
+		// Fetch skills for each user (gracefully handle if user_skills table doesn't exist)
 		const userIds = rows.map(u => u.id);
 		let skillsMap = {};
 		if (userIds.length > 0) {
-			const [skillsRows] = await pool.query(
-				`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
-				userIds
-			);
-			skillsMap = skillsRows.reduce((acc, skill) => {
-				if (!acc[skill.user_id]) acc[skill.user_id] = [];
-				acc[skill.user_id].push(skill.skill_name);
-				return acc;
-			}, {});
+			try {
+				const [skillsRows] = await pool.query(
+					`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
+					userIds
+				);
+				skillsMap = skillsRows.reduce((acc, skill) => {
+					if (!acc[skill.user_id]) acc[skill.user_id] = [];
+					acc[skill.user_id].push(skill.skill_name);
+					return acc;
+				}, {});
+				console.log('Skills map created:', Object.keys(skillsMap).length, 'users have skills');
+			} catch (skillsError) {
+				console.warn('user_skills table error, skipping skills:', skillsError.message);
+				skillsMap = {};
+			}
 		}
 
-		const cofounders = rows.map((u) => ({
-			id: u.id,
-			name: `${u.first_name} ${u.last_name}`,
-			email: u.email,
-			bio: u.introduction || "",
-			profile_image: u.profile_image || null,
-			industry: u.industry,
-			location: u.location,
-			preferred_location: u.preferred_location,
-			preferred_industries: u.preferred_industries
-				? JSON.parse(u.preferred_industries)
-				: [],
-			preferred_startup_stage: u.preferred_startup_stage,
-			skills: skillsMap[u.id] || [],
-		}));
+		const cofounders = rows.map((u) => {
+			// Handle double-encoded JSON for preferred_industries with more robust error handling
+			let preferredIndustries = [];
+			if (u.preferred_industries) {
+				try {
+					// Handle both single and double-encoded JSON
+					let parsed = u.preferred_industries;
+					if (typeof parsed === 'string') {
+						parsed = JSON.parse(parsed);
+						// If it's still a string after first parse, parse again (double-encoded)
+						if (typeof parsed === 'string') {
+							parsed = JSON.parse(parsed);
+						}
+					}
+					preferredIndustries = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+				} catch (e) {
+					console.warn(`Error parsing preferred_industries for user ${u.id}:`, e.message, 'Raw value:', u.preferred_industries);
+					preferredIndustries = [];
+				}
+			}
 
+			// Keep original database enum values - let frontend handle display mapping
+			let mappedStartupStage = u.preferred_startup_stage;
+
+			const result = {
+				id: u.id,
+				name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Anonymous User',
+				email: u.email || '',
+				bio: u.introduction || "",
+				profile_image: u.profile_image || null,
+				industry: u.industry || null,
+				location: u.location || null,
+				preferred_location: u.preferred_location || null,
+				preferred_industries: preferredIndustries,
+				preferred_startup_stage: mappedStartupStage || null,
+				skills: skillsMap[u.id] || [],
+				role: u.role || 'entrepreneur'
+			};
+
+			console.log(`Cofounder ${u.id} processed:`, {
+				name: result.name,
+				industry: result.industry,
+				preferred_industries: result.preferred_industries,
+				skills_count: result.skills.length
+			});
+
+			return result;
+		});
+
+		console.log('Successfully processed', cofounders.length, 'cofounders');
 		res.json(cofounders);
 	} catch (error) {
 		console.error("Error fetching co-founders:", error);
-		res.status(500).json({ error: "Internal server error" });
+		console.error("Error details:", error.message);
+		console.error("Error stack:", error.stack);
+		res.status(500).json({ error: "Internal server error", details: error.message });
 	}
 });
 
@@ -871,41 +938,62 @@ app.get("/api/users/role/investor", authenticateToken, async (req, res) => {
       AND u.show_in_search = 1
     `);
 
-		// Fetch skills for each investor
+		// Fetch skills for each investor (gracefully handle if user_skills table doesn't exist)
 		const investorIds = rows.map(u => u.id);
 		let skillsMap = {};
 		if (investorIds.length > 0) {
-			const [skillsRows] = await pool.query(
-				`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${investorIds.map(() => '?').join(',')})`,
-				investorIds
-			);
-			skillsMap = skillsRows.reduce((acc, skill) => {
-				if (!acc[skill.user_id]) acc[skill.user_id] = [];
-				acc[skill.user_id].push(skill.skill_name);
-				return acc;
-			}, {});
+			try {
+				const [skillsRows] = await pool.query(
+					`SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${investorIds.map(() => '?').join(',')})`,
+					investorIds
+				);
+				skillsMap = skillsRows.reduce((acc, skill) => {
+					if (!acc[skill.user_id]) acc[skill.user_id] = [];
+					acc[skill.user_id].push(skill.skill_name);
+					return acc;
+				}, {});
+			} catch (skillsError) {
+				console.warn('user_skills table not found, skipping skills:', skillsError.message);
+				skillsMap = {};
+			}
 		}
 
-		const investors = rows.map((u) => ({
-			id: u.id,
-			name: `${u.first_name} ${u.last_name}`,
-			email: u.email,
-			bio: u.introduction || "",
-			profile_image: u.profile_image || null,
-			industry: u.industry,
-			location: u.location,
-			preferred_location: u.preferred_location,
-			preferred_industries: u.preferred_industries
-				? JSON.parse(u.preferred_industries)
-				: [],
-			preferred_locations: u.preferred_locations
-				? JSON.parse(u.preferred_locations)
-				: [],
-			funding_stage_preferences: u.funding_stage_preferences
-				? JSON.parse(u.funding_stage_preferences)
-				: [],
-			skills: skillsMap[u.id] || [],
-		}));
+		const investors = rows.map((u) => {
+			// Handle double-encoded JSON for preferred_industries
+			let preferredIndustries = [];
+			if (u.preferred_industries) {
+				try {
+					let parsed = JSON.parse(u.preferred_industries);
+					// If it's still a string, parse again (double-encoded)
+					if (typeof parsed === 'string') {
+						parsed = JSON.parse(parsed);
+					}
+					preferredIndustries = Array.isArray(parsed) ? parsed : [];
+				} catch (e) {
+					console.warn(`Error parsing preferred_industries for investor ${u.id}:`, e.message);
+					preferredIndustries = [];
+				}
+			}
+
+			return {
+				id: u.id,
+				name: `${u.first_name} ${u.last_name}`,
+				email: u.email,
+				bio: u.introduction || "",
+				profile_image: u.profile_image || null,
+				industry: u.industry,
+				location: u.location,
+				preferred_location: u.preferred_location,
+				preferred_industries: preferredIndustries,
+				preferred_locations: u.preferred_locations
+					? JSON.parse(u.preferred_locations)
+					: [],
+				funding_stage_preferences: u.funding_stage_preferences
+					? JSON.parse(u.funding_stage_preferences)
+					: [],
+				skills: skillsMap[u.id] || [],
+			};
+		});
 
 		res.json(investors);
 	} catch (error) {
@@ -1595,6 +1683,152 @@ app.post(
 	}
 );
 
+// View verification document
+app.get(
+	"/api/verification/document/:id/view",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			const { id } = req.params;
+
+			// Get document details
+			const [[document]] = await pool.query(
+				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				[id]
+			);
+
+			if (!document) {
+				return res.status(404).json({ error: "Document not found" });
+			}
+
+			// Check if user owns the document or is admin
+			if (req.user.role !== "admin" && document.user_id !== req.user.id) {
+				return res.status(403).json({ error: "Access denied" });
+			}
+
+			// Check if file exists
+			const fs = require('fs');
+			const path = require('path');
+			const filePath = path.join(__dirname, document.file_path);
+
+			if (!fs.existsSync(filePath)) {
+				return res.status(404).json({ error: "File not found" });
+			}
+
+			// Set headers for inline viewing
+			res.setHeader('Content-Type', document.file_type || 'application/octet-stream');
+			res.setHeader('Content-Disposition', `inline; filename="${document.file_name}"`);
+
+			// Send file
+			res.sendFile(filePath);
+		} catch (error) {
+			console.error("Error viewing verification document:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Download verification document
+app.get(
+	"/api/verification/document/:id/download",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			const { id } = req.params;
+
+			// Get document details
+			const [[document]] = await pool.query(
+				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				[id]
+			);
+
+			if (!document) {
+				return res.status(404).json({ error: "Document not found" });
+			}
+
+			// Check if user owns the document or is admin
+			if (req.user.role !== "admin" && document.user_id !== req.user.id) {
+				return res.status(403).json({ error: "Access denied" });
+			}
+
+			// Check if file exists
+			const fs = require('fs');
+			const path = require('path');
+			const filePath = path.join(__dirname, document.file_path);
+
+			if (!fs.existsSync(filePath)) {
+				return res.status(404).json({ error: "File not found" });
+			}
+
+			// Set headers for download
+			res.setHeader('Content-Type', 'application/octet-stream');
+			res.setHeader('Content-Disposition', `attachment; filename="${document.file_name}"`);
+
+			// Send file
+			res.sendFile(filePath);
+		} catch (error) {
+			console.error("Error downloading verification document:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Get user's verification documents (admin only)
+app.get(
+	"/api/admin/users/:id/verification-documents",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can access user verification documents" });
+			}
+
+			const { id } = req.params;
+			console.log('Fetching verification documents for user_id:', id, 'type:', typeof id);
+
+			// Convert id to number to ensure type consistency
+			const userId = parseInt(id, 10);
+			console.log('Converted user_id:', userId, 'type:', typeof userId);
+
+			// First, verify the user exists
+			const [[user]] = await pool.query(
+				'SELECT id FROM users WHERE id = ?',
+				[userId]
+			);
+
+			if (!user) {
+				console.log('User not found with id:', userId);
+				return res.status(404).json({ error: "User not found" });
+			}
+
+			console.log('User found:', user);
+
+			// Get user's verification documents with debug logging
+			const [documents] = await pool.query(
+				`SELECT document_id, user_id, document_type, document_number, 
+				        file_name, file_path, file_type, file_size,
+				        issue_date, expiry_date, issuing_authority,
+				        status, uploaded_at, rejection_reason
+				 FROM verification_documents 
+				 WHERE user_id = ?
+				 ORDER BY uploaded_at DESC`,
+				[userId]
+			);
+
+			console.log('Found documents:', documents);
+
+			// Log the response being sent
+			console.log('Sending response with documents:', { documents });
+			res.json({ documents });
+		} catch (error) {
+			console.error("Error fetching user verification documents:", error);
+			console.error("Full error details:", error.stack);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
 // Approve startup (admin only)
 app.post(
 	"/api/admin/startups/:id/approve",
@@ -2097,13 +2331,13 @@ app.post(
 				return res.status(404).json({ error: "User not found" });
 			}
 
-			// Update user status
-			await pool.query(
-				`UPDATE users 
-				 SET is_suspended = true, updated_at = NOW()
-				 WHERE id = ?`,
-				[id]
-			);
+					// Update user status
+		await pool.query(
+			`UPDATE users 
+			 SET is_suspended = true, updated_at = NOW()
+			 WHERE id = ?`,
+			[id]
+		);
 
 			res.json({ message: "User suspended successfully" });
 		} catch (error) {
@@ -2126,13 +2360,13 @@ app.post(
 
 			const { id } = req.params;
 
-			// Update user status
-			await pool.query(
-				`UPDATE users 
-				 SET is_suspended = false, updated_at = NOW()
-				 WHERE id = ?`,
-				[id]
-			);
+					// Update user status
+		await pool.query(
+			`UPDATE users 
+			 SET is_suspended = false, updated_at = NOW()
+			 WHERE id = ?`,
+			[id]
+		);
 
 			res.json({ message: "User reactivated successfully" });
 		} catch (error) {
@@ -2178,20 +2412,20 @@ app.put(
 				}
 			}
 
-			// Update user
-			await pool.query(
-				`UPDATE users 
-				 SET first_name = ?, last_name = ?, email = ?, role = ?, is_verified = ?, is_suspended = ?, 
-				     industry = ?, location = ?, updated_at = NOW()
-				 WHERE id = ?`,
-				[first_name, last_name, email, role, is_verified, is_suspended, industry, location, id]
-			);
+					// Update user
+		await pool.query(
+			`UPDATE users 
+			 SET first_name = ?, last_name = ?, email = ?, role = ?, is_verified = ?, is_suspended = ?, 
+			     industry = ?, location = ?, updated_at = NOW()
+			 WHERE id = ?`,
+			[first_name, last_name, email, role, is_verified, is_suspended, industry, location, id]
+		);
 
-			// Get updated user
-			const [rows] = await pool.query(
-				"SELECT id, first_name, last_name, email, role, is_verified, is_suspended, industry, location, created_at FROM users WHERE id = ?",
-				[id]
-			);
+		// Get updated user
+		const [rows] = await pool.query(
+			"SELECT id, first_name, last_name, email, role, is_verified, is_suspended, industry, location, created_at FROM users WHERE id = ?",
+			[id]
+		);
 
 			res.json(rows[0]);
 		} catch (error) {
@@ -2248,6 +2482,72 @@ app.delete(
 	}
 );
 
+// Approve user verification (admin only)
+app.post(
+	"/api/admin/users/:id/verify",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can verify users" });
+			}
+
+			const { id } = req.params;
+			const { verification_comment } = req.body;
+
+			// Update user verification status
+		await pool.query(
+			`UPDATE users 
+			 SET is_verified = true, verification_status = 'verified', 
+			     verification_comment = ?, verified_by = ?, verified_at = NOW(), updated_at = NOW()
+			 WHERE id = ?`,
+			[verification_comment || 'Approved by admin', req.user.id, id]
+		);
+
+			res.json({ message: "User verified successfully" });
+		} catch (error) {
+			console.error("Error verifying user:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
+// Reject user verification (admin only)
+app.post(
+	"/api/admin/users/:id/reject",
+	authenticateToken,
+	async (req, res) => {
+		try {
+			// Check if user is admin
+			if (req.user.role !== "admin") {
+				return res.status(403).json({ error: "Only admins can reject user verification" });
+			}
+
+			const { id } = req.params;
+			const { rejection_reason } = req.body;
+
+			if (!rejection_reason) {
+				return res.status(400).json({ error: "Rejection reason is required" });
+			}
+
+			// Update user verification status
+		await pool.query(
+			`UPDATE users 
+			 SET is_verified = false, verification_status = 'not approved', 
+			     verification_comment = ?, verified_by = ?, verified_at = NOW(), updated_at = NOW()
+			 WHERE id = ?`,
+			[rejection_reason, req.user.id, id]
+		);
+
+			res.json({ message: "User verification rejected" });
+		} catch (error) {
+			console.error("Error rejecting user verification:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+);
+
 // Bulk action for users (admin only)
 app.post(
 	"/api/admin/users/bulk-action",
@@ -2265,8 +2565,8 @@ app.post(
 				return res.status(400).json({ error: "user_ids array is required" });
 			}
 
-			if (!action || !['suspend', 'reactivate', 'verify', 'delete'].includes(action)) {
-				return res.status(400).json({ error: "Invalid action. Must be 'suspend', 'reactivate', 'verify', or 'delete'" });
+			if (!action || !['suspend', 'reactivate', 'verify', 'reject', 'delete'].includes(action)) {
+				return res.status(400).json({ error: "Invalid action. Must be 'suspend', 'reactivate', 'verify', 'reject', or 'delete'" });
 			}
 
 			const placeholders = user_ids.map(() => '?').join(',');
@@ -2297,18 +2597,21 @@ app.post(
 				let updateQuery = '';
 				let params = [];
 
-				if (action === 'suspend') {
-					updateQuery = `UPDATE users SET is_suspended = true, updated_at = NOW() WHERE id IN (${placeholders})`;
-					params = user_ids;
-				} else if (action === 'reactivate') {
-					updateQuery = `UPDATE users SET is_suspended = false, updated_at = NOW() WHERE id IN (${placeholders})`;
-					params = user_ids;
-				} else if (action === 'verify') {
-					updateQuery = `UPDATE users SET is_verified = true, updated_at = NOW() WHERE id IN (${placeholders})`;
-					params = user_ids;
-				}
+							if (action === 'suspend') {
+				updateQuery = `UPDATE users SET is_suspended = true, updated_at = NOW() WHERE id IN (${placeholders})`;
+				params = user_ids;
+			} else if (action === 'reactivate') {
+				updateQuery = `UPDATE users SET is_suspended = false, updated_at = NOW() WHERE id IN (${placeholders})`;
+				params = user_ids;
+			} else if (action === 'verify') {
+				updateQuery = `UPDATE users SET is_verified = true, verification_status = 'verified', updated_at = NOW() WHERE id IN (${placeholders})`;
+				params = user_ids;
+			} else if (action === 'reject') {
+				updateQuery = `UPDATE users SET is_verified = false, verification_status = 'not approved', updated_at = NOW() WHERE id IN (${placeholders})`;
+				params = user_ids;
+			}
 
-				await pool.query(updateQuery, params);
+			await pool.query(updateQuery, params);
 			}
 
 			res.json({ 

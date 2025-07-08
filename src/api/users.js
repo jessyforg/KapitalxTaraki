@@ -79,7 +79,7 @@ export const getUserPreferences = async (userId) => {
 export const getUserProfile = async (userId) => {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/users/${userId}`, {
+    const response = await axios.get(`${API_URL}/user/${userId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
