@@ -165,12 +165,18 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       const stored = localStorage.getItem('user');
       const userObj = stored ? JSON.parse(stored) : null;
       if (userObj && userObj.role) {
-        if (userObj.role === 'entrepreneur') {
-          navigate('/entrepreneur-dashboard');
-        } else if (userObj.role === 'investor') {
-          navigate('/investor-dashboard');
-        } else if (userObj.role === 'admin') {
-          navigate('/admin');
+        // Check if we're trying to access settings
+        const isSettingsPath = location.pathname === '/settings';
+        if (isSettingsPath) {
+          navigate('/settings');
+        } else {
+          if (userObj.role === 'entrepreneur') {
+            navigate('/entrepreneur-dashboard');
+          } else if (userObj.role === 'investor') {
+            navigate('/investor-dashboard');
+          } else if (userObj.role === 'admin') {
+            navigate('/admin');
+          }
         }
       }
     } catch (e) {
@@ -588,8 +594,8 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
     return date.toLocaleDateString();
   };
 
-  // Function to handle notification click
-  const handleNotificationClick = async (notification) => {
+  // Add useCallback for notification handlers
+  const handleNotificationClick = useCallback(async (notification) => {
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
@@ -602,25 +608,106 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         navigate('/matches');
         break;
       case 'profile_view':
-        navigate(`/profile/${notification.sender_id}`);
+        navigate(`/profile/${notification.data?.sender_id}`);
         break;
       case 'startup_status':
       case 'program_status':
         navigate('/dashboard');
         break;
       case 'event_reminder':
-        navigate(`/events/${notification.event_id}`);
+        navigate(`/events/${notification.data?.event_id}`);
         break;
       case 'message':
-        navigate(`/messages?chat_with=${notification.sender_id}`);
+        navigate(`/messages?chat_with=${notification.data?.sender_id}`);
         break;
       case 'connection_request':
         navigate('/connections');
         break;
       default:
         // For other notification types, just close the dropdown
-        setShowNotifications(false);
+        break;
     }
+    setShowNotifications(false);
+  }, [navigate]);
+
+  // Update notification rendering to use portals
+  const NotificationContent = ({ onClose }) => {
+    return (
+      <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn`}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-orange-500"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="max-h-[70vh] overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">No notifications</div>
+          ) : (
+            notifications.map((notification) => (
+              <button
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`w-full flex items-start gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-700 ${
+                  !notification.is_read ? 'bg-orange-50 dark:bg-orange-900/20' : ''
+                }`}
+              >
+                <div className="flex-shrink-0 mt-1">
+                  {getNotificationIcon(notification.type)}
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {notification.type === 'match_received' && 'New Match Found!'}
+                        {notification.type === 'investor_match' && 'Investor Match'}
+                        {notification.type === 'startup_match' && 'Startup Match'}
+                        {notification.type === 'profile_view' && 'Profile Viewed'}
+                        {notification.type === 'startup_status' && 'Startup Update'}
+                        {notification.type === 'program_status' && 'Program Update'}
+                        {notification.type === 'event_reminder' && 'Event Reminder'}
+                        {notification.type === 'message' && 'New Message'}
+                        {notification.type === 'connection_request' && 'Connection Request'}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                        {notification.type === 'match_received' && `You have a new match with ${notification.data?.match_name || 'someone'}!`}
+                        {notification.type === 'investor_match' && `${notification.data?.investor_name || 'An investor'} might be interested in your startup.`}
+                        {notification.type === 'startup_match' && `${notification.data?.startup_name || 'A startup'} matches your investment criteria.`}
+                        {notification.type === 'profile_view' && `${notification.data?.viewer_name || 'Someone'} viewed your profile.`}
+                        {notification.type === 'startup_status' && notification.data?.status_message}
+                        {notification.type === 'program_status' && notification.data?.status_message}
+                        {notification.type === 'event_reminder' && `Reminder: ${notification.data?.event_name || 'Event'} is coming up!`}
+                        {notification.type === 'message' && `${notification.data?.sender_name || 'Someone'} sent you a message.`}
+                        {notification.type === 'connection_request' && `${notification.data?.requester_name || 'Someone'} wants to connect with you.`}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">
+                      {formatNotificationTime(notification.created_at)}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => {
+              onClose();
+              navigate('/notifications');
+            }}
+            className="w-full py-2 text-orange-600 dark:text-orange-400 hover:underline text-sm font-medium"
+          >
+            View All Notifications
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const navLinks = [
@@ -694,9 +781,50 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
     setIsMobileMenuOpen(false);
   };
 
+  // Add scroll state
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Handle scroll behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollThreshold = 400;
+      
+      // Show/hide scroll-to-top button with smoother threshold
+      if (currentScrollY > scrollThreshold && !showScrollTop) {
+        setShowScrollTop(true);
+      } else if (currentScrollY <= scrollThreshold && showScrollTop) {
+        setShowScrollTop(false);
+      }
+      
+      // Show/hide navbar based on scroll direction with a minimum scroll threshold
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsNavbarVisible(false); // Scrolling down
+      } else {
+        setIsNavbarVisible(true); // Scrolling up
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showScrollTop]);
+
+  // Scroll to top function with smooth behavior
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+      duration: 500
+    });
+  };
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
-      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300`}>
+      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-32'}`}>
         <div className="flex items-center justify-between mx-auto px-6 py-3">
           <Link
             to="/"
@@ -868,7 +996,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     </button>
                   </span>
                   <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
-                    <ul className="py-1">
+                    <ul className="py-1 overflow-hidden rounded-xl">
                       <li>
                         <Link
                           to="/"
@@ -876,7 +1004,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             e.preventDefault();
                             scrollToSection("objectives");
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           Objectives
                         </Link>
@@ -888,7 +1016,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             e.preventDefault();
                             scrollToSection("team");
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           TARAKIs
                         </Link>
@@ -900,7 +1028,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             e.preventDefault();
                             scrollToSection("FAQs");
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           FAQ
                         </Link>
@@ -923,7 +1051,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     </button>
                   </span>
                   <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
-                    <ul className="py-1">
+                    <ul className="py-1 overflow-hidden rounded-xl">
                       <li>
                         <Link
                           to="/ecosystem#tbi"                        onClick={e => {
@@ -940,7 +1068,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             }
                             closeNavbar();
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           TBI
                         </Link>
@@ -961,7 +1089,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             }
                             closeNavbar();
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           Mentors
                         </Link>
@@ -979,7 +1107,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             }
                             closeNavbar();
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           Framework
                         </Link>
@@ -1002,11 +1130,11 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     </button>
                   </span>
                   <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-44 rounded-xl shadow-2xl z-20 opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 border border-gray-200 dark:border-white/10 ${darkMode ? 'bg-trkblack bg-opacity-95' : 'bg-white'}`}> 
-                    <ul className="py-1">
+                    <ul className="py-1 overflow-hidden rounded-xl">
                       <li>
                         <NavLink
                           to="/programs"
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           Programs
                         </NavLink>
@@ -1015,8 +1143,8 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                         <NavLink
                           to="/events"
                           className={({ isActive }) =>
-                            `flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors` +
-                            (isActive ? ' text-orange-600' : '')
+                            `block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors` +
+                            (isActive ? ' bg-orange-600' : '')
                           }
                         >
                           Events
@@ -1029,7 +1157,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             e.preventDefault();
                             scrollToSection("newsletter");
                           }}
-                          className={`flex justify-between w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
                         >
                           Newsletter
                         </Link>
@@ -1466,35 +1594,18 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2 text-gray-500 hover:text-orange-600 transition-colors"
             >
-              <i className="fas fa-times text-xl"></i>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
           {/* Scrollable content area */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-6">
-              {/* Admin Tabs in Mobile Menu */}
-              {adminTabs && adminActiveTab && setAdminActiveTab && (
-                <div className="flex flex-col gap-2 mb-6">
-                  {adminTabs.map(tab => (
-                    <button
-                      key={tab.id}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-colors text-base text-left w-full ${
-                        adminActiveTab === tab.id
-                          ? (darkMode ? 'bg-orange-900 text-orange-400' : 'bg-orange-50 text-orange-600')
-                          : (darkMode ? 'hover-bg-orange-900-30 hover-text-orange-400 text-gray-300' : 'hover:bg-gray-50 hover:text-orange-600 text-gray-700')
-                      }`}
-                      onClick={() => { setAdminActiveTab(tab.id); setIsMobileMenuOpen(false); }}
-                    >
-                      <span className="text-xl">{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* User Profile Section - Show when user is logged in */}
+              {/* User Profile Section */}
               {user && (
-                <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-trkblack rounded-lg">
+                <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-trkblack/30 rounded-lg">
                   {user.profile_image ? (
                     <img
                       src={user.profile_image}
@@ -1503,7 +1614,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-4xl text-white font-bold">
-                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : <i className="fas fa-user"></i>}
+                      {user.first_name ? user.first_name.charAt(0).toUpperCase() : <FaUser />}
                     </div>
                   )}
                   <div>
@@ -1515,210 +1626,176 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 </div>
               )}
 
-              {/* Dashboard Navigation - Show when user is on dashboard pages */}
-              {user && (location.pathname.includes('dashboard') || location.pathname.includes('admin')) && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-bold text-orange-600 mb-4">Dashboard</h3>
-                  <ul className="space-y-2">
-                    {user.role === 'entrepreneur' && (
-                      <>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('startups')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'startups'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-building text-xl"></i>
-                            <span>Startups</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('cofounders')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'cofounders'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-users text-xl"></i>
-                            <span>Co-Founders</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('investors')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'investors'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-hand-holding-usd text-xl"></i>
-                            <span>Investors</span>
-                          </button>
-                        </li>
-                      </>
+              {/* Quick Actions */}
+              {user && (
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  {/* Notifications */}
+                  <button
+                    onClick={() => {
+                      setShowNotifications(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50 dark:bg-trkblack/30 relative"
+                  >
+                    <FaBell size={24} className="text-orange-500 mb-2" />
+                    <span className="text-sm">Notifications</span>
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        {unreadNotifications}
+                      </span>
                     )}
-                    {user.role === 'investor' && (
-                      <>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('startups')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'startups'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-building text-xl"></i>
-                            <span>Startups</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('matches')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'matches'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-star text-xl"></i>
-                            <span>Matches</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('entrepreneurs')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'entrepreneurs'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-users text-xl"></i>
-                            <span>Entrepreneurs</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => handleDashboardSectionChange('investors')}
-                            className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium ${
-                              activeDashboardSection === 'investors'
-                                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack'
-                            }`}
-                          >
-                            <i className="fas fa-hand-holding-usd text-xl"></i>
-                            <span>Investors</span>
-                          </button>
-                        </li>
-                      </>
+                  </button>
+
+                  {/* Messages */}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setMsgDropdownOpen(false);
+                      navigate('/messages');
+                    }}
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50 dark:bg-trkblack/30 relative"
+                  >
+                    <FaEnvelope size={24} className="text-orange-500 mb-2" />
+                    <span className="text-sm">Messages</span>
+                    {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        {msgPreview.reduce((total, msg) => total + (msg.unread_count || 0), 0)}
+                      </span>
                     )}
-                    {/* Common dashboard links */}
-                    <li>
-                      <button
-                        onClick={() => handleExternalNavigation('/ecosystem')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
-                      >
-                        <i className="fas fa-globe text-xl"></i>
-                        <span>Ecosystem</span>
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        onClick={() => handleExternalNavigation('/events')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
-                      >
-                        <i className="fas fa-calendar text-xl"></i>
-                        <span>Events</span>
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        onClick={() => handleExternalNavigation('/settings')}
-                        className="flex items-center gap-3 w-full py-3 px-4 rounded-lg text-left transition-colors text-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-trkblack"
-                      >
-                        <i className="fas fa-cog text-xl"></i>
-                        <span>Settings</span>
-                      </button>
-                    </li>
-                  </ul>
+                  </button>
+
+                  {/* Settings */}
+                  <button
+                    onClick={() => {
+                      navigate('/settings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50 dark:bg-trkblack/30"
+                  >
+                    <FaCog size={24} className="text-orange-500 mb-2" />
+                    <span className="text-sm">Settings</span>
+                  </button>
                 </div>
               )}
 
-              {/* General Navigation Links */}
-              <ul className="flex flex-col space-y-2">
-                {navLinks.map((link, index) => (
-                  <li key={index}>
+              {/* Navigation Links */}
+              <div className="space-y-6">
+                {/* Dashboard Link - Moved to top */}
+                {user && (
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Dashboard</h3>
                     <button
-                      onClick={() => setOpenAccordion(openAccordion === index ? null : index)}
-                      className="flex items-center justify-between w-full py-3 text-lg font-semibold text-trkblack dark:text-white"
+                      onClick={() => {
+                        navigate(
+                          user.role === 'admin'
+                            ? '/admin'
+                            : user.role === 'entrepreneur'
+                              ? '/entrepreneur-dashboard'
+                              : '/investor-dashboard'
+                        );
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left py-2 px-4 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                     >
-                      <span>{link.title}</span>
-                      <svg
-                        className={`w-5 h-5 transition-transform duration-200 ${openAccordion === index ? 'transform rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
+                      View Dashboard
                     </button>
-                    {openAccordion === index && (
-                      <ul className="pl-4 mt-2 space-y-2 border-l-2 border-orange-500">
-                        {link.subLinks.map((subLink, subIndex) => (
-                          <li key={subIndex}>
-                            <button
-                              onClick={() => handleMobileNavClick(subLink)}
-                              className="block py-2 text-md text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
-                            >
-                              {subLink.title}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
+                  </div>
+                )}
+
+                {navLinks.map((section, index) => (
+                  <div key={index} className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{section.title}</h3>
+                    <div className="space-y-2 pl-2">
+                      {section.subLinks.map((link, subIndex) => (
+                        <button
+                          key={subIndex}
+                          onClick={() => {
+                            handleMobileNavClick(link);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full text-left py-2 px-4 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                        >
+                          {link.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-                 {user ? (
-                  <li>
-                    <NavLink
-                      to={
-                        user.role === 'admin'
-                          ? '/admin'
-                          : user.role === 'entrepreneur'
-                            ? '/entrepreneur-dashboard'
-                            : '/investor-dashboard'
-                      }
-                      className="w-full block py-3 text-lg font-semibold text-trkblack dark:text-white"
-                      onClick={() => handleDashboardSectionChange(activeDashboardSection)}
+
+                {/* Theme Toggle */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Appearance</h3>
+                  <button
+                    onClick={() => setDarkMode(prev => !prev)}
+                    className="w-full flex items-center justify-between py-2 px-4 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                  >
+                    <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                    {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
+                  </button>
+                </div>
+
+                {/* Logout Button */}
+                {user && (
+                  <div className="pt-4">
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
                     >
-                      Dashboard
-                    </NavLink>
-                  </li>
-                ) : (
-                  <li>
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Login/Signup Button */}
+                {!user && (
+                  <div className="pt-4">
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
                         openModal();
                       }}
-                      className="w-full mt-4 py-3 px-6 text-lg font-bold text-white bg-orange-500 rounded-lg shadow-md hover:bg-orange-600 transition-colors"
+                      className="w-full py-3 px-6 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
                     >
                       Get Started
                     </button>
-                  </li>
+                  </div>
                 )}
-              </ul>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Scroll to top button - Updated styling and animation */}
+      <button
+        onClick={scrollToTop}
+        className={`fixed bottom-24 tablet-m:bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-50 transform hover:scale-110 ${
+          showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+        }`}
+        aria-label="Scroll to top"
+      >
+        <svg className="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+      </button>
+
+      {/* Mobile Notifications Modal */}
+      {showNotifications && window.innerWidth < 768 && (
+        <div className="fixed inset-0 z-[999] flex items-start justify-center pt-16 px-4 tablet-m:hidden bg-black bg-opacity-40">
+          <NotificationContent onClose={() => setShowNotifications(false)} />
+        </div>
+      )}
+
+      {/* Desktop Notifications Dropdown */}
+      {showNotifications && window.innerWidth >= 768 && (
+        <div className="hidden tablet-m:block absolute right-0 mt-2 w-96 max-w-sm rounded-xl shadow-lg z-50">
+          <NotificationContent onClose={() => setShowNotifications(false)} />
+        </div>
+      )}
     </header>
   );
 }
