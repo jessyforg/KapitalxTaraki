@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiHome, FiUsers, FiBarChart2, FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiEye, FiPause, FiPlay, FiX, FiMenu, FiSettings, FiCheck, FiLogOut, FiClock } from 'react-icons/fi';
-import { FaTicketAlt, FaUser, FaBell, FaLock, FaPalette, FaEnvelope, FaQuestionCircle, FaBuilding, FaChartLine, FaCalendarAlt } from 'react-icons/fa';
+import { FaTicketAlt, FaUser, FaBell, FaLock, FaPalette, FaEnvelope, FaQuestionCircle, FaBuilding, FaChartLine, FaCalendarAlt, FaUsers } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import { HiOutlineDocumentText, HiOutlineLocationMarker } from 'react-icons/hi';
 import { MdOutlineEvent, MdEventAvailable } from 'react-icons/md';
@@ -18,6 +18,9 @@ import autoTable from 'jspdf-autotable';
 import FAQ from './FAQ';
 import { useNavigate } from 'react-router-dom';
 import { updateProfilePhoto } from '../api/user';
+import axios from 'axios';
+import MobileSidebar from './MobileSidebar';
+import HamburgerButton from './HamburgerButton';
 
 // Message component for displaying success/error messages
 const Message = ({ type, message }) => {
@@ -36,6 +39,7 @@ const initialTabs = [
   { id: 'users', label: 'Users Management', icon: <FiUsers size={20} /> },
   { id: 'startup', label: 'Startup', icon: <FiBarChart2 size={20} /> },
   { id: 'events', label: 'Events', icon: <FiCalendar size={20} /> },
+  { id: 'team', label: 'Team Management', icon: <FaUsers size={20} /> },
   { id: 'tickets', label: 'Tickets', icon: <FaTicketAlt size={20} /> },
   { id: 'sitePerformance', label: 'Site Performance', icon: <FiBarChart2 size={20} /> }
 ];
@@ -180,6 +184,17 @@ function AdminDashboard() {
   const [selectedUserForVerification, setSelectedUserForVerification] = useState(null);
   const [verificationComment, setVerificationComment] = useState('');
   const [userRejectionReason, setUserRejectionReason] = useState('');
+
+  // Team management state
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [teamMemberForm, setTeamMemberForm] = useState({
+    name: '',
+    position: '',
+    description: '',
+    image: null
+  });
 
   // Dashboard analytics state
   const [dashboardStats, setDashboardStats] = useState({
@@ -792,11 +807,207 @@ function AdminDashboard() {
 
   // Handler for opening pending startup modal
   const handleOpenPendingStartupModal = (startup) => {
-    setSelectedPendingStartup(startup);
+    setSelectedStartup({
+      ...startup,
+      documents: {
+        businessPermit: startup.business_permit_url || null,
+        secRegistration: startup.sec_registration_url || null
+      }
+    });
     setPendingStartupModalOpen(true);
   };
+
+  // Add new function to handle document preview
+  const handleDocumentPreview = (url) => {
+    if (!url) return;
+    
+    // Check if it's a PDF
+    if (url.toLowerCase().endsWith('.pdf')) {
+      window.open(url, '_blank');
+    } else {
+      // For images, show in modal
+      setPreviewDocument({
+        url,
+        isOpen: true
+      });
+    }
+  };
+
+  // Add state for document preview
+  const [previewDocument, setPreviewDocument] = useState({ url: '', isOpen: false });
+
+  // Add function to close preview
+  const handleClosePreview = () => {
+    setPreviewDocument({ url: '', isOpen: false });
+  };
+
+  // Modify the pending startup modal content
+  const renderPendingStartupModal = () => {
+    if (!selectedStartup) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Verify Startup: {selectedStartup.name}</h2>
+            <button
+              onClick={handleClosePendingStartupModal}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+
+          {/* Startup Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-4">Basic Information</h3>
+              <div className="space-y-3">
+                <p><span className="font-semibold">Industry:</span> {selectedStartup.industry}</p>
+                <p><span className="font-semibold">Location:</span> {selectedStartup.location}</p>
+                <p><span className="font-semibold">Full Address:</span> {selectedStartup.full_address || 'Not provided'}</p>
+                <p><span className="font-semibold">Telephone:</span> {selectedStartup.telephone_number || 'Not provided'}</p>
+                <p><span className="font-semibold">Stage:</span> {formatStartupStage(selectedStartup.startup_stage)}</p>
+                <p><span className="font-semibold">Funding Stage:</span> {toTitleCase(selectedStartup.funding_stage)}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-4">Contact & Social Media</h3>
+              <div className="space-y-3">
+                <p>
+                  <span className="font-semibold">Website:</span>{' '}
+                  {selectedStartup.website ? (
+                    <a href={selectedStartup.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      Visit Website
+                    </a>
+                  ) : 'Not provided'}
+                </p>
+                {selectedStartup.facebook_url && (
+                  <p>
+                    <span className="font-semibold">Facebook:</span>{' '}
+                    <a href={selectedStartup.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      View Profile
+                    </a>
+                  </p>
+                )}
+                {selectedStartup.linkedin_url && (
+                  <p>
+                    <span className="font-semibold">LinkedIn:</span>{' '}
+                    <a href={selectedStartup.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      View Profile
+                    </a>
+                  </p>
+                )}
+                {/* Add other social media links similarly */}
+              </div>
+            </div>
+          </div>
+
+          {/* Verification Documents */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-4">Verification Documents</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Business Permit */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold">Business Permit</h4>
+                  {selectedStartup.documents.businessPermit ? (
+                    <button
+                      onClick={() => handleDocumentPreview(selectedStartup.documents.businessPermit)}
+                      className="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
+                    >
+                      <i className="fas fa-eye"></i>
+                      View Document
+                    </button>
+                  ) : (
+                    <span className="text-red-500">Not Uploaded</span>
+                  )}
+                </div>
+                {selectedStartup.documents.businessPermit && (
+                  <p className="text-sm text-gray-500 break-all">{selectedStartup.documents.businessPermit}</p>
+                )}
+              </div>
+
+              {/* SEC Registration */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold">SEC Registration</h4>
+                  {selectedStartup.documents.secRegistration ? (
+                    <button
+                      onClick={() => handleDocumentPreview(selectedStartup.documents.secRegistration)}
+                      className="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
+                    >
+                      <i className="fas fa-eye"></i>
+                      View Document
+                    </button>
+                  ) : (
+                    <span className="text-red-500">Not Uploaded</span>
+                  )}
+                </div>
+                {selectedStartup.documents.secRegistration && (
+                  <p className="text-sm text-gray-500 break-all">{selectedStartup.documents.secRegistration}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-2">Description</h3>
+            <p className="text-gray-700 whitespace-pre-line">{selectedStartup.description}</p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => handleDeclineStartup(selectedStartup.id)}
+              className="bg-red-100 text-red-600 px-6 py-2 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => handleAcceptStartup(selectedStartup.id)}
+              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Approve
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add document preview modal
+  const renderDocumentPreviewModal = () => {
+    if (!previewDocument.isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60]">
+        <div className="bg-white rounded-lg p-4 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Document Preview</h3>
+            <button
+              onClick={handleClosePreview}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          <div className="relative w-full h-[70vh]">
+            <img
+              src={previewDocument.url}
+              alt="Document Preview"
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleClosePendingStartupModal = () => {
-    setSelectedPendingStartup(null);
+    setSelectedStartup(null);
     setPendingStartupModalOpen(false);
   };
 
@@ -1055,12 +1266,17 @@ function AdminDashboard() {
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
-    // If we're accessing from localhost, use localhost
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
-    // Otherwise, use the same hostname as the frontend (for network access)
     return `http://${window.location.hostname}:5000/api`;
+  };
+
+  const getBaseUrl = () => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    return `http://${window.location.hostname}:5000`;
   };
 
   // Fetch dashboard analytics
@@ -1194,6 +1410,136 @@ function AdminDashboard() {
       <>
         {(() => {
           switch (activeTab) {
+            case 'team':
+              return (
+                <div className="bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Team Management</h2>
+                    <button
+                      onClick={() => {
+                        setSelectedTeamMember(null);
+                        setTeamMemberForm({ name: '', position: '', description: '', image: null });
+                        setIsTeamModalOpen(true);
+                      }}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+                    >
+                      <FiPlus size={20} />
+                      Add Team Member
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {teamMembers.map((member) => (
+                      <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden">
+                        <div className="aspect-[4/3] overflow-hidden">
+                          <img 
+                            src={member.image_url ? `${getBaseUrl()}${member.image_url}` : defaultAvatar}
+                            alt={member.name}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              console.error('Image load error:', e.target.src);
+                              e.target.onerror = null;
+                              e.target.src = defaultAvatar;
+                            }}
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{member.name}</h3>
+                          <p className="text-gray-600 dark:text-gray-300">{member.position}</p>
+                          <p className="mt-2 text-gray-700 dark:text-gray-400">{member.description}</p>
+                          <div className="mt-4 flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEditTeamMember(member)}
+                              className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center gap-1"
+                            >
+                              <FiEdit2 size={16} />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTeamMember(member.id)}
+                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                            >
+                              <FiTrash2 size={16} />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Team Member Modal */}
+                  {isTeamModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4">
+                        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                          {selectedTeamMember ? 'Edit Team Member' : 'Add Team Member'}
+                        </h2>
+                        <form onSubmit={handleTeamMemberSubmit} className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                            <input
+                              type="text"
+                              value={teamMemberForm.name}
+                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
+                            <input
+                              type="text"
+                              value={teamMemberForm.position}
+                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                            <textarea
+                              value={teamMemberForm.description}
+                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              rows="4"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image</label>
+                            <input
+                              type="file"
+                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, image: e.target.files[0] })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              accept="image/*"
+                              {...(!selectedTeamMember && { required: true })}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2 mt-6">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsTeamModalOpen(false);
+                                setSelectedTeamMember(null);
+                                setTeamMemberForm({ name: '', position: '', description: '', image: null });
+                              }}
+                              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                            >
+                              {selectedTeamMember ? 'Save Changes' : 'Add Member'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
             case 'dashboard':
               // Show upcoming events from the events state (created by admin)
               const upcomingEvents = events
@@ -3997,6 +4343,244 @@ case 'sitePerformance':
     );
   };
 
+
+
+  // Add these functions inside the AdminDashboard component
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch(`${getApiUrl()}/team`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch team members');
+      setTeamMembers(data);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+    }
+  };
+
+  const handleTeamMemberSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', teamMemberForm.name);
+    formData.append('position', teamMemberForm.position);
+    formData.append('description', teamMemberForm.description);
+    if (teamMemberForm.image) {
+      formData.append('image', teamMemberForm.image);
+    }
+
+    try {
+      const url = selectedTeamMember 
+        ? `${getApiUrl()}/team/${selectedTeamMember.id}`
+        : `${getApiUrl()}/team`;
+
+      const response = await fetch(url, {
+        method: selectedTeamMember ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to save team member');
+
+      fetchTeamMembers();
+      setIsTeamModalOpen(false);
+      setSelectedTeamMember(null);
+      setTeamMemberForm({ name: '', position: '', description: '', image: null });
+    } catch (error) {
+      console.error('Error saving team member:', error);
+      alert(error.message || 'Failed to save team member. Please try again.');
+    }
+  };
+
+  const handleDeleteTeamMember = async (id) => {
+    if (window.confirm('Are you sure you want to delete this team member?')) {
+      try {
+        const response = await fetch(`${getApiUrl()}/team/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to delete team member');
+
+        fetchTeamMembers();
+      } catch (error) {
+        console.error('Error deleting team member:', error);
+        alert(error.message || 'Failed to delete team member. Please try again.');
+      }
+    }
+  };
+
+  const handleEditTeamMember = (member) => {
+    setSelectedTeamMember(member);
+    setTeamMemberForm({
+      name: member.name,
+      position: member.position,
+      description: member.description,
+      image: null
+    });
+    setIsTeamModalOpen(true);
+  };
+
+  // Add this to your useEffect that loads initial data
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        await Promise.all([
+          fetchUsers(),
+          fetchPendingVerificationUsers(),
+          fetchStartups(),
+          fetchEvents(),
+          fetchTeamMembers(),
+          fetchDashboardStats()
+        ]);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
+  }, []);
+
+  // Add this to your renderContent function
+  const renderTeamManagement = () => (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Team Management</h2>
+        <button
+          onClick={() => {
+            setSelectedTeamMember(null);
+            setTeamMemberForm({ name: '', position: '', description: '', image: null });
+            setIsTeamModalOpen(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Team Member
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {teamMembers.map((member) => (
+          <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden">
+            <div className="aspect-[4/3] overflow-hidden">
+              <img 
+                src={member.image_url ? `${getBaseUrl()}${member.image_url}` : defaultAvatar}
+                alt={member.name}
+                className="w-full h-48 object-cover"
+                onError={(e) => {
+                  console.error('Image load error:', e.target.src);
+                  e.target.onerror = null;
+                  e.target.src = defaultAvatar;
+                }}
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{member.name}</h3>
+              <p className="text-gray-600 dark:text-gray-300">{member.position}</p>
+              <p className="mt-2 text-gray-700 dark:text-gray-400">{member.description}</p>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleEditTeamMember(member)}
+                  className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center gap-1"
+                >
+                  <FiEdit2 size={16} />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteTeamMember(member.id)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                >
+                  <FiTrash2 size={16} />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {isTeamModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h2 className="text-2xl font-semibold mb-4">
+              {selectedTeamMember ? 'Edit Team Member' : 'Add Team Member'}
+            </h2>
+            <form onSubmit={handleTeamMemberSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  value={teamMemberForm.name}
+                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Position</label>
+                <input
+                  type="text"
+                  value={teamMemberForm.position}
+                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={teamMemberForm.description}
+                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows="4"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Image</label>
+                <input
+                  type="file"
+                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, image: e.target.files[0] })}
+                  className="w-full"
+                  accept="image/*"
+                  {...(!selectedTeamMember && { required: true })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTeamModalOpen(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+
+
   return (
     <>
       <Navbar />
@@ -4005,19 +4589,9 @@ case 'sitePerformance':
         {renderError()}
         {renderLoading()}
         
-        {/* Sidebar */}
-        <aside className={`
-          ${isDesktop 
-            ? 'fixed left-8 top-24 bottom-8 z-30 w-64' 
-            : 'fixed left-0 top-0 h-full w-64 z-[70]'
-          }
-          bg-white dark:bg-[#232323] flex flex-col 
-          ${isDesktop ? 'pt-4 pb-4' : 'pt-3 pb-3'} 
-          border border-orange-100 dark:border-orange-700 
-          ${isDesktop ? 'rounded-2xl' : 'rounded-none'} 
-          shadow-xl transform transition-transform duration-300 ease-in-out
-          ${!isDesktop && !isMobileSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
-        `}>
+        {/* Desktop Sidebar */}
+        {isDesktop && (
+          <aside className="fixed left-8 top-24 bottom-8 z-30 w-64 bg-white dark:bg-[#232323] flex flex-col pt-4 pb-4 border border-orange-100 dark:border-orange-700 rounded-2xl shadow-xl">
           {/* Profile Section */}
           <div className="flex flex-col items-center mb-4 px-4">
             <div className="relative w-16 h-16 mb-2">
@@ -4037,12 +4611,7 @@ case 'sitePerformance':
               {tabs.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (isMobile) {
-                      setIsMobileSidebarOpen(false);
-                    }
-                  }}
+                    onClick={() => setActiveTab(item.id)}
                   className={`
                     w-full flex items-center px-3 py-2 text-sm rounded-lg
                     ${activeTab === item.id 
@@ -4062,12 +4631,7 @@ case 'sitePerformance':
           {/* Bottom Actions */}
           <div className="px-3 mt-2">
               <button
-              onClick={() => {
-                setActiveTab('settings');
-                if (isMobile) {
-                  setIsMobileSidebarOpen(false);
-                }
-              }}
+                onClick={() => setActiveTab('settings')}
               className={`
                 w-full flex items-center px-3 py-2 text-sm rounded-lg mb-1.5
                 ${activeTab === 'settings' 
@@ -4090,6 +4654,94 @@ case 'sitePerformance':
               </button>
           </div>
         </aside>
+        )}
+
+        {/* Mobile Hamburger Button */}
+        {!isDesktop && (
+          <HamburgerButton
+            isOpen={isMobileSidebarOpen}
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          />
+        )}
+
+        {/* Mobile Sidebar */}
+        {!isDesktop && (
+          <MobileSidebar
+            isOpen={isMobileSidebarOpen}
+            onClose={() => setIsMobileSidebarOpen(false)}
+            title="Dashboard"
+          >
+            <div className="flex flex-col h-full">
+              {/* Profile Section */}
+              <div className="flex flex-col items-center mb-4 px-4 pt-4">
+                <div className="relative w-16 h-16 mb-2">
+                  <img 
+                    src={user?.profile_image || defaultAvatar}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover border-2 border-orange-500"
+                  />
+                </div>
+                <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{user?.name || 'Admin Demo'}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">ENTREPRENEUR</p>
+                </div>
+                
+              {/* Navigation Links */}
+              <nav className="flex-1 px-3">
+                <div className="space-y-1.5">
+                  {tabs.map((item) => (
+                <button
+                      key={item.id}
+                  onClick={() => {
+                        setActiveTab(item.id);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                      className={`
+                        w-full flex items-center px-3 py-2 text-sm rounded-lg
+                        ${activeTab === item.id 
+                          ? 'bg-orange-500 text-white' 
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900'
+                        }
+                        transition-colors duration-150 ease-in-out
+                      `}
+                    >
+                      <span className="text-xl mr-3">{item.icon}</span>
+                      <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
+                </button>
+                  ))}
+              </div>
+              </nav>
+              
+              {/* Bottom Actions */}
+              <div className="px-3 mt-2 mb-4">
+                <button
+                  onClick={() => {
+                    setActiveTab('settings');
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center px-3 py-2 text-sm rounded-lg mb-1.5
+                    ${activeTab === 'settings' 
+                      ? 'bg-orange-500 text-white' 
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900'
+                    }
+                    transition-colors duration-150 ease-in-out
+                  `}
+                >
+                  <FiSettings className="text-xl mr-3" />
+                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">Settings</span>
+                </button>
+                
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-3 py-2 text-sm rounded-lg text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-150 ease-in-out"
+                >
+                  <FiLogOut className="text-xl mr-3" />
+                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">Logout</span>
+                </button>
+              </div>
+            </div>
+          </MobileSidebar>
+        )}
 
         {/* Main Content */}
         <main className={`
@@ -4098,323 +4750,6 @@ case 'sitePerformance':
         `}>
           {renderContent()}
         </main>
-
-        {/* Action Dropdowns */}
-        {renderUserActionDropdownPortal()}
-        {renderActionDropdownPortal()}
-
-        {/* User Details Modal */}
-        {showUserDetailsModal && selectedUserModal && (
-          <AdminUserDetailsModal
-            user={selectedUserModal}
-            onClose={() => {
-              setShowUserDetailsModal(false);
-              setSelectedUserModal(null);
-            }}
-          />
-        )}
-
-        {/* User Verification Modal */}
-        {showUserVerificationModal && selectedUserForVerification && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                {verificationAction === 'approve' ? 'Verify User' : 'Reject User Verification'}
-              </h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {verificationAction === 'approve' ? 'Verification Comment (Optional)' : 'Rejection Reason'}
-                </label>
-                <textarea
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  rows="3"
-                  value={verificationAction === 'approve' ? verificationComment : userRejectionReason}
-                  onChange={(e) => {
-                    if (verificationAction === 'approve') {
-                      setVerificationComment(e.target.value);
-                    } else {
-                      setUserRejectionReason(e.target.value);
-                    }
-                  }}
-                  placeholder={verificationAction === 'approve' 
-                    ? "Add any notes about the verification (optional)"
-                    : "Please provide a reason for rejection"
-                  }
-                />
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowUserVerificationModal(false);
-                    setSelectedUserForVerification(null);
-                    setVerificationAction(null);
-                    setVerificationComment('');
-                    setUserRejectionReason('');
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                    verificationAction === 'approve'
-                      ? 'bg-green-500 hover:bg-green-600'
-                      : 'bg-red-500 hover:bg-red-600'
-                  }`}
-                  onClick={handleVerificationModalSubmit}
-                  disabled={verificationAction === 'reject' && !userRejectionReason.trim()}
-                >
-                  {verificationAction === 'approve' ? 'Verify' : 'Reject'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete User Confirmation Modal */}
-        {showDeleteUserConfirmModal && userToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Delete User</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Are you sure you want to delete this user? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowDeleteUserConfirmModal(false);
-                    setUserToDelete(null);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                  onClick={() => {
-                    handleDeleteUser(userToDelete.id);
-                    setShowDeleteUserConfirmModal(false);
-                    setUserToDelete(null);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Bulk User Action Modal */}
-        {showBulkUserActionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Bulk Action</h3>
-              <div className="mb-4">
-                <select
-                  value={bulkUserAction}
-                  onChange={(e) => setBulkUserAction(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                >
-                  <option value="">Select Action</option>
-                  <option value="suspend">Suspend Users</option>
-                  <option value="reactivate">Reactivate Users</option>
-                  <option value="delete">Delete Users</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowBulkUserActionModal(false);
-                    setBulkUserAction('');
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  onClick={() => {
-                    handleBulkUserAction();
-                    setShowBulkUserActionModal(false);
-                    setBulkUserAction('');
-                  }}
-                  disabled={!bulkUserAction}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Startup Modal */}
-        {showEditStartupModal && editingStartup && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Edit Startup</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStartup.name}
-                    onChange={(e) => setEditingStartup({...editingStartup, name: e.target.value})}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Industry
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStartup.industry}
-                    onChange={(e) => setEditingStartup({...editingStartup, industry: e.target.value})}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStartup.location}
-                    onChange={(e) => setEditingStartup({...editingStartup, location: e.target.value})}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={editingStartup.description}
-                    onChange={(e) => setEditingStartup({...editingStartup, description: e.target.value})}
-                    rows="3"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Stage
-                  </label>
-                  <select
-                    value={editingStartup.startup_stage}
-                    onChange={(e) => setEditingStartup({...editingStartup, startup_stage: e.target.value})}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                  >
-                    <option value="idea">Idea Stage</option>
-                    <option value="mvp">MVP</option>
-                    <option value="early_traction">Early Traction</option>
-                    <option value="scaling">Scaling</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowEditStartupModal(false);
-                    setEditingStartup(null);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  onClick={handleSaveStartupEdit}
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Startup Confirmation Modal */}
-        {showDeleteConfirmModal && startupToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Delete Startup</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Are you sure you want to delete this startup? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowDeleteConfirmModal(false);
-                    setStartupToDelete(null);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                  onClick={() => handleDeleteStartup(startupToDelete.startup_id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Bulk Startup Action Modal */}
-        {showBulkActionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#232323] rounded-xl p-6 max-w-lg w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Bulk Action</h3>
-              <div className="mb-4">
-                <select
-                  value={bulkAction}
-                  onChange={(e) => setBulkAction(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-[#1b1b1b] dark:text-white"
-                >
-                  <option value="">Select Action</option>
-                  <option value="suspend">Suspend Startups</option>
-                  <option value="reactivate">Reactivate Startups</option>
-                  <option value="delete">Delete Startups</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  onClick={() => {
-                    setShowBulkActionModal(false);
-                    setBulkAction('');
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  onClick={() => {
-                    handleBulkAction();
-                    setShowBulkActionModal(false);
-                    setBulkAction('');
-                  }}
-                  disabled={!bulkAction}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ... rest of the existing modals and portals ... */}
       </div>
     </>
   );

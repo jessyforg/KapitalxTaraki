@@ -180,21 +180,101 @@ const calculateIndustryMatch = (industry1, industry2) => {
 const calculateLocationMatch = (location1, location2) => {
   if (!location1 || !location2) return 0;
   
+  // Convert locations to comparable strings
+  const getLocationString = (location) => {
+    if (typeof location === 'string') {
+      return location;
+    }
+    
+    // Handle object-based location (from preferences)
+    if (typeof location === 'object') {
+      // Build location string from components, prioritizing most specific
+      const parts = [];
+      if (location.barangay) parts.push(location.barangay);
+      if (location.city) parts.push(location.city);
+      if (location.province) parts.push(location.province);
+      if (location.region) parts.push(location.region);
+      
+      // If we have specific components, use them
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+      
+      // Fallback to string conversion
+      return String(location);
+    }
+    
+    // Final fallback
+    return String(location);
+  };
+  
+  const loc1Str = getLocationString(location1);
+  const loc2Str = getLocationString(location2);
+  
   // Exact match
-  if (location1 === location2) return 1;
+  if (loc1Str === loc2Str) return 1;
   
   // Parse location components
   const parseLocation = (location) => {
-    const parts = location.split(',').map(p => p.trim());
+    // Ensure location is a string before splitting
+    const locationStr = typeof location === 'string' ? location : String(location);
+    const parts = locationStr.split(',').map(p => p.trim());
     return {
-      full: location,
+      full: locationStr,
       city: parts[0],
       region: parts[1] || parts[0]
     };
   };
   
-  const loc1 = parseLocation(location1);
-  const loc2 = parseLocation(location2);
+  const loc1 = parseLocation(loc1Str);
+  const loc2 = parseLocation(loc2Str);
+  
+  // Check for object-based location matching
+  const getObjectLocation = (location) => {
+    if (typeof location === 'object') {
+      return {
+        region: location.region,
+        province: location.province,
+        city: location.city,
+        barangay: location.barangay
+      };
+    }
+    return null;
+  };
+  
+  const objLoc1 = getObjectLocation(location1);
+  const objLoc2 = getObjectLocation(location2);
+  
+  // If both are object locations, do component-wise matching
+  if (objLoc1 && objLoc2) {
+    let matchScore = 0;
+    let components = 0;
+    
+    // Exact matches for each component
+    if (objLoc1.barangay && objLoc2.barangay) {
+      components++;
+      if (objLoc1.barangay === objLoc2.barangay) matchScore += 1;
+    }
+    
+    if (objLoc1.city && objLoc2.city) {
+      components++;
+      if (objLoc1.city === objLoc2.city) matchScore += 0.9;
+    }
+    
+    if (objLoc1.province && objLoc2.province) {
+      components++;
+      if (objLoc1.province === objLoc2.province) matchScore += 0.7;
+    }
+    
+    if (objLoc1.region && objLoc2.region) {
+      components++;
+      if (objLoc1.region === objLoc2.region) matchScore += 0.5;
+    }
+    
+    if (components > 0) {
+      return Math.min(matchScore / components, 1);
+    }
+  }
   
   // Same city, different specificity
   if (loc1.city === loc2.city) return 0.9;

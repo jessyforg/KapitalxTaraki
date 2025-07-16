@@ -627,88 +627,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         // For other notification types, just close the dropdown
         break;
     }
-    setShowNotifications(false);
   }, [navigate]);
-
-  // Update notification rendering to use portals
-  const NotificationContent = ({ onClose }) => {
-    return (
-      <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn`}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-orange-500"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="max-h-[70vh] overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">No notifications</div>
-          ) : (
-            notifications.map((notification) => (
-              <button
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`w-full flex items-start gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-700 ${
-                  !notification.is_read ? 'bg-orange-50 dark:bg-orange-900/20' : ''
-                }`}
-              >
-                <div className="flex-shrink-0 mt-1">
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {notification.type === 'match_received' && 'New Match Found!'}
-                        {notification.type === 'investor_match' && 'Investor Match'}
-                        {notification.type === 'startup_match' && 'Startup Match'}
-                        {notification.type === 'profile_view' && 'Profile Viewed'}
-                        {notification.type === 'startup_status' && 'Startup Update'}
-                        {notification.type === 'program_status' && 'Program Update'}
-                        {notification.type === 'event_reminder' && 'Event Reminder'}
-                        {notification.type === 'message' && 'New Message'}
-                        {notification.type === 'connection_request' && 'Connection Request'}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                        {notification.type === 'match_received' && `You have a new match with ${notification.data?.match_name || 'someone'}!`}
-                        {notification.type === 'investor_match' && `${notification.data?.investor_name || 'An investor'} might be interested in your startup.`}
-                        {notification.type === 'startup_match' && `${notification.data?.startup_name || 'A startup'} matches your investment criteria.`}
-                        {notification.type === 'profile_view' && `${notification.data?.viewer_name || 'Someone'} viewed your profile.`}
-                        {notification.type === 'startup_status' && notification.data?.status_message}
-                        {notification.type === 'program_status' && notification.data?.status_message}
-                        {notification.type === 'event_reminder' && `Reminder: ${notification.data?.event_name || 'Event'} is coming up!`}
-                        {notification.type === 'message' && `${notification.data?.sender_name || 'Someone'} sent you a message.`}
-                        {notification.type === 'connection_request' && `${notification.data?.requester_name || 'Someone'} wants to connect with you.`}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                      {formatNotificationTime(notification.created_at)}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => {
-              onClose();
-              navigate('/notifications');
-            }}
-            className="w-full py-2 text-orange-600 dark:text-orange-400 hover:underline text-sm font-medium"
-          >
-            View All Notifications
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   const navLinks = [
     {
@@ -1207,33 +1126,29 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                       </span>
                     )}
                   </button>
-                  {/* Desktop dropdown */}
-                  <div className="hidden tablet-m:block">
-                    {showNotifications && (
-                      <NotificationDropdown
-                        notifications={notifications}
-                        onNotificationClick={handleNotificationClick}
-                        onViewAll={() => {
-                          setShowNotifications(false);
-                          navigate('/notifications');
-                        }}
-                        formatTime={formatNotificationTime}
-                      />
-                    )}
-                  </div>
-                  {/* Mobile modal overlay */}
+
+                  {/* Unified Notification Component */}
                   {showNotifications && (
-                    <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
-                      <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn`}>
-                        <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setShowNotifications(false)} aria-label="Close notifications">&times;</button>
+                    <div className="tablet-m:absolute tablet-m:right-0 tablet-m:mt-2 tablet-m:w-96 tablet-m:max-w-sm fixed inset-0 z-[999] flex items-center justify-center">
+                      <div className="tablet-m:relative tablet-m:w-full">
+                        {/* Backdrop for mobile only */}
+                        <div 
+                          className="tablet-m:hidden fixed inset-0 bg-black/50" 
+                          onClick={() => setShowNotifications(false)}
+                        />
+                        
                         <NotificationDropdown
                           notifications={notifications}
-                          onNotificationClick={handleNotificationClick}
+                          onNotificationClick={(notification) => {
+                            handleNotificationClick(notification);
+                            setShowNotifications(false);
+                          }}
                           onViewAll={() => {
                             setShowNotifications(false);
                             navigate('/notifications');
                           }}
                           formatTime={formatNotificationTime}
+                          isMobile={window.innerWidth < 768}
                         />
                       </div>
                     </div>
@@ -1773,7 +1688,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       {/* Scroll to top button - Updated styling and animation */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-24 tablet-m:bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-50 transform hover:scale-110 ${
+        className={`fixed bottom-20 tablet-m:bottom-20 right-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-50 transform hover:scale-110 ${
           showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
         }`}
         aria-label="Scroll to top"
@@ -1782,20 +1697,6 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
       </button>
-
-      {/* Mobile Notifications Modal */}
-      {showNotifications && window.innerWidth < 768 && (
-        <div className="fixed inset-0 z-[999] flex items-start justify-center pt-16 px-4 tablet-m:hidden bg-black bg-opacity-40">
-          <NotificationContent onClose={() => setShowNotifications(false)} />
-        </div>
-      )}
-
-      {/* Desktop Notifications Dropdown */}
-      {showNotifications && window.innerWidth >= 768 && (
-        <div className="hidden tablet-m:block absolute right-0 mt-2 w-96 max-w-sm rounded-xl shadow-lg z-50">
-          <NotificationContent onClose={() => setShowNotifications(false)} />
-        </div>
-      )}
     </header>
   );
 }

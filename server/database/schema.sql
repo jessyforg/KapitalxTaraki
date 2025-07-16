@@ -13,7 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
     verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    two_factor_enabled BOOLEAN DEFAULT FALSE
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    -- Add new fields for preferences
+    position_desired VARCHAR(50),
+    preferred_industries TEXT,
+    preferred_startup_stage VARCHAR(50),
+    preferred_location JSON,
+    skills JSON
 );
 
 -- Create notification_preferences table if not exists

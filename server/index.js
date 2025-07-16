@@ -96,14 +96,23 @@ app.use("/api/search", searchRouter);
 const userRouter = require("./routes/users");
 app.use("/api/users", userRouter);
 
+// Add team routes
+const teamRouter = require("./routes/team");
+app.use("/api/team", teamRouter(pool));
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "uploads");
 const messagesUploadsDir = path.join(__dirname, "uploads", "messages");
+const teamUploadsDir = path.join(__dirname, "uploads", "team");
+
 if (!fs.existsSync(uploadsDir)) {
-	fs.mkdirSync(uploadsDir);
+	fs.mkdirSync(uploadsDir, { recursive: true });
 }
 if (!fs.existsSync(messagesUploadsDir)) {
 	fs.mkdirSync(messagesUploadsDir, { recursive: true });
+}
+if (!fs.existsSync(teamUploadsDir)) {
+	fs.mkdirSync(teamUploadsDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -134,6 +143,7 @@ app.post(
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads/team", express.static(path.join(__dirname, "public", "uploads", "team")));
 
 // Authentication Routes
 app.post("/api/auth/register", async (req, res) => {
@@ -2675,6 +2685,11 @@ app.use("/api/tickets", authenticateToken, ticketsRouter);
 
 const notificationsRouter = require("./routes/notifications")(pool);
 app.use("/api/notifications", authenticateToken, notificationsRouter);
+
+const documentsRouter = require('./routes/documents');
+
+// Register routes
+app.use('/api', documentsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

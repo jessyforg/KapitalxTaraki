@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import TBI from "../components/TBI";
-import InTTOTBI from "../components/InTTOTBI";
 import Framework from "../components/Framework";
 import Footer from "../components/Footer";
 import Navbar from '../components/Navbar';
@@ -52,10 +51,7 @@ function Ecosystem() {
               <TBI hideHeading={true} />
             </div>
           </section>
-          {/* Mentors Section */}
-          <section id="mentors">
-            <InTTOTBI />
-          </section>
+          
           {/* Framework Section */}
           <section id="framework">
             <Framework />

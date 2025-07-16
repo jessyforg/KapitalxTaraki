@@ -63,18 +63,74 @@ export default function StartupDetails() {
                 <h1 className="text-3xl font-bold text-orange-600 mb-2">{startup.name || 'Not Provided'}</h1>
                 <div className="text-gray-700 font-semibold mb-1">Industry: <span className="font-normal">{startup.industry || 'Not Provided'}</span></div>
                 <div className="text-gray-700 font-semibold mb-1">Location: <span className="font-normal">{startup.location || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-1">Full Address: <span className="font-normal">{startup.full_address || 'Not Provided'}</span></div>
+                <div className="text-gray-700 font-semibold mb-1">Telephone: <span className="font-normal">{startup.telephone_number || 'Not Provided'}</span></div>
                 <div className="text-gray-700 font-semibold mb-1">Funding Stage: <span className="font-normal">{startup.funding_stage || 'Not Provided'}</span></div>
-                <div className="text-gray-700 font-semibold mb-4">Business Plan: <span className="font-normal">
-                  {startup.business_plan_url ? (
-                    <a href={startup.business_plan_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>
-                  ) : (
-                    'Not Provided'
+                
+                {/* Social Media Links */}
+                <div className="flex gap-4 mt-4 mb-4">
+                  {startup.facebook_url && (
+                    <a href={startup.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">
+                      <i className="fab fa-facebook fa-lg"></i>
+                    </a>
                   )}
-                </span></div>
-                {startup.website ? (
-                  <a href={startup.website} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors">Visit Website</a>
-                ) : (
-                  <span className="mt-2 inline-block bg-gray-200 text-gray-500 font-semibold px-5 py-2 rounded-lg shadow">Website Not Provided</span>
+                  {startup.twitter_url && (
+                    <a href={startup.twitter_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-500">
+                      <i className="fab fa-twitter fa-lg"></i>
+                    </a>
+                  )}
+                  {startup.linkedin_url && (
+                    <a href={startup.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-800">
+                      <i className="fab fa-linkedin fa-lg"></i>
+                    </a>
+                  )}
+                  {startup.instagram_url && (
+                    <a href={startup.instagram_url} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700">
+                      <i className="fab fa-instagram fa-lg"></i>
+                    </a>
+                  )}
+                </div>
+
+                {/* Verification Status */}
+                <div className="mt-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <i className={`fas fa-check-circle ${startup.is_verified ? 'text-green-500' : 'text-gray-400'}`}></i>
+                    <span className={`font-semibold ${startup.is_verified ? 'text-green-500' : 'text-gray-400'}`}>
+                      {startup.is_verified ? 'Verified Startup' : 'Verification Pending'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Document Links */}
+                <div className="flex gap-4 mt-4">
+                  {startup.business_permit_url && (
+                    <a 
+                      href={startup.business_permit_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors"
+                    >
+                      <i className="fas fa-certificate"></i>
+                      Business Permit
+                    </a>
+                  )}
+                  {startup.sec_registration_url && (
+                    <a 
+                      href={startup.sec_registration_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      <i className="fas fa-building"></i>
+                      SEC Registration
+                    </a>
+                  )}
+                </div>
+
+                {startup.website && (
+                  <a href={startup.website} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors">
+                    Visit Website
+                  </a>
                 )}
               </div>
             </div>

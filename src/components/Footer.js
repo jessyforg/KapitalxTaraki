@@ -6,7 +6,7 @@ function footer() {
           <div className="w-full mx-auto max-w-screen-xl p-4 px-14 tablet:px-64 tablet:flex tablet:items-center tablet:justify-between laptop-s:px-[32rem] phone:px-16 tablet-m:px-96">
             <span className="text-xs text-gray-400 text-center laptop-m:text-sm">
               &copy; {new Date().getFullYear()} TARAKI | All Rights Reserved Designed by{" "}
-              <span className="font-semibold text-gray-500"> TARAKI-CAR</span>
+              <span className="font-semibold text-orange-500"> KAPITAL</span>
             </span>
             <ul className="flex flex-wrap items-center mt-0 text-sm font-medium phone:hidden laptop:flex text-gray-400">
               <li>

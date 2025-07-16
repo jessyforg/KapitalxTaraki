@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
+import { validateDate } from '../utils/validation';
 
 export default function VerifyAccount() {
   const [status, setStatus] = useState('');
@@ -80,6 +81,17 @@ export default function VerifyAccount() {
 
   function handleChange(e) {
     const { name, value, files } = e.target;
+    
+    // Validate dates
+    if (name === 'issue_date' || name === 'expiry_date') {
+      const validation = validateDate(value, name);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
   }
 
@@ -97,6 +109,17 @@ export default function VerifyAccount() {
   }
   function handleEditFormChange(e) {
     const { name, value, files } = e.target;
+    
+    // Validate dates
+    if (name === 'issue_date' || name === 'expiry_date') {
+      const validation = validateDate(value, name);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
     setEditForm(f => ({ ...f, [name]: files ? files[0] : value }));
   }
   async function handleEditSubmit(e) {

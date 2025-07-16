@@ -499,7 +499,18 @@ const InvestorDashboard = () => {
                 preferred_startup_stage: preferences?.preferred_startup_stage,
                 // Use preferences first, only fall back to profile if preferences don't exist
                 display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (fullProfile?.industry || entrepreneur.industry || 'Not specified'),
-                display_location: preferences?.preferred_location || (fullProfile?.location || entrepreneur.location || 'Not specified'),
+                display_location: (() => {
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
+                    const loc = preferences.preferred_location;
+                    const parts = [];
+                    if (loc.barangay) parts.push(loc.barangay);
+                    if (loc.city) parts.push(loc.city);
+                    if (loc.province) parts.push(loc.province);
+                    if (loc.region) parts.push(loc.region);
+                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                  }
+                  return preferences?.preferred_location || fullProfile?.location || entrepreneur.location || 'Not specified';
+                })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
             } catch (error) {
@@ -589,15 +600,26 @@ const InvestorDashboard = () => {
                   }
                 }
                 
-                return {
+                                return {
                   ...investor,
                   // Always prioritize preferences over basic profile data
                   preferred_location: preferences?.preferred_location,
                   preferred_industries: Array.isArray(preferredIndustries) ? preferredIndustries : [],
                   preferred_startup_stage: preferences?.preferred_startup_stage,
-                                  // Use preferences first, only fall back to profile if preferences don't exist
+                  // Use preferences first, only fall back to profile if preferences don't exist
                 display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (investor.industry || 'Not specified'),
-                display_location: preferences?.preferred_location || (investor.location || 'Not specified'),
+                display_location: (() => {
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
+                    const loc = preferences.preferred_location;
+                    const parts = [];
+                    if (loc.barangay) parts.push(loc.barangay);
+                    if (loc.city) parts.push(loc.city);
+                    if (loc.province) parts.push(loc.province);
+                    if (loc.region) parts.push(loc.region);
+                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                  }
+                  return preferences?.preferred_location || investor.location || 'Not specified';
+                })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
                 };
               } catch (error) {

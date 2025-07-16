@@ -3,16 +3,15 @@ import axios from 'axios';
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
   if (typeof window === 'undefined') {
-    return '/api'; // Server-side rendering fallback
+    return 'http://localhost:5000/api'; // Server-side rendering fallback
   }
   
   const hostname = window.location.hostname;
   const port = window.location.port;
   
-  // If accessing from localhost (React dev server on port 3000)
+  // Always point to the backend server on port 5000
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Use relative URL - the proxy in package.json will forward to port 5000
-    return '/api';
+    return 'http://localhost:5000/api';
   }
   
   // If accessing from network (e.g., 192.168.0.24:3000)

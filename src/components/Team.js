@@ -1,35 +1,57 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import ateJez from "../components/imgs/team/ate-jez.webp";
-import maamT from "../components/imgs/team/thelma.webp";
-import pia from "../components/imgs/team/pia.webp";
 import "./styles.css";
+import axios from "axios";
+import defaultAvatar from './imgs/default-avatar.png';
 
 function TarakiTeam() {
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const getApiUrl = () => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    return `http://${window.location.hostname}:5000/api`;
+  };
+
+  const getBaseUrl = () => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    return `http://${window.location.hostname}:5000`;
+  };
+
   useEffect(() => {
-    // eslint-disable-next-line no-unused-vars
-    const swiper = new window.Swiper(".mySwiper", {
-      effect: "cards",
-      grabCursor: true,
-      scrollbar: {
-        el: ".swiper-scrollbar",
-        hide: false,
-      },
-      breakpoints: {
-        768: {
-          slidesPerView: 1,
-          spaceBetween: 10,
-          freeMode: true,
-          centeredSlides: false,
-        },
-      },
-    });
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await axios.get(`${getApiUrl()}/team`);
+        setTeamMembers(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching team members:', err);
+        setError('Failed to load team members');
+        setLoading(false);
+      }
+    };
+
+    fetchTeamMembers();
+
     AOS.init({
-      easing: "ease", // Easing function
+      easing: "ease",
       once: false,
     });
   }, []);
+
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-600">{error}</div>;
+  }
 
   return (
     <section id="team">
@@ -56,72 +78,38 @@ function TarakiTeam() {
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-8 mt-12">
-            <div className="bg-white rounded-lg overflow-hidden">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img 
-                  src={maamT} 
-                  alt="Dr. Thelma D. Palaoag"
-                  className="w-full h-full object-cover"
-                />
+            {teamMembers.map((member) => (
+              <div key={member.id} className="bg-white rounded-lg overflow-hidden">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img 
+                    src={`${getBaseUrl()}${member.image_url}`}
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('Image load error:', e.target.src);
+                      e.target.onerror = null;
+                      e.target.src = defaultAvatar;
+                    }}
+                  />
+                </div>
+                <div className="p-6">
+                  <h1 className="font-montserrat text-[1.8rem] font-semibold text-orange-600">
+                    {member.name}
+                  </h1>
+                  <h2 className="font-montserrat text-[1.4rem] text-gray-900 mt-1">
+                    {member.position}
+                  </h2>
+                  <p className="font-montserrat text-[1.1rem] text-gray-700 mt-4 leading-relaxed">
+                    {member.description}
+                  </p>
+                </div>
               </div>
-              <div className="p-6">
-                <h1 className="font-montserrat text-[1.8rem] font-semibold text-orange-600">
-                  Dr. Thelma D. Palaoag
-                </h1>
-                <h2 className="font-montserrat text-[1.4rem] text-gray-900 mt-1">
-                  Project Leader
-                </h2>
-                <p className="font-montserrat text-[1.1rem] text-gray-700 mt-4 leading-relaxed">
-                  20 years of experience in technology and innovation. Her visionary leadership has been instrumental in shaping TARAKI's strategic direction.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg overflow-hidden">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img 
-                  src={ateJez} 
-                  alt="Jezelle Q. Oliva"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h1 className="font-montserrat text-[1.8rem] font-semibold text-orange-600">
-                  Jezelle Q. Oliva
-                </h1>
-                <h2 className="font-montserrat text-[1.4rem] text-gray-900 mt-1">
-                  Startup Community Enabler
-                </h2>
-                <p className="font-montserrat text-[1.1rem] text-gray-700 mt-4 leading-relaxed">
-                  Jezelle is an educator, empowering TARAKI startups, and fosters community growth through spearheading innovative initiatives.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg overflow-hidden">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img 
-                  src={pia} 
-                  alt="Pia Bernardine T. Capuyan"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h1 className="font-montserrat text-[1.8rem] font-semibold text-orange-600">
-                  Pia Bernardine T. Capuyan
-                </h1>
-                <h2 className="font-montserrat text-[1.4rem] text-gray-900 mt-1">
-                  Project Assistant
-                </h2>
-                <p className="font-montserrat text-[1.1rem] text-gray-700 mt-4 leading-relaxed">
-                  An experienced writer with a background in architecture, combining creativity with technical insight. She helps drive fresh ideas and solutions within TARAKI.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 export default TarakiTeam;

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import { validatePhoneNumber } from '../utils/validation';
 
 const industries = {
   Technology: [
@@ -72,6 +73,18 @@ const initialState = {
   funding_stage: '',
   website: '',
   startup_stage: '',
+  // Add new fields
+  full_address: '',
+  telephone_number: '',
+  facebook_url: '',
+  twitter_url: '',
+  linkedin_url: '',
+  instagram_url: '',
+  business_permit_url: '',
+  sec_registration_url: '',
+  // Add upload status fields
+  uploading_business_permit: false,
+  uploading_sec_doc: false,
 };
 
 const CreateStartup = () => {
@@ -82,11 +95,27 @@ const CreateStartup = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState('');
   const fileInputRef = useRef();
+  const businessPermitRef = useRef();
+  const secDocRef = useRef();
   const navigate = useNavigate();
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+
+    // Validate phone number during typing
+    if (name === 'telephone_number') {
+      const validation = validatePhoneNumber(value, true);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleLogoChange = async (e) => {
@@ -110,8 +139,65 @@ const CreateStartup = () => {
     }
   };
 
-  const handleSubmit = async e => {
+  const handleDocumentUpload = async (e, docType) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Only PDF and image files (JPEG, PNG) are allowed');
+      return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size should not exceed 5MB');
+      return;
+    }
+
+    try {
+      const uploadingField = docType === 'business_permit' ? 'uploading_business_permit' : 'uploading_sec_doc';
+      const urlField = docType === 'business_permit' ? 'business_permit_url' : 'sec_registration_url';
+
+      setForm(prev => ({ ...prev, [uploadingField]: true }));
+      setError('');
+
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('type', docType);
+
+      const res = await axios.post('/api/upload-document', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setForm(prev => ({
+        ...prev,
+        [uploadingField]: false,
+        [urlField]: res.data.url
+      }));
+    } catch (err) {
+      setError(`Failed to upload ${docType.replace('_', ' ')}`);
+      setForm(prev => ({ ...prev, [uploadingField]: false }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate phone number on submit
+    if (form.telephone_number) {
+      const validation = validatePhoneNumber(form.telephone_number, false);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+    }
+
     setError('');
     if (!form.name || !form.industry) {
       setError('Name and industry are required.');
@@ -333,6 +419,175 @@ const CreateStartup = () => {
                 onChange={handleChange} 
                 className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
               />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2 text-gray-700">
+                <i className="fas fa-map-marked-alt mr-2 text-orange-500"></i>Full Address
+              </label>
+              <textarea 
+                name="full_address" 
+                value={form.full_address} 
+                onChange={handleChange} 
+                className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2 text-gray-700">
+                <i className="fas fa-phone mr-2 text-orange-500"></i>Telephone Number
+              </label>
+              <input 
+                name="telephone_number" 
+                value={form.telephone_number} 
+                onChange={handleChange} 
+                className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <h3 className="font-semibold text-lg text-gray-700 mb-4">
+                <i className="fas fa-share-alt mr-2 text-orange-500"></i>Social Media Links
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fab fa-facebook mr-2 text-blue-600"></i>Facebook
+                  </label>
+                  <input 
+                    name="facebook_url" 
+                    value={form.facebook_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fab fa-twitter mr-2 text-blue-400"></i>Twitter
+                  </label>
+                  <input 
+                    name="twitter_url" 
+                    value={form.twitter_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fab fa-linkedin mr-2 text-blue-700"></i>LinkedIn
+                  </label>
+                  <input 
+                    name="linkedin_url" 
+                    value={form.linkedin_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fab fa-instagram mr-2 text-pink-600"></i>Instagram
+                  </label>
+                  <input 
+                    name="instagram_url" 
+                    value={form.instagram_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <h3 className="font-semibold text-lg text-gray-700 mb-4">
+                <i className="fas fa-file-alt mr-2 text-orange-500"></i>Verification Documents
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Business Permit Section */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fas fa-certificate mr-2 text-green-600"></i>Business Permit
+                  </label>
+                  
+                  {/* URL Input */}
+                  <input 
+                    name="business_permit_url" 
+                    value={form.business_permit_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent mb-3" 
+                    placeholder="Enter document URL"
+                  />
+                  
+                  {/* File Upload Section */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600">OR</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      ref={businessPermitRef}
+                      onChange={(e) => handleDocumentUpload(e, 'business_permit')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => businessPermitRef.current?.click()}
+                      className="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                      disabled={form.uploading_business_permit}
+                    >
+                      <i className="fas fa-upload"></i>
+                      {form.uploading_business_permit ? 'Uploading...' : 'Upload File'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* SEC Registration Section */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <label className="block font-semibold mb-2 text-gray-700">
+                    <i className="fas fa-building mr-2 text-blue-600"></i>SEC Registration
+                  </label>
+                  
+                  {/* URL Input */}
+                  <input 
+                    name="sec_registration_url" 
+                    value={form.sec_registration_url} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent mb-3" 
+                    placeholder="Enter document URL"
+                  />
+                  
+                  {/* File Upload Section */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600">OR</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      ref={secDocRef}
+                      onChange={(e) => handleDocumentUpload(e, 'sec_registration')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => secDocRef.current?.click()}
+                      className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                      disabled={form.uploading_sec_doc}
+                    >
+                      <i className="fas fa-upload"></i>
+                      {form.uploading_sec_doc ? 'Uploading...' : 'Upload File'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Document Guidelines */}
+              <div className="mt-4 bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+                <h4 className="font-semibold mb-2">Document Guidelines:</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Accepted formats: PDF, JPEG, PNG</li>
+                  <li>Maximum file size: 5MB</li>
+                  <li>Documents must be clear and legible</li>
+                  <li>You can either provide a URL to your document or upload the file directly</li>
+                </ul>
+              </div>
             </div>
           </div>
 

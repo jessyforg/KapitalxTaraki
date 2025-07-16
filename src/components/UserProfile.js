@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import api from '../services/api';
@@ -6,6 +6,9 @@ import userProfileAPI from '../api/userProfile';
 import {
   FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit
 } from 'react-icons/fa';
+import { validatePhoneNumber, validateDate } from '../utils/validation';
+import MobileSidebar from './MobileSidebar';
+import HamburgerButton from './HamburgerButton';
 
 // Add SKILLS array and TagMultiSelect component at the top after the imports
 const SKILLS = [
@@ -116,21 +119,70 @@ const formatGender = (gender) => {
 };
 
 // Move these components outside the main function so they are not re-created on every render
-function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user, isOwnProfile }) {
+const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user, isOwnProfile }) => {
+  const [validationError, setValidationError] = useState('');
+  const [localInfo, setLocalInfo] = useState(generalInfo);
+
+  // Update local state when generalInfo changes and not editing
+  useEffect(() => {
+    if (!isEditingGeneral) {
+      setLocalInfo(generalInfo);
+    }
+  }, [generalInfo, isEditingGeneral]);
+
+  const handleChange = useCallback((field, value) => {
+    setLocalInfo(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSave = useCallback(() => {
+    setGeneralInfo(localInfo);
+    handleSaveGeneral(localInfo); // Pass the local state to save
+  }, [localInfo, setGeneralInfo, handleSaveGeneral]);
+
+  const handleCancel = useCallback(() => {
+    setLocalInfo(generalInfo);
+    setIsEditingGeneral(false);
+  }, [generalInfo, setIsEditingGeneral]);
+
   // Handle date change
   const handleDateChange = (e) => {
     const newDate = e.target.value;
-    setGeneralInfo({ ...generalInfo, birthdate: newDate });
+    handleChange('birthdate', newDate);
+    
+    // Only validate complete dates
+    if (newDate.length === 10) {
+      const validation = validateDate(newDate, 'birthdate');
+      if (!validation.isValid) {
+        setValidationError(validation.message);
+      } else {
+        setValidationError('');
+      }
+    }
   };
 
   // Handle gender change
   const handleGenderChange = (e) => {
     const newGender = e.target.value.toLowerCase();
-    setGeneralInfo({ ...generalInfo, gender: newGender });
+    handleChange('gender', newGender);
+  };
+
+  // Handle phone change
+  const handlePhoneChange = (e) => {
+    const newPhone = e.target.value;
+    const validation = validatePhoneNumber(newPhone, true);
+    if (!validation.isValid) {
+      setValidationError(validation.message);
+      return;
+    }
+    setValidationError('');
+    handleChange('contact_number', newPhone);
   };
 
   return (
     <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+      {validationError && (
+        <div className="text-red-500 mb-4">{validationError}</div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">General Information</h2>
         {!isEditingGeneral && isOwnProfile && (
@@ -140,11 +192,27 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
         <div>
           <div className="text-gray-600 mb-1">First Name</div>
-          <input id="general-firstName" name="general-firstName" type="text" value={generalInfo.firstName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, firstName: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input
+            id="general-firstName"
+            name="general-firstName"
+            type="text"
+            value={localInfo.firstName || ''}
+            disabled={!isEditingGeneral}
+            onChange={e => handleChange('firstName', e.target.value)}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+          />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Last Name</div>
-          <input id="general-lastName" name="general-lastName" type="text" value={generalInfo.lastName} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, lastName: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input 
+            id="general-lastName" 
+            name="general-lastName" 
+            type="text" 
+            value={localInfo.lastName || ''} 
+            disabled={!isEditingGeneral} 
+            onChange={e => handleChange('lastName', e.target.value)} 
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
+          />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Date of Birth</div>
@@ -152,9 +220,17 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
             id="general-birthdate"
             name="general-birthdate"
             type="date"
-            value={formatDate(generalInfo.birthdate)}
+            value={formatDate(localInfo.birthdate) || ''}
             disabled={!isEditingGeneral}
             onChange={handleDateChange}
+            onBlur={(e) => {
+              const validation = validateDate(e.target.value, 'birthdate');
+              if (!validation.isValid) {
+                setValidationError(validation.message);
+              } else {
+                setValidationError('');
+              }
+            }}
             className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
           />
         </div>
@@ -164,7 +240,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
             <select
               id="general-gender"
               name="general-gender"
-              value={generalInfo.gender}
+              value={localInfo.gender || ''}
               onChange={handleGenderChange}
               className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
@@ -178,7 +254,7 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
               id="general-gender" 
               name="general-gender" 
               type="text" 
-              value={formatGender(generalInfo.gender)} 
+              value={formatGender(localInfo.gender)} 
               disabled 
               className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
             />
@@ -186,36 +262,75 @@ function GeneralInfo({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditi
         </div>
         <div>
           <div className="text-gray-600 mb-1">Phone</div>
-          <input id="general-contact_number" name="general-contact_number" type="text" value={generalInfo.contact_number} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, contact_number: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input 
+            id="general-contact_number" 
+            name="general-contact_number" 
+            type="tel"
+            value={localInfo.contact_number || ''} 
+            disabled={!isEditingGeneral} 
+            onChange={handlePhoneChange}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
+          />
         </div>
         <div>
           <div className="text-gray-600 mb-1">Email</div>
-          <input id="general-email" name="general-email" type="text" value={generalInfo.email} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, email: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input 
+            id="general-email" 
+            name="general-email" 
+            type="text" 
+            value={localInfo.email || ''} 
+            disabled={!isEditingGeneral} 
+            onChange={e => handleChange('email', e.target.value)} 
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
+          />
         </div>
         <div className="col-span-1 md:col-span-2">
           <div className="text-gray-600 mb-1">Address</div>
-          <input id="general-location" name="general-location" type="text" value={generalInfo.location} disabled={!isEditingGeneral} onChange={e => setGeneralInfo({ ...generalInfo, location: e.target.value })} className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" />
+          <input 
+            id="general-location" 
+            name="general-location" 
+            type="text" 
+            value={localInfo.location || ''} 
+            disabled={!isEditingGeneral} 
+            onChange={e => handleChange('location', e.target.value)} 
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
+          />
         </div>
       </div>
       {isEditingGeneral && (
         <div className="flex gap-2 mt-4">
-          <button onClick={handleSaveGeneral} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
-          <button onClick={() => { setIsEditingGeneral(false); setGeneralInfo({
-            firstName: user?.first_name || '',
-            lastName: user?.last_name || '',
-            birthdate: user?.birthdate || '',
-            gender: user?.gender || '',
-            contact_number: user?.contact_number || '',
-            email: user?.email || '',
-            location: user?.location || ''
-          }); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+          <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
         </div>
       )}
     </div>
   );
-}
+});
 
-function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) {
+const AboutCard = React.memo(({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) => {
+  const textRef = useRef(about);
+
+  useEffect(() => {
+    if (!isEditingAbout) {
+      textRef.current = about;
+    }
+  }, [about, isEditingAbout]);
+
+  const handleChange = useCallback((value) => {
+    textRef.current = value;
+    // Only update parent state on save
+  }, []);
+
+  const handleSave = useCallback(() => {
+    setAbout(textRef.current);
+    handleSaveAbout();
+  }, [setAbout, handleSaveAbout]);
+
+  const handleCancel = useCallback(() => {
+    textRef.current = about;
+    setIsEditingAbout(false);
+  }, [about, setIsEditingAbout]);
+
   return (
     <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-2">
@@ -226,27 +341,27 @@ function AboutCard({ about, setAbout, isEditingAbout, setIsEditingAbout, handleS
       </div>
       {isEditingAbout ? (
         <textarea 
-          value={about} 
-          onChange={e => setAbout(e.target.value)} 
+          defaultValue={textRef.current} 
+          onChange={e => handleChange(e.target.value)} 
           className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-[120px] resize-none" 
           placeholder="Tell us about yourself..."
         />
       ) : (
         <div className="bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 whitespace-pre-line min-h-[120px]">
-          {about || 'No description provided.'}
+          {textRef.current || 'No description provided.'}
         </div>
       )}
       {isEditingAbout && (
         <div className="flex gap-2 mt-4">
-          <button onClick={handleSaveAbout} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
-          <button onClick={() => { setIsEditingAbout(false); setAbout(user?.introduction || ''); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+          <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
         </div>
       )}
     </div>
   );
-}
+});
 
-function ProfessionalBackgroundCard({ employments: initialEmployments, setEmployments, isEditingProfessional, setIsEditingProfessional, handleSaveProfessional, user, isOwnProfile }) {
+const ProfessionalBackgroundCard = React.memo(({ employments: initialEmployments, setEmployments, isEditingProfessional, setIsEditingProfessional, handleSaveProfessional, user, isOwnProfile }) => {
   // Use local state for editing
   const [localEmployments, setLocalEmployments] = useState(initialEmployments || []);
 
@@ -256,6 +371,15 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
       setLocalEmployments(initialEmployments || []);
     }
   }, [initialEmployments, isEditingProfessional]);
+
+  // Handle employment field change
+  const handleEmploymentChange = useCallback((idx, field, value) => {
+    setLocalEmployments(prev => {
+      const newEmps = [...prev];
+      newEmps[idx] = { ...newEmps[idx], [field]: value };
+      return newEmps;
+    });
+  }, []);
 
   // Add new employment
   const handleAddEmployment = () => {
@@ -275,15 +399,6 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
   // Remove employment by index
   const handleRemoveEmployment = (idx) => {
     setLocalEmployments(localEmployments.filter((_, i) => i !== idx));
-  };
-
-  // Handle employment field change
-  const handleEmploymentChange = (idx, field, value) => {
-    setLocalEmployments(prev => {
-      const newEmps = [...prev];
-      newEmps[idx] = { ...newEmps[idx], [field]: value };
-      return newEmps;
-    });
   };
 
   // Handle save
@@ -391,9 +506,9 @@ function ProfessionalBackgroundCard({ employments: initialEmployments, setEmploy
       )}
     </div>
   );
-}
+});
 
-function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcademicProfile, isEditingAcademic, setIsEditingAcademic, handleSaveAcademic, user, isOwnProfile }) {
+const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfile, setAcademicProfile, isEditingAcademic, setIsEditingAcademic, handleSaveAcademic, user, isOwnProfile }) => {
   // Use local state for editing
   const [localAcademicProfile, setLocalAcademicProfile] = useState(initialAcademicProfile || []);
 
@@ -405,13 +520,13 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
   }, [initialAcademicProfile, isEditingAcademic]);
 
   // Handle academic profile field change
-  const handleProfileChange = (idx, field, value) => {
+  const handleProfileChange = useCallback((idx, field, value) => {
     setLocalAcademicProfile(prev => {
       const newProfile = [...prev];
       newProfile[idx] = { ...newProfile[idx], [field]: value };
       return newProfile;
     });
-  };
+  }, []);
 
   // Handle add new education
   const handleAddEducation = () => {
@@ -532,7 +647,7 @@ function AcademicProfileCard({ academicProfile: initialAcademicProfile, setAcade
       )}
     </div>
   );
-}
+});
 
 function PrivacySettingsCard({ user, setUser, fetchProfile }) {
   const [permissions, setPermissions] = useState({
@@ -803,13 +918,21 @@ const parseArrayField = (field) => {
   }
 };
 
-function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPreferences, setIsEditingPreferences, handleSavePreferences, user, isOwnProfile }) {
+const MatchmakingPreferencesCard = React.memo(({ preferences, setPreferences, isEditingPreferences, setIsEditingPreferences, handleSavePreferences, user, isOwnProfile }) => {
   const [localPreferences, setLocalPreferences] = useState(preferences || {
     position_desired: '',
     preferred_industries: [],
     preferred_startup_stage: '',
     preferred_location: ''
   });
+
+  // Handle preference field change
+  const handlePreferenceChange = useCallback((field, value) => {
+    setLocalPreferences(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
   // Update local state when preferences change and not editing
   useEffect(() => {
@@ -870,7 +993,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
             <div className="text-gray-600 mb-1">Position Desired</div>
             <select
               value={localPreferences.position_desired || ''}
-              onChange={e => setLocalPreferences({ ...localPreferences, position_desired: e.target.value })}
+              onChange={e => handlePreferenceChange('position_desired', e.target.value)}
               className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select position</option>
@@ -901,7 +1024,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
                 'Food & Beverage'
               ]}
               selected={industries}
-              onChange={selected => setLocalPreferences({ ...localPreferences, preferred_industries: selected })}
+              onChange={selected => handlePreferenceChange('preferred_industries', selected)}
               placeholder="Select or type industries..."
             />
           </div>
@@ -909,7 +1032,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
             <div className="text-gray-600 mb-1">Preferred Startup Stage</div>
             <select
               value={localPreferences.preferred_startup_stage || ''}
-              onChange={e => setLocalPreferences({ ...localPreferences, preferred_startup_stage: e.target.value })}
+              onChange={e => handlePreferenceChange('preferred_startup_stage', e.target.value)}
               className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
             >
               <option value="">Select stage</option>
@@ -924,7 +1047,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
             <input
               type="text"
               value={localPreferences.preferred_location || ''}
-              onChange={e => setLocalPreferences({ ...localPreferences, preferred_location: e.target.value })}
+              onChange={e => handlePreferenceChange('preferred_location', e.target.value)}
               className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
               placeholder="Enter preferred location"
             />
@@ -966,7 +1089,7 @@ function MatchmakingPreferencesCard({ preferences, setPreferences, isEditingPref
       )}
     </div>
   );
-}
+});
 
 // Replace the SkillsCard component with this updated version
 function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkills, handleSaveSkills, user, isOwnProfile }) {
@@ -1143,36 +1266,29 @@ export default function UserProfile() {
   };
 
   // Save handlers
-  const handleSaveGeneral = async () => {
+  const handleSaveGeneral = async (localInfo) => {
+    // Validate phone number on save
+    if (localInfo.contact_number) {
+      const validation = validatePhoneNumber(localInfo.contact_number, false);
+      if (!validation.isValid) {
+        setValidationError(validation.message);
+        return;
+      }
+    }
+
     // Format the birthdate to ensure it's in YYYY-MM-DD format without timezone conversion
-    const birthdate = formatDate(generalInfo.birthdate);
-    
-    console.log('handleSaveGeneral called', {
-      first_name: generalInfo.firstName,
-      last_name: generalInfo.lastName,
-      email: generalInfo.email,
-      profile_image: user.profile_image,
-      birthdate,
-      gender: generalInfo.gender,
-      contact_number: generalInfo.contact_number,
-      location: generalInfo.location,
-      introduction: about,
-      industry: employments[0]?.industry || '',
-      show_in_search: user.show_in_search,
-      show_in_messages: user.show_in_messages,
-      show_in_pages: user.show_in_pages
-    });
+    const birthdate = formatDate(localInfo.birthdate);
     
     try {
       await userProfileAPI.updateUserProfile(user.id, {
-        first_name: generalInfo.firstName,
-        last_name: generalInfo.lastName,
-        email: generalInfo.email,
+        first_name: localInfo.firstName,
+        last_name: localInfo.lastName,
+        email: localInfo.email,
         profile_image: user.profile_image,
         birthdate,
-        gender: generalInfo.gender,
-        contact_number: generalInfo.contact_number,
-        location: generalInfo.location,
+        gender: localInfo.gender,
+        contact_number: localInfo.contact_number,
+        location: localInfo.location,
         introduction: about,
         industry: employments[0]?.industry || '',
         show_in_search: user.show_in_search,
@@ -1181,7 +1297,7 @@ export default function UserProfile() {
         employment: employments
       });
       setIsEditingGeneral(false);
-      fetchProfile(user.id);
+      await fetchProfile(user.id); // Refresh the profile data
     } catch (err) {
       alert('Failed to update general information.');
     }
@@ -1387,18 +1503,9 @@ export default function UserProfile() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Add this before the MobileSidebar component
-  const Overlay = () => (
-    <div 
-      className={`lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      onClick={() => setIsSidebarOpen(false)}
-    />
-  );
-
   // Update the MobileSidebar component
   const MobileSidebar = () => (
     <>
-      <Overlay />
       <div 
         className={`lg:hidden fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64 bg-white dark:bg-[#232526] shadow-lg transition-transform duration-300 ease-in-out z-50`}
       >
@@ -1413,54 +1520,10 @@ export default function UserProfile() {
                     <FaUser className="text-white" size={60} />
                   </div>
                 )}
-                {isOwnProfile && (
-                  <label className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow cursor-pointer opacity-80 hover:opacity-100 transition-opacity group-hover:opacity-100">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          if (!file.type.startsWith('image/')) {
-                            alert('Please select an image file');
-                            return;
-                          }
-                          if (file.size > 5 * 1024 * 1024) {
-                            alert('Image size must be less than 5MB');
-                            return;
-                          }
-                          try {
-                            const reader = new window.FileReader();
-                            reader.onloadend = async () => {
-                              try {
-                                const base64Image = reader.result;
-                                await userProfileAPI.updateProfileImage(user.id, base64Image);
-                                await fetchProfile(user.id);
-                                alert('Profile image updated successfully');
-                              } catch (error) {
-                                console.error('Error updating profile image:', error);
-                                alert(error.message || 'Failed to update profile image. Please try again.');
-                              }
-                            };
-                            reader.onerror = () => {
-                              alert('Error reading the image file. Please try again.');
-                            };
-                            reader.readAsDataURL(file);
-                          } catch (error) {
-                            console.error('Error processing image:', error);
-                            alert('Error processing the image. Please try again.');
-                          }
-                        }
-                      }}
-                    />
-                    <span className="text-xs text-orange-500 font-semibold">Edit</span>
-                  </label>
-                )}
               </div>
               <div className="text-center">
                 <div className="font-bold text-xl text-gray-800 dark:text-white">{user.first_name} {user.last_name}</div>
-                <div className="text-xs text-gray-500">{user.email}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
               </div>
             </div>
           )}
@@ -1492,7 +1555,7 @@ export default function UserProfile() {
               </li>
             )}
           </ul>
-          <div className="mt-8 pt-8 border-t border-gray-200">
+          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
             <button 
               onClick={() => { navigate('/login'); localStorage.clear(); }} 
               className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"
@@ -1794,14 +1857,97 @@ export default function UserProfile() {
     <PrivacySettingsCard user={user} setUser={setUser} fetchProfile={fetchProfile} />
   );
 
+  const handleGeneralInfoChange = useCallback((newInfo) => {
+    setGeneralInfo(newInfo);
+  }, []);
+
+  const handleAboutChange = useCallback((newAbout) => {
+    setAbout(newAbout);
+  }, []);
+
   // Main Layout
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#181818] flex flex-col">
       <Navbar />
       <div className="flex flex-col lg:flex-row w-full gap-8 px-4 sm:px-8 pt-24 lg:pt-24 pb-8">
+        {/* Desktop Sidebar */}
         <div className="hidden lg:block">
-        <Sidebar />
-            </div>
+          <Sidebar />
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <div className="lg:hidden">
+          <HamburgerButton
+            isOpen={isSidebarOpen}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        </div>
+
+        {/* Mobile Sidebar */}
+        <div className="lg:hidden">
+          <MobileSidebar
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            title="Profile"
+          >
+            <nav className="flex-1 px-4 py-6 h-full overflow-y-auto">
+              {user && (
+                <div className="flex flex-col items-center mb-8">
+                  <div className="mb-3 relative group">
+                    {user.profile_image && user.profile_image.trim() !== '' ? (
+                      <img src={user.profile_image} alt="Profile" className="w-28 h-28 rounded-full object-cover border-4 border-orange-500 bg-gray-100 mb-2" />
+                    ) : (
+                      <div className="w-28 h-28 rounded-full bg-orange-500 flex items-center justify-center mb-2">
+                        <FaUser className="text-white" size={60} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-xl text-gray-800 dark:text-white">{user.first_name} {user.last_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
+                  </div>
+                </div>
+              )}
+              <ul className="space-y-6">
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`} 
+                  onClick={() => { setActiveSection('personal'); setIsSidebarOpen(false); }}
+                >
+                  <FaUser /> Personal Details
+                </li>
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('academic'); setIsSidebarOpen(false); }}
+                >
+                  <FaGraduationCap /> Academic Profile
+                </li>
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('matchmaking'); setIsSidebarOpen(false); }}
+                >
+                  <FaHandshake /> Matchmaking Preferences
+                </li>
+                {isOwnProfile && (
+                  <li 
+                    className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                    onClick={() => { setActiveSection('privacy'); setIsSidebarOpen(false); }}
+                  >
+                    <FaLock /> Privacy Settings
+                  </li>
+                )}
+              </ul>
+              <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <button 
+                  onClick={() => { navigate('/login'); localStorage.clear(); }} 
+                  className="flex items-center gap-3 text-left text-orange-500 font-semibold hover:underline w-full"
+                >
+                  <FaSignOutAlt /> Logout
+                </button>
+              </div>
+            </nav>
+          </MobileSidebar>
+        </div>
+
         <div className="flex-1 flex flex-col min-w-0">
           {activeSection === 'personal' && <PersonalSection />}
           {activeSection === 'academic' && <AcademicProfile />}

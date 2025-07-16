@@ -355,11 +355,13 @@ const EntrepreneurDashboard = () => {
     const fetchCoFounders = async () => {
       try {
         const coFoundersData = await getCoFounders();
+        console.log('Raw co-founders data:', coFoundersData);
         
         // Fetch preferences for each co-founder
         const coFoundersWithPreferences = await Promise.all(
           coFoundersData.map(async (coFounder) => {
             try {
+              console.log(`Attempting to fetch preferences for co-founder ${coFounder.id}`);
               const preferences = await getUserPreferences(coFounder.id);
               console.log(`EntrepreneurDashboard - Preferences for co-founder ${coFounder.id}:`, preferences);
               
@@ -398,11 +400,23 @@ const EntrepreneurDashboard = () => {
                 preferred_startup_stage: preferences?.preferred_startup_stage,
                 // Use preferences first, only fall back to profile if preferences don't exist
                 display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (coFounder.industry || 'Not specified'),
-                display_location: preferences?.preferred_location || (coFounder.location || 'Not specified'),
+                display_location: (() => {
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
+                    const loc = preferences.preferred_location;
+                    const parts = [];
+                    if (loc.barangay) parts.push(loc.barangay);
+                    if (loc.city) parts.push(loc.city);
+                    if (loc.province) parts.push(loc.province);
+                    if (loc.region) parts.push(loc.region);
+                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                  }
+                  return preferences?.preferred_location || coFounder.location || 'Not specified';
+                })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
             } catch (error) {
               console.error(`Error fetching preferences for co-founder ${coFounder.id}:`, error);
+              console.error('Error details:', error.response?.data, 'Status:', error.response?.status);
               return {
                 ...coFounder,
                 preferred_location: null,
@@ -478,7 +492,18 @@ const EntrepreneurDashboard = () => {
                 preferred_startup_stage: preferences?.preferred_startup_stage,
                 // Use preferences first, only fall back to profile if preferences don't exist
                 display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (investor.industry || 'Not specified'),
-                display_location: preferences?.preferred_location || (investor.location || 'Not specified'),
+                display_location: (() => {
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
+                    const loc = preferences.preferred_location;
+                    const parts = [];
+                    if (loc.barangay) parts.push(loc.barangay);
+                    if (loc.city) parts.push(loc.city);
+                    if (loc.province) parts.push(loc.province);
+                    if (loc.region) parts.push(loc.region);
+                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                  }
+                  return preferences?.preferred_location || investor.location || 'Not specified';
+                })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
             } catch (error) {

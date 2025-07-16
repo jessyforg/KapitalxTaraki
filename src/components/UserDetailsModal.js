@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { validatePhoneNumber, validateDate } from '../utils/validation';
 
 const CAR_LOCATIONS = [
   '',
@@ -187,6 +188,32 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Validate phone number during typing
+    if (name === 'contact_number') {
+      const validation = validatePhoneNumber(value, true);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
+    // Validate dates
+    if (type === 'date') {
+      let dateType = 'general';
+      if (name === 'birthdate') dateType = 'birthdate';
+      else if (name.includes('hire_date')) dateType = 'hire_date';
+      else if (name.includes('graduation_date')) dateType = 'graduation_date';
+      
+      const validation = validateDate(value, dateType);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -198,6 +225,36 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleEmploymentChange = (idx, field, value) => {
+    if (field === 'hire_date') {
+      const validation = validateDate(value, 'hire_date');
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
+    const newEmployment = [...formData.employment];
+    newEmployment[idx] = { ...newEmployment[idx], [field]: value };
+    setFormData({ ...formData, employment: newEmployment });
+  };
+
+  const handleAcademicChange = (idx, field, value) => {
+    if (field === 'graduation_date') {
+      const validation = validateDate(value, 'graduation_date');
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+      setError('');
+    }
+
+    const newAcademic = [...formData.academic_profile];
+    newAcademic[idx] = { ...newAcademic[idx], [field]: value };
+    setFormData({ ...formData, academic_profile: newAcademic });
   };
 
   const handleNext = (e) => {
@@ -214,6 +271,16 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    // Validate phone number on submit
+    if (formData.contact_number) {
+      const validation = validatePhoneNumber(formData.contact_number, false);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+    }
+
     try {
       await api.updateUserProfile(user.id, formData);
       onComplete();
@@ -310,33 +377,21 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                         <input
                           type="text"
                           value={emp.company || ''}
-                          onChange={e => {
-                            const newEmployment = [...formData.employment];
-                            newEmployment[idx] = { ...newEmployment[idx], company: e.target.value };
-                            setFormData({ ...formData, employment: newEmployment });
-                          }}
+                          onChange={e => handleEmploymentChange(idx, 'company', e.target.value)}
                           placeholder="Company Name"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                         <input
                           type="text"
                           value={emp.title || ''}
-                          onChange={e => {
-                            const newEmployment = [...formData.employment];
-                            newEmployment[idx] = { ...newEmployment[idx], title: e.target.value };
-                            setFormData({ ...formData, employment: newEmployment });
-                          }}
+                          onChange={e => handleEmploymentChange(idx, 'title', e.target.value)}
                           placeholder="Job Title"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                         <input
                           type="text"
                           value={emp.industry || ''}
-                          onChange={e => {
-                            const newEmployment = [...formData.employment];
-                            newEmployment[idx] = { ...newEmployment[idx], industry: e.target.value };
-                            setFormData({ ...formData, employment: newEmployment });
-                          }}
+                          onChange={e => handleEmploymentChange(idx, 'industry', e.target.value)}
                           placeholder="Industry"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
@@ -346,11 +401,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                           <input
                             type="date"
                             value={emp.hire_date || ''}
-                            onChange={e => {
-                              const newEmployment = [...formData.employment];
-                              newEmployment[idx] = { ...newEmployment[idx], hire_date: e.target.value };
-                              setFormData({ ...formData, employment: newEmployment });
-                            }}
+                            onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
                             className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                           />
                           <label className="flex items-center gap-2">
@@ -408,22 +459,14 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                         <input
                           type="text"
                           value={edu.level || ''}
-                          onChange={e => {
-                            const newEducation = [...formData.academic_profile];
-                            newEducation[idx] = { ...newEducation[idx], level: e.target.value };
-                            setFormData({ ...formData, academic_profile: newEducation });
-                          }}
+                          onChange={e => handleAcademicChange(idx, 'level', e.target.value)}
                           placeholder="Education Level"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                         <input
                           type="text"
                           value={edu.course || ''}
-                          onChange={e => {
-                            const newEducation = [...formData.academic_profile];
-                            newEducation[idx] = { ...newEducation[idx], course: e.target.value };
-                            setFormData({ ...formData, academic_profile: newEducation });
-                          }}
+                          onChange={e => handleAcademicChange(idx, 'course', e.target.value)}
                           placeholder="Course/Program"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
@@ -432,22 +475,14 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                         <input
                           type="text"
                           value={edu.institution || ''}
-                          onChange={e => {
-                            const newEducation = [...formData.academic_profile];
-                            newEducation[idx] = { ...newEducation[idx], institution: e.target.value };
-                            setFormData({ ...formData, academic_profile: newEducation });
-                          }}
+                          onChange={e => handleAcademicChange(idx, 'institution', e.target.value)}
                           placeholder="Institution"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                         <input
                           type="text"
                           value={edu.address || ''}
-                          onChange={e => {
-                            const newEducation = [...formData.academic_profile];
-                            newEducation[idx] = { ...newEducation[idx], address: e.target.value };
-                            setFormData({ ...formData, academic_profile: newEducation });
-                          }}
+                          onChange={e => handleAcademicChange(idx, 'address', e.target.value)}
                           placeholder="Institution Address"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
@@ -456,11 +491,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                         <input
                           type="date"
                           value={edu.graduation_date || ''}
-                          onChange={e => {
-                            const newEducation = [...formData.academic_profile];
-                            newEducation[idx] = { ...newEducation[idx], graduation_date: e.target.value };
-                            setFormData({ ...formData, academic_profile: newEducation });
-                          }}
+                          onChange={e => handleAcademicChange(idx, 'graduation_date', e.target.value)}
                           className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                         <button
