@@ -3619,6 +3619,761 @@ case 'sitePerformance':
     }
   };
 
+  // Render missing modals
+  const renderUserDetailsModal = () => {
+    if (!showUserDetailsModal || !selectedUserModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">User Details: {selectedUserModal.first_name} {selectedUserModal.last_name}</h2>
+            <button
+              onClick={() => setShowUserDetailsModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+
+          {/* User Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Basic Information</h3>
+              <div className="space-y-3">
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Name:</span> {selectedUserModal.first_name} {selectedUserModal.last_name}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Email:</span> {selectedUserModal.email}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Role:</span> {roleLabels[selectedUserModal.role] || selectedUserModal.role}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Location:</span> {selectedUserModal.location || 'Not provided'}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Industry:</span> {selectedUserModal.industry || 'Not provided'}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Status:</span> {renderUserStatusBadge(selectedUserModal)}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Verification Documents</h3>
+              {selectedUserModal.verification_documents && selectedUserModal.verification_documents.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedUserModal.verification_documents.map((doc, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-gray-800 dark:text-white">{doc.document_type}</h4>
+                        {doc.file_url && (
+                          <button
+                            onClick={() => window.open(doc.file_url, '_blank')}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                          >
+                            View Document
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Status: {doc.status}</p>
+                      {doc.uploaded_at && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">No verification documents found.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowUserDetailsModal(false)}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderUserVerificationModal = () => {
+    if (!showUserVerificationModal || !selectedUserForVerification) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              {verificationAction === 'approve' ? 'Approve User' : 'Reject User'}
+            </h2>
+            <button
+              onClick={() => setShowUserVerificationModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-gray-700 dark:text-gray-300 mb-2">
+              User: {selectedUserForVerification.first_name} {selectedUserForVerification.last_name}
+            </p>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              Email: {selectedUserForVerification.email}
+            </p>
+          </div>
+
+          {verificationAction === 'approve' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Verification Comment (Optional)
+              </label>
+              <textarea
+                value={verificationComment}
+                onChange={(e) => setVerificationComment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                rows="3"
+                placeholder="Add a comment about the verification..."
+              />
+            </div>
+          )}
+
+          {verificationAction === 'reject' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Rejection Reason *
+              </label>
+              <textarea
+                value={userRejectionReason}
+                onChange={(e) => setUserRejectionReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                rows="3"
+                placeholder="Please provide a reason for rejection..."
+                required
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowUserVerificationModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleVerificationModalSubmit}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                verificationAction === 'approve'
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              {verificationAction === 'approve' ? 'Approve' : 'Reject'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDeleteUserConfirmModal = () => {
+    if (!showDeleteUserConfirmModal || !userToDelete) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Confirm Delete</h2>
+            <button
+              onClick={() => setShowDeleteUserConfirmModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this user? This action cannot be undone.
+            </p>
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="font-semibold text-gray-800 dark:text-white">
+                {userToDelete.first_name} {userToDelete.last_name}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400">{userToDelete.email}</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowDeleteUserConfirmModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDeleteUser(userToDelete.id)}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete User
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBulkUserActionModal = () => {
+    if (!showBulkUserActionModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Bulk Action</h2>
+            <button
+              onClick={() => setShowBulkUserActionModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              Select an action to apply to {selectedUserIds.length} selected user(s):
+            </p>
+            <select
+              value={bulkUserAction}
+              onChange={(e) => setBulkUserAction(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="">Select Action</option>
+              <option value="verify">Verify Users</option>
+              <option value="suspend">Suspend Users</option>
+              <option value="reactivate">Reactivate Users</option>
+              <option value="delete">Delete Users</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowBulkUserActionModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkUserAction}
+              disabled={!bulkUserAction}
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-400"
+            >
+              Apply Action
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEditUserModal = () => {
+    if (!showEditUserModal || !editingUser) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Edit User</h2>
+            <button
+              onClick={() => setShowEditUserModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+              <input
+                type="text"
+                value={editingUser.first_name}
+                onChange={(e) => setEditingUser({ ...editingUser, first_name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+              <input
+                type="text"
+                value={editingUser.last_name}
+                onChange={(e) => setEditingUser({ ...editingUser, last_name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <input
+                type="email"
+                value={editingUser.email}
+                onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+              <select
+                value={editingUser.role}
+                onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="admin">Administrator</option>
+                <option value="entrepreneur">Entrepreneur</option>
+                <option value="investor">Investor</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+              <input
+                type="text"
+                value={editingUser.industry}
+                onChange={(e) => setEditingUser({ ...editingUser, industry: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+              <input
+                type="text"
+                value={editingUser.location}
+                onChange={(e) => setEditingUser({ ...editingUser, location: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 mt-6">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={editingUser.is_verified}
+                onChange={(e) => setEditingUser({ ...editingUser, is_verified: e.target.checked })}
+                className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Verified</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={editingUser.is_suspended}
+                onChange={(e) => setEditingUser({ ...editingUser, is_suspended: e.target.checked })}
+                className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Suspended</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              onClick={() => setShowEditUserModal(false)}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveUserEdit}
+              className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render startup modals
+  const renderStartupDetailsModal = () => {
+    if (!startupModalOpen || !selectedStartupModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Startup Details: {selectedStartupModal.name}</h2>
+            <button
+              onClick={() => setStartupModalOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+
+          {/* Startup Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Basic Information</h3>
+              <div className="space-y-3">
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Name:</span> {selectedStartupModal.name}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Industry:</span> {selectedStartupModal.industry}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Location:</span> {selectedStartupModal.location}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Stage:</span> {formatStartupStage(selectedStartupModal.startup_stage)}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Founder:</span> {selectedStartupModal.entrepreneur_name}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Status:</span> {renderStatusBadge(selectedStartupModal.approval_status)}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Description</h3>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{selectedStartupModal.description}</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setStartupModalOpen(false)}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEditStartupModal = () => {
+    if (!showEditStartupModal || !editingStartup) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Edit Startup</h2>
+            <button
+              onClick={() => setShowEditStartupModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+              <input
+                type="text"
+                value={editingStartup.name}
+                onChange={(e) => setEditingStartup({ ...editingStartup, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+              <input
+                type="text"
+                value={editingStartup.industry}
+                onChange={(e) => setEditingStartup({ ...editingStartup, industry: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+              <input
+                type="text"
+                value={editingStartup.location}
+                onChange={(e) => setEditingStartup({ ...editingStartup, location: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stage</label>
+              <select
+                value={editingStartup.startup_stage}
+                onChange={(e) => setEditingStartup({ ...editingStartup, startup_stage: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="ideation">Ideation</option>
+                <option value="mvp">MVP</option>
+                <option value="validation">Validation</option>
+                <option value="growth">Growth</option>
+                <option value="maturity">Maturity</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <select
+                value={editingStartup.approval_status}
+                onChange={(e) => setEditingStartup({ ...editingStartup, approval_status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <textarea
+                value={editingStartup.description}
+                onChange={(e) => setEditingStartup({ ...editingStartup, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                rows="4"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              onClick={() => setShowEditStartupModal(false)}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveStartupEdit}
+              className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDeleteStartupConfirmModal = () => {
+    if (!showDeleteConfirmModal || !startupToDelete) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Confirm Delete</h2>
+            <button
+              onClick={() => setShowDeleteConfirmModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this startup? This action cannot be undone.
+            </p>
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="font-semibold text-gray-800 dark:text-white">
+                {startupToDelete.name}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400">{startupToDelete.industry}</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowDeleteConfirmModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDeleteStartup(startupToDelete.startup_id)}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Startup
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBulkStartupActionModal = () => {
+    if (!showBulkActionModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Bulk Action</h2>
+            <button
+              onClick={() => setShowBulkActionModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              Select an action to apply to {selectedStartupIds.length} selected startup(s):
+            </p>
+            <select
+              value={bulkAction}
+              onChange={(e) => setBulkAction(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="">Select Action</option>
+              <option value="approve">Approve Startups</option>
+              <option value="suspend">Suspend Startups</option>
+              <option value="reactivate">Reactivate Startups</option>
+              <option value="delete">Delete Startups</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowBulkActionModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkAction}
+              disabled={!bulkAction}
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-400"
+            >
+              Apply Action
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDeleteEventConfirmModal = () => {
+    if (!showDeleteEventModal || !eventToDelete) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Confirm Delete</h2>
+            <button
+              onClick={() => setShowDeleteEventModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this event? This action cannot be undone.
+            </p>
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="font-semibold text-gray-800 dark:text-white">
+                {eventToDelete.title}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400">
+                {eventToDelete.event_date ? new Date(eventToDelete.event_date).toLocaleDateString() : 'No date'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowDeleteEventModal(false)}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteEvent}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Event
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTicketModal = () => {
+    if (!showTicketModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-[#232323] rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Submit Support Ticket</h2>
+            <button
+              onClick={() => setShowTicketModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <form onSubmit={handleTicketSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                value={ticketForm.title}
+                onChange={handleTicketChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+              <select
+                name="type"
+                value={ticketForm.type}
+                onChange={handleTicketChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="bug">Bug Report</option>
+                <option value="suggestion">Suggestion</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <textarea
+                name="description"
+                value={ticketForm.description}
+                onChange={handleTicketChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={() => setShowTicketModal(false)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Submit Ticket
+              </button>
+            </div>
+          </form>
+
+          {ticketMessage && (
+            <div className="mt-4">
+              <Message type={ticketMessage.includes('success') ? 'success' : 'error'} message={ticketMessage} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Render user status badge
   const renderUserStatusBadge = (user) => {
     // Handle both boolean and integer values for is_verified and is_suspended

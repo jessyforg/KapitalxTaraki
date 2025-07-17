@@ -145,17 +145,40 @@ const userProfileAPI = {
   // Update social links
   async updateSocialLinks(userId, socialLinks) {
     try {
-      const response = await fetch(`${API_URL}/user/${userId}`, {
+      const response = await fetch(`${API_URL}/users/${userId}/social-links`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ social_links: socialLinks }),
+        body: JSON.stringify(socialLinks),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to update social links');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update social links');
+      }
       const data = await response.json();
-      return data.success;
+      return data.socialLinks;
     } catch (error) {
       console.error('Error updating social links:', error);
+      throw error;
+    }
+  },
+
+  // Delete a specific social link
+  async deleteSocialLink(userId, platform) {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/social-links/${platform}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete social link');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting social link:', error);
       throw error;
     }
   },

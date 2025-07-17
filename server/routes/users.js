@@ -428,6 +428,16 @@ router.get('/:id', auth, async (req, res) => {
 
     const userData = user[0];
 
+    // Parse location JSON if it's a string
+    if (userData.location && typeof userData.location === 'string') {
+      try {
+        userData.location = JSON.parse(userData.location);
+      } catch (e) {
+        // Keep as string if not valid JSON
+        console.log('Location is not valid JSON, keeping as string:', userData.location);
+      }
+    }
+
     // Get preferences from user_preferences table
     const [preferences] = await pool.query(
       'SELECT position_desired, preferred_industries, preferred_startup_stage, preferred_location, skills FROM user_preferences WHERE user_id = ?',
@@ -705,30 +715,546 @@ router.get('/:id/social-links', auth, async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Get social links from users table or return defaults
-    const [user] = await pool.query(
-      'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM users WHERE id = ?',
-      [userId]
-    );
-
-    if (user.length === 0) {
+    // Check if user exists
+    const [userCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+    if (userCheck.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Get social links from user_social_links table
+    const [socialLinksData] = await pool.query(
+      'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?',
+      [userId]
+    );
+
     // Return social links or empty strings as defaults
     const socialLinks = {
-      facebook_url: user[0].facebook_url || '',
-      twitter_url: user[0].twitter_url || '',
-      instagram_url: user[0].instagram_url || '',
-      linkedin_url: user[0].linkedin_url || '',
-      microsoft_url: user[0].microsoft_url || '',
-      whatsapp_url: user[0].whatsapp_url || '',
-      telegram_url: user[0].telegram_url || ''
+      facebook_url: socialLinksData[0]?.facebook_url || '',
+      twitter_url: socialLinksData[0]?.twitter_url || '',
+      instagram_url: socialLinksData[0]?.instagram_url || '',
+      linkedin_url: socialLinksData[0]?.linkedin_url || '',
+      microsoft_url: socialLinksData[0]?.microsoft_url || '',
+      whatsapp_url: socialLinksData[0]?.whatsapp_url || '',
+      telegram_url: socialLinksData[0]?.telegram_url || ''
     };
 
     res.json(socialLinks);
   } catch (error) {
     console.error('Error fetching social links:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update user social links
+router.put('/:id/social-links', auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const {
+      facebook_url,
+      twitter_url,
+      instagram_url,
+      linkedin_url,
+      microsoft_url,
+      whatsapp_url,
+      telegram_url
+    } = req.body;
+
+    // Validate URLs if provided
+    const urlPattern = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+    
+    const socialUrls = { facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url };
+    
+    for (const [key, url] of Object.entries(socialUrls)) {
+      if (url && url.trim() !== '' && !urlPattern.test(url)) {
+        return res.status(400).json({ 
+          message: `Invalid URL format for ${key.replace('_url', '')}`,
+          field: key 
+        });
+      }
+    }
+
+    // Check if user exists
+    const [userCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+    if (userCheck.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update social links in user_social_links table
+    await pool.query(
+      `INSERT INTO user_social_links 
+       (user_id, facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       facebook_url = VALUES(facebook_url),
+       twitter_url = VALUES(twitter_url),
+       instagram_url = VALUES(instagram_url),
+       linkedin_url = VALUES(linkedin_url),
+       microsoft_url = VALUES(microsoft_url),
+       whatsapp_url = VALUES(whatsapp_url),
+       telegram_url = VALUES(telegram_url)`,
+      [
+        userId,
+        facebook_url || null,
+        twitter_url || null,
+        instagram_url || null,
+        linkedin_url || null,
+        microsoft_url || null,
+        whatsapp_url || null,
+        telegram_url || null
+      ]
+    );
+
+    // Get updated social links to return
+    const [updatedLinks] = await pool.query(
+      'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?',
+      [userId]
+    );
+
+    const socialLinks = {
+      facebook_url: updatedLinks[0]?.facebook_url || '',
+      twitter_url: updatedLinks[0]?.twitter_url || '',
+      instagram_url: updatedLinks[0]?.instagram_url || '',
+      linkedin_url: updatedLinks[0]?.linkedin_url || '',
+      microsoft_url: updatedLinks[0]?.microsoft_url || '',
+      whatsapp_url: updatedLinks[0]?.whatsapp_url || '',
+      telegram_url: updatedLinks[0]?.telegram_url || ''
+    };
+
+    res.json({
+      message: 'Social links updated successfully',
+      socialLinks
+    });
+  } catch (error) {
+    console.error('Error updating social links:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Delete a specific social link
+router.delete('/:id/social-links/:platform', auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const platform = req.params.platform;
+    
+    const validPlatforms = ['facebook', 'twitter', 'instagram', 'linkedin', 'microsoft', 'whatsapp', 'telegram'];
+    if (!validPlatforms.includes(platform)) {
+      return res.status(400).json({ message: 'Invalid platform' });
+    }
+
+    const fieldName = `${platform}_url`;
+    
+    // Update specific platform URL to null
+    await pool.query(
+      `UPDATE user_social_links SET ${fieldName} = NULL WHERE user_id = ?`,
+      [userId]
+    );
+
+    res.json({ message: `${platform} link removed successfully` });
+  } catch (error) {
+    console.error('Error deleting social link:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Comprehensive profile update endpoint
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    console.log('Updating comprehensive profile for user:', userId);
+    console.log('Request body:', req.body);
+    
+    const {
+      // Basic profile data
+      gender,
+      birthdate,
+      location,
+      contact_number,
+      industry,
+      introduction,
+      
+      // Complex profile data
+      employment,
+      academic_profile,
+      accomplishments,
+      
+      // Social links
+      facebook_url,
+      instagram_url,
+      linkedin_url,
+      
+      // Matchmaking preferences
+      skills,
+      position_desired,
+      preferred_industries,
+      preferred_startup_stage,
+      preferred_location,
+      
+      // Privacy settings
+      show_in_search,
+      show_in_messages,
+      show_in_pages
+    } = req.body;
+
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // 1. Update basic profile data and privacy settings in users table
+      let updateFields = [];
+      let updateValues = [];
+      
+      if (gender !== undefined) {
+        updateFields.push('gender = ?');
+        updateValues.push(gender);
+      }
+      if (birthdate !== undefined) {
+        updateFields.push('birthdate = ?');
+        updateValues.push(birthdate);
+      }
+      if (location !== undefined) {
+        updateFields.push('location = ?');
+        updateValues.push(location);
+      }
+      if (contact_number !== undefined) {
+        updateFields.push('contact_number = ?');
+        updateValues.push(contact_number);
+      }
+      if (industry !== undefined) {
+        updateFields.push('industry = ?');
+        updateValues.push(industry);
+      }
+      if (introduction !== undefined) {
+        updateFields.push('introduction = ?');
+        updateValues.push(introduction);
+      }
+      if (show_in_search !== undefined) {
+        updateFields.push('show_in_search = ?');
+        updateValues.push(show_in_search);
+      }
+      if (show_in_messages !== undefined) {
+        updateFields.push('show_in_messages = ?');
+        updateValues.push(show_in_messages);
+      }
+      if (show_in_pages !== undefined) {
+        updateFields.push('show_in_pages = ?');
+        updateValues.push(show_in_pages);
+      }
+
+      if (updateFields.length > 0) {
+        updateValues.push(userId);
+        await connection.query(
+          `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+          updateValues
+        );
+        console.log('Updated users table successfully');
+      }
+
+      // 2. Handle employment data using the employment table (with error handling)
+      if (employment && Array.isArray(employment)) {
+        try {
+          // Check if employment table exists and has the right columns
+          const [empTableCheck] = await connection.query(
+            'SHOW COLUMNS FROM employment LIKE ?',
+            ['is_current']
+          );
+          
+          if (empTableCheck.length > 0) {
+            // Delete existing employment records
+            await connection.query(
+              'DELETE FROM employment WHERE user_id = ?',
+              [userId]
+            );
+            
+            // Insert new employment records
+            for (const emp of employment) {
+              if (emp.company || emp.title) {
+                await connection.query(
+                  `INSERT INTO employment (user_id, company, title, industry, hire_date, is_current) 
+                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  [userId, emp.company || '', emp.title || '', emp.industry || '', emp.hire_date || null, emp.is_current || false]
+                );
+              }
+            }
+            console.log('Updated employment data successfully');
+          } else {
+            console.log('Employment table missing is_current column, skipping employment update');
+          }
+        } catch (empError) {
+          console.log('Employment table error:', empError.message);
+          // Continue without failing the entire request
+        }
+      }
+
+      // 3. Handle academic profile data using the academic_profile table (with error handling)
+      if (academic_profile && Array.isArray(academic_profile)) {
+        try {
+          // Delete existing academic records
+          await connection.query(
+            'DELETE FROM academic_profile WHERE user_id = ?',
+            [userId]
+          );
+          
+          // Insert new academic records
+          for (const edu of academic_profile) {
+            if (edu.level || edu.course || edu.institution) {
+              await connection.query(
+                `INSERT INTO academic_profile (user_id, level, course, institution, address, graduation_date) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [userId, edu.level || '', edu.course || '', edu.institution || '', edu.address || '', edu.graduation_date || null]
+              );
+            }
+          }
+          console.log('Updated academic profile successfully');
+        } catch (acadError) {
+          console.log('Academic profile error:', acadError.message);
+          // Continue without failing the entire request
+        }
+      }
+
+      // 4. Handle accomplishments (stored in users table)
+      if (accomplishments !== undefined) {
+        try {
+          await connection.query(
+            'UPDATE users SET accomplishments = ? WHERE id = ?',
+            [Array.isArray(accomplishments) ? JSON.stringify(accomplishments) : accomplishments, userId]
+          );
+          console.log('Updated accomplishments successfully');
+        } catch (accError) {
+          console.log('Accomplishments error:', accError.message);
+        }
+      }
+
+      // 5. Update or insert preferences (with error handling)
+      if (skills !== undefined || position_desired !== undefined || preferred_industries !== undefined || 
+          preferred_startup_stage !== undefined || preferred_location !== undefined) {
+        
+        try {
+          // Handle JSON data properly - check if columns support JSON
+          let skillsJson = null;
+          let preferredIndustriesJson = null;
+          
+          if (skills) {
+            skillsJson = JSON.stringify(skills);
+          }
+          if (preferred_industries) {
+            preferredIndustriesJson = JSON.stringify(preferred_industries);
+          }
+          
+          // Check if preferences exist
+          const [existingPrefs] = await connection.query(
+            'SELECT id FROM user_preferences WHERE user_id = ?',
+            [userId]
+          );
+
+          if (existingPrefs.length === 0) {
+            // Insert new preferences
+            await connection.query(
+              `INSERT INTO user_preferences (
+                user_id,
+                position_desired,
+                preferred_industries,
+                preferred_startup_stage,
+                preferred_location,
+                skills
+              ) VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                userId,
+                position_desired,
+                preferredIndustriesJson,
+                preferred_startup_stage,
+                preferred_location,
+                skillsJson
+              ]
+            );
+          } else {
+            // Update existing preferences
+            let prefUpdateFields = [];
+            let prefUpdateValues = [];
+            
+            if (position_desired !== undefined) {
+              prefUpdateFields.push('position_desired = ?');
+              prefUpdateValues.push(position_desired);
+            }
+            if (preferred_industries !== undefined) {
+              prefUpdateFields.push('preferred_industries = ?');
+              prefUpdateValues.push(preferredIndustriesJson);
+            }
+            if (preferred_startup_stage !== undefined) {
+              prefUpdateFields.push('preferred_startup_stage = ?');
+              prefUpdateValues.push(preferred_startup_stage);
+            }
+            if (preferred_location !== undefined) {
+              prefUpdateFields.push('preferred_location = ?');
+              prefUpdateValues.push(preferred_location);
+            }
+            if (skills !== undefined) {
+              prefUpdateFields.push('skills = ?');
+              prefUpdateValues.push(skillsJson);
+            }
+
+            if (prefUpdateFields.length > 0) {
+              prefUpdateValues.push(userId);
+              await connection.query(
+                `UPDATE user_preferences SET ${prefUpdateFields.join(', ')} WHERE user_id = ?`,
+                prefUpdateValues
+              );
+            }
+          }
+          console.log('Updated preferences successfully');
+        } catch (prefError) {
+          console.log('Preferences error:', prefError.message);
+        }
+      }
+
+      // 6. Handle social links (with error handling)
+      if (facebook_url !== undefined || instagram_url !== undefined || linkedin_url !== undefined) {
+        try {
+          // Check if social links exist
+          const [existingSocial] = await connection.query(
+            'SELECT user_id FROM user_social_links WHERE user_id = ?',
+            [userId]
+          );
+
+          if (existingSocial.length === 0 && (facebook_url || instagram_url || linkedin_url)) {
+            // Insert new social links
+            await connection.query(
+              `INSERT INTO user_social_links (user_id, facebook_url, instagram_url, linkedin_url) 
+               VALUES (?, ?, ?, ?)`,
+              [userId, facebook_url, instagram_url, linkedin_url]
+            );
+          } else if (existingSocial.length > 0) {
+            // Update existing social links
+            let socialUpdateFields = [];
+            let socialUpdateValues = [];
+            
+            if (facebook_url !== undefined) {
+              socialUpdateFields.push('facebook_url = ?');
+              socialUpdateValues.push(facebook_url);
+            }
+            if (instagram_url !== undefined) {
+              socialUpdateFields.push('instagram_url = ?');
+              socialUpdateValues.push(instagram_url);
+            }
+            if (linkedin_url !== undefined) {
+              socialUpdateFields.push('linkedin_url = ?');
+              socialUpdateValues.push(linkedin_url);
+            }
+
+            if (socialUpdateFields.length > 0) {
+              socialUpdateValues.push(userId);
+              await connection.query(
+                `UPDATE user_social_links SET ${socialUpdateFields.join(', ')} WHERE user_id = ?`,
+                socialUpdateValues
+              );
+            }
+          }
+          console.log('Updated social links successfully');
+        } catch (socialError) {
+          console.log('Social links error:', socialError.message);
+        }
+      }
+
+      // Commit transaction
+      await connection.commit();
+      console.log('Transaction committed successfully');
+
+      // Get updated user data
+      const [users] = await connection.query(
+        `SELECT u.*, 
+                up.position_desired, up.preferred_industries, up.preferred_startup_stage, 
+                up.preferred_location, up.skills,
+                usl.facebook_url, usl.instagram_url, usl.linkedin_url
+         FROM users u
+         LEFT JOIN user_preferences up ON u.id = up.user_id
+         LEFT JOIN user_social_links usl ON u.id = usl.user_id
+         WHERE u.id = ?`,
+        [userId]
+      );
+
+      if (users.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const userData = users[0];
+      
+      // Get employment data (with error handling)
+      try {
+        const [employmentData] = await connection.query(
+          'SELECT * FROM employment WHERE user_id = ? ORDER BY hire_date DESC',
+          [userId]
+        );
+        userData.employment = employmentData || [];
+      } catch (empError) {
+        console.log('Error fetching employment data:', empError.message);
+        userData.employment = [];
+      }
+
+      // Get academic profile data (with error handling)
+      try {
+        const [academicData] = await connection.query(
+          'SELECT * FROM academic_profile WHERE user_id = ? ORDER BY graduation_date DESC',
+          [userId]
+        );
+        userData.academic_profile = academicData || [];
+      } catch (acadError) {
+        console.log('Error fetching academic data:', acadError.message);
+        userData.academic_profile = [];
+      }
+
+      // Parse JSON fields safely
+      if (userData.preferred_industries) {
+        try {
+          userData.preferred_industries = typeof userData.preferred_industries === 'string' 
+            ? JSON.parse(userData.preferred_industries) 
+            : userData.preferred_industries;
+        } catch (e) {
+          console.log('Error parsing preferred_industries:', e.message);
+          userData.preferred_industries = [];
+        }
+      } else {
+        userData.preferred_industries = [];
+      }
+      
+      if (userData.skills) {
+        try {
+          userData.skills = typeof userData.skills === 'string' 
+            ? JSON.parse(userData.skills) 
+            : userData.skills;
+        } catch (e) {
+          console.log('Error parsing skills:', e.message);
+          userData.skills = [];
+        }
+      } else {
+        userData.skills = [];
+      }
+
+      if (userData.accomplishments) {
+        try {
+          userData.accomplishments = typeof userData.accomplishments === 'string' 
+            ? JSON.parse(userData.accomplishments) 
+            : userData.accomplishments;
+        } catch (e) {
+          console.log('Error parsing accomplishments:', e.message);
+          userData.accomplishments = [];
+        }
+      } else {
+        userData.accomplishments = [];
+      }
+
+      console.log('Profile update completed successfully for user:', userId);
+      res.json(userData);
+
+    } catch (error) {
+      console.error('Transaction error:', error);
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Error updating comprehensive profile:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

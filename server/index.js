@@ -335,12 +335,78 @@ app.get("/api/user/:id", authenticateToken, async (req, res) => {
 			"SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?",
 			[req.params.id]
 		);
+		// Get user preferences
+		const [preferencesRows] = await pool.query(
+			"SELECT position_desired, preferred_industries, preferred_startup_stage, preferred_location, skills FROM user_preferences WHERE user_id = ?",
+			[req.params.id]
+		);
+
+		// Parse JSON fields safely
+		let parsedLocation = userRows[0].location;
+		let parsedPreferredLocation = null;
+		let parsedPreferredIndustries = [];
+		let parsedSkills = [];
+
+		// Parse location from users table
+		if (parsedLocation && typeof parsedLocation === 'string') {
+			try {
+				parsedLocation = JSON.parse(parsedLocation);
+			} catch (e) {
+				// Keep as string if not valid JSON
+			}
+		}
+
+		// Parse preferences if they exist
+		if (preferencesRows[0]) {
+			const prefs = preferencesRows[0];
+			
+			// Parse preferred_location
+			if (prefs.preferred_location && typeof prefs.preferred_location === 'string') {
+				try {
+					parsedPreferredLocation = JSON.parse(prefs.preferred_location);
+				} catch (e) {
+					parsedPreferredLocation = prefs.preferred_location;
+				}
+			} else {
+				parsedPreferredLocation = prefs.preferred_location;
+			}
+
+			// Parse preferred_industries
+			if (prefs.preferred_industries && typeof prefs.preferred_industries === 'string') {
+				try {
+					parsedPreferredIndustries = JSON.parse(prefs.preferred_industries);
+				} catch (e) {
+					parsedPreferredIndustries = [];
+				}
+			} else if (Array.isArray(prefs.preferred_industries)) {
+				parsedPreferredIndustries = prefs.preferred_industries;
+			}
+
+			// Parse skills
+			if (prefs.skills && typeof prefs.skills === 'string') {
+				try {
+					parsedSkills = JSON.parse(prefs.skills);
+				} catch (e) {
+					parsedSkills = [];
+				}
+			} else if (Array.isArray(prefs.skills)) {
+				parsedSkills = prefs.skills;
+			}
+		}
+
 		// Combine all data
 		const userData = {
 			...userRows[0],
+			location: parsedLocation,
 			employment: employmentRows || [],
 			academic_profile: academicRows || [],
 			social_links: socialRows[0] || {},
+			// Add preferences data
+			position_desired: preferencesRows[0]?.position_desired || null,
+			preferred_industries: parsedPreferredIndustries,
+			preferred_startup_stage: preferencesRows[0]?.preferred_startup_stage || null,
+			preferred_location: parsedPreferredLocation,
+			skills: parsedSkills
 		};
 		res.json(userData);
 	} catch (error) {
@@ -377,6 +443,9 @@ app.put("/api/user/:id", authenticateToken, async (req, res) => {
 		} = req.body;
 		await pool.query("START TRANSACTION");
 		try {
+			// Convert location object to JSON string if it's an object
+			const locationData = location && typeof location === 'object' ? JSON.stringify(location) : location;
+			
 			// Update user basic info
 			await pool.query(
 				`UPDATE users SET 
@@ -393,7 +462,7 @@ app.put("/api/user/:id", authenticateToken, async (req, res) => {
 					birthdate,
 					gender,
 					contact_number,
-					location,
+					locationData,
 					introduction,
 					industry,
 					show_in_search,
@@ -505,6 +574,10 @@ app.put("/api/user/:id", authenticateToken, async (req, res) => {
 				preferred_startup_stage !== undefined ||
 				preferred_location !== undefined
 			) {
+				// Convert preferred_location object to JSON string if it's an object
+				const preferredLocationData = preferred_location && typeof preferred_location === 'object' ? 
+					JSON.stringify(preferred_location) : preferred_location;
+				
 				await pool.query(
 					`INSERT INTO user_preferences (user_id, position_desired, preferred_industries, preferred_startup_stage, preferred_location)
            VALUES (?, ?, ?, ?, ?)
@@ -518,7 +591,7 @@ app.put("/api/user/:id", authenticateToken, async (req, res) => {
 						position_desired || null,
 						preferred_industries ? JSON.stringify(preferred_industries) : null,
 						preferred_startup_stage || null,
-						preferred_location || null,
+						preferredLocationData || null,
 					]
 				);
 			}

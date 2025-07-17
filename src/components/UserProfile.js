@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import api from '../services/api';
 import userProfileAPI from '../api/userProfile';
+import { fetchRegions, fetchProvinces, fetchCities, fetchBarangays } from '../services/locationAPI';
 import {
-  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit
+  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit, FaTwitter, FaInstagram
 } from 'react-icons/fa';
 import { validatePhoneNumber, validateDate } from '../utils/validation';
 import MobileSidebar from './MobileSidebar';
@@ -27,6 +28,20 @@ const SKILLS = [
   'Legal',
   'Other'
 ];
+
+// Helper function to format Philippines addresses
+const formatPhilippinesAddress = (locationObj) => {
+  if (!locationObj || typeof locationObj !== 'object') {
+    return typeof locationObj === 'string' ? locationObj : '';
+  }
+
+  const parts = [];
+  if (locationObj.barangayName) parts.push(locationObj.barangayName);
+  if (locationObj.cityName) parts.push(locationObj.cityName);
+  if (locationObj.provinceName) parts.push(locationObj.provinceName);
+  if (locationObj.regionName) parts.push(locationObj.regionName);
+  return parts.join(', ');
+};
 
 // Tag-based MultiSelect component
 function TagMultiSelect({ id, name, options, selected, onChange, placeholder }) {
@@ -286,15 +301,22 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
         </div>
         <div className="col-span-1 md:col-span-2">
           <div className="text-gray-600 mb-1">Address</div>
-          <input 
-            id="general-location" 
-            name="general-location" 
-            type="text" 
-            value={localInfo.location || ''} 
-            disabled={!isEditingGeneral} 
-            onChange={e => handleChange('location', e.target.value)} 
-            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
-          />
+          {isEditingGeneral ? (
+            <PhilippinesLocationSelector
+              value={localInfo.location}
+              onChange={value => handleChange('location', value)}
+              disabled={false}
+            />
+          ) : (
+            <input 
+              id="general-location" 
+              name="general-location" 
+              type="text" 
+              value={formatPhilippinesAddress(localInfo.location)} 
+              disabled 
+              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
+            />
+          )}
         </div>
       </div>
       {isEditingGeneral && (
@@ -867,7 +889,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
 
 // Add a helper function for formatting
 function formatPreferenceText(text) {
-  if (!text) return '';
+  if (!text || typeof text !== 'string') return '';
   // Replace underscores and hyphens with spaces, capitalize each word
   return text
     .replace(/_/g, ' ')
@@ -879,7 +901,7 @@ function formatPreferenceText(text) {
 }
 
 function formatStartupStage(stage) {
-  if (!stage) return '';
+  if (!stage || typeof stage !== 'string') return '';
   if (stage.toLowerCase() === 'mvp') return 'MVP';
   return formatPreferenceText(stage);
 }
@@ -1044,12 +1066,10 @@ const MatchmakingPreferencesCard = React.memo(({ preferences, setPreferences, is
           </div>
           <div>
             <div className="text-gray-600 mb-1">Preferred Location</div>
-            <input
-              type="text"
-              value={localPreferences.preferred_location || ''}
-              onChange={e => handlePreferenceChange('preferred_location', e.target.value)}
-              className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
-              placeholder="Enter preferred location"
+            <PhilippinesLocationSelector
+              value={localPreferences.preferred_location}
+              onChange={value => handlePreferenceChange('preferred_location', value)}
+              disabled={false}
             />
           </div>
           <div className="flex gap-2 mt-4">
@@ -1083,7 +1103,9 @@ const MatchmakingPreferencesCard = React.memo(({ preferences, setPreferences, is
           </div>
           <div>
             <div className="text-gray-600 mb-1">Preferred Location</div>
-            <div className="font-semibold">{formatPreferenceText(localPreferences.preferred_location) || 'Not specified'}</div>
+            <div className="font-semibold">
+              {formatPhilippinesAddress(localPreferences.preferred_location) || 'Not specified'}
+            </div>
           </div>
         </div>
       )}
@@ -1124,6 +1146,510 @@ function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkill
               {skill}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Social Media Links Card Component
+const SocialMediaLinksCard = React.memo(({ socialLinks, setSocialLinks, isEditingSocial, setIsEditingSocial, handleSaveSocial, user, isOwnProfile }) => {
+  const [localSocialLinks, setLocalSocialLinks] = useState(socialLinks || {
+    facebook_url: '',
+    twitter_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    microsoft_url: '',
+    whatsapp_url: '',
+    telegram_url: ''
+  });
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Update local state when socialLinks changes
+  useEffect(() => {
+    console.log('SocialMediaLinksCard useEffect triggered:', { socialLinks, isEditingSocial });
+    if (!isEditingSocial) {
+      const newLinks = socialLinks || {
+        facebook_url: '',
+        twitter_url: '',
+        instagram_url: '',
+        linkedin_url: '',
+        microsoft_url: '',
+        whatsapp_url: '',
+        telegram_url: ''
+      };
+      console.log('Updating localSocialLinks:', newLinks);
+      setLocalSocialLinks(newLinks);
+    }
+  }, [socialLinks, isEditingSocial]);
+
+  // URL validation function
+  const validateURL = (url, platform) => {
+    if (!url || url.trim() === '') return { isValid: true, message: '' };
+    
+    const urlPattern = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+    
+    if (!urlPattern.test(url)) {
+      return { isValid: false, message: 'Please enter a valid URL' };
+    }
+
+    // Platform-specific validations
+    const platformValidations = {
+      facebook: /facebook\.com|fb\.com/i,
+      twitter: /twitter\.com|x\.com/i,
+      instagram: /instagram\.com/i,
+      linkedin: /linkedin\.com/i,
+      microsoft: /microsoft\.com|outlook\.com|live\.com/i,
+      whatsapp: /whatsapp\.com|wa\.me/i,
+      telegram: /telegram\.org|t\.me/i
+    };
+
+    if (platformValidations[platform] && !platformValidations[platform].test(url)) {
+      return { isValid: false, message: `Please enter a valid ${platform.charAt(0).toUpperCase() + platform.slice(1)} URL` };
+    }
+
+    return { isValid: true, message: '' };
+  };
+
+  // Handle input changes with validation
+  const handleInputChange = (field, value) => {
+    setLocalSocialLinks(prev => ({ ...prev, [field]: value }));
+    
+    // Validate URL
+    const platform = field.replace('_url', '');
+    const validation = validateURL(value, platform);
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: validation.isValid ? '' : validation.message
+    }));
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    // Validate all URLs before saving
+    const errors = {};
+    Object.keys(localSocialLinks).forEach(field => {
+      const platform = field.replace('_url', '');
+      const validation = validateURL(localSocialLinks[field], platform);
+      if (!validation.isValid) {
+        errors[field] = validation.message;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setSocialLinks(localSocialLinks);
+    await handleSaveSocial(localSocialLinks);
+    setIsEditingSocial(false);
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setLocalSocialLinks(socialLinks || {
+      facebook_url: '',
+      twitter_url: '',
+      instagram_url: '',
+      linkedin_url: '',
+      microsoft_url: '',
+      whatsapp_url: '',
+      telegram_url: ''
+    });
+    setValidationErrors({});
+    setIsEditingSocial(false);
+  };
+
+  // Social media platforms configuration
+  const socialPlatforms = [
+    { key: 'facebook_url', name: 'Facebook', icon: FaFacebook, color: 'text-blue-600', placeholder: 'https://facebook.com/yourprofile' },
+    { key: 'twitter_url', name: 'Twitter/X', icon: FaTwitter, color: 'text-black', placeholder: 'https://twitter.com/yourprofile' },
+    { key: 'instagram_url', name: 'Instagram', icon: FaInstagram, color: 'text-pink-600', placeholder: 'https://instagram.com/yourprofile' },
+    { key: 'linkedin_url', name: 'LinkedIn', icon: FaLinkedin, color: 'text-blue-700', placeholder: 'https://linkedin.com/in/yourprofile' },
+    { key: 'microsoft_url', name: 'Microsoft', icon: FaMicrosoft, color: 'text-blue-500', placeholder: 'https://outlook.com/yourprofile' },
+    { key: 'whatsapp_url', name: 'WhatsApp', icon: FaWhatsapp, color: 'text-green-500', placeholder: 'https://wa.me/yourphonenumber' },
+    { key: 'telegram_url', name: 'Telegram', icon: FaTelegram, color: 'text-blue-400', placeholder: 'https://t.me/yourprofile' }
+  ];
+
+  return (
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-orange-600">Social Media Links</h2>
+        {!isEditingSocial && isOwnProfile && (
+          <button onClick={() => setIsEditingSocial(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
+        )}
+      </div>
+
+      {isEditingSocial ? (
+        <div className="space-y-4">
+          {socialPlatforms.map(platform => (
+            <div key={platform.key}>
+              <label className="flex items-center gap-2 text-gray-600 mb-2">
+                <platform.icon className={`w-5 h-5 ${platform.color}`} />
+                <span className="font-medium">{platform.name}</span>
+              </label>
+              <input
+                type="url"
+                value={localSocialLinks[platform.key] || ''}
+                onChange={e => handleInputChange(platform.key, e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-medium border focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                placeholder={platform.placeholder}
+              />
+              {validationErrors[platform.key] && (
+                <div className="text-red-500 text-sm mt-1">{validationErrors[platform.key]}</div>
+              )}
+            </div>
+          ))}
+          <div className="flex gap-2 mt-6">
+            <button onClick={handleSave} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+            <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {socialPlatforms.map(platform => {
+            // Use socialLinks from parent when not editing, localSocialLinks when editing
+            const currentLinks = isEditingSocial ? localSocialLinks : socialLinks || {};
+            const url = currentLinks[platform.key];
+            return (
+              <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#2a2b2c] rounded-lg">
+                <div className="flex items-center gap-3">
+                  <platform.icon className={`w-5 h-5 ${platform.color}`} />
+                  <span className="font-medium">{platform.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {url && url.trim() !== '' ? (
+                    <>
+                      <a 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-orange-500 hover:text-orange-600 text-sm font-medium"
+                      >
+                        View Profile
+                      </a>
+                                             {isOwnProfile && (
+                         <button
+                           onClick={async () => {
+                             try {
+                               const platformName = platform.key.replace('_url', '');
+                               await userProfileAPI.deleteSocialLink(user.id, platformName);
+                               const updatedLinks = { ...currentLinks, [platform.key]: '' };
+                               setSocialLinks(updatedLinks);
+                               await fetchProfile(user.id);
+                             } catch (error) {
+                               alert('Failed to remove social link: ' + error.message);
+                             }
+                           }}
+                           className="text-red-500 hover:text-red-600 text-sm"
+                         >
+                           Remove
+                         </button>
+                       )}
+                    </>
+                  ) : (
+                    <span className="text-gray-500 text-sm">Not connected</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+});
+
+// Philippines Location Selector Component
+function PhilippinesLocationSelector({ value, onChange, disabled = false }) {
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedBarangay, setSelectedBarangay] = useState('');
+
+  // Load regions on component mount
+  useEffect(() => {
+    const loadRegions = async () => {
+      try {
+        const regionData = await fetchRegions();
+        setRegions(regionData);
+      } catch (error) {
+        console.error('Error loading regions:', error);
+      }
+    };
+    loadRegions();
+  }, []);
+
+  // Parse the current value to set initial selections
+  useEffect(() => {
+    if (value && typeof value === 'object') {
+      setSelectedRegion(value.regionCode || '');
+      setSelectedProvince(value.provinceCode || '');
+      setSelectedCity(value.cityCode || '');
+      setSelectedBarangay(value.barangayCode || '');
+      
+      // Load the dependent dropdowns
+      if (value.regionCode) {
+        loadProvinces(value.regionCode);
+      }
+      if (value.provinceCode) {
+        loadCities(value.provinceCode);
+      }
+      if (value.cityCode) {
+        loadBarangays(value.cityCode);
+      }
+    } else if (typeof value === 'string' && value !== '') {
+      // If it's a string, clear selections and set as display text
+      setSelectedRegion('');
+      setSelectedProvince('');
+      setSelectedCity('');
+      setSelectedBarangay('');
+    }
+  }, [value]);
+
+  const loadProvinces = async (regionCode) => {
+    if (!regionCode) {
+      setProvinces([]);
+      setCities([]);
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const provinceData = await fetchProvinces(regionCode);
+      setProvinces(provinceData);
+      setCities([]);
+      setBarangays([]);
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCities = async (provinceCode) => {
+    if (!provinceCode) {
+      setCities([]);
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const cityData = await fetchCities(provinceCode);
+      setCities(cityData);
+      setBarangays([]);
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBarangays = async (cityCode) => {
+    if (!cityCode) {
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const barangayData = await fetchBarangays(cityCode);
+      setBarangays(barangayData);
+    } catch (error) {
+      console.error('Error loading barangays:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegionChange = (e) => {
+    const regionCode = e.target.value;
+    setSelectedRegion(regionCode);
+    setSelectedProvince('');
+    setSelectedCity('');
+    setSelectedBarangay('');
+    
+    loadProvinces(regionCode);
+    
+    if (regionCode) {
+      const region = regions.find(r => r.code === regionCode);
+      updateValue({ regionCode, regionName: region?.name });
+    } else {
+      updateValue(null);
+    }
+  };
+
+  const handleProvinceChange = (e) => {
+    const provinceCode = e.target.value;
+    setSelectedProvince(provinceCode);
+    setSelectedCity('');
+    setSelectedBarangay('');
+    
+    loadCities(provinceCode);
+    
+    if (provinceCode && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === provinceCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode,
+        provinceName: province?.name
+      });
+    }
+  };
+
+  const handleCityChange = (e) => {
+    const cityCode = e.target.value;
+    setSelectedCity(cityCode);
+    setSelectedBarangay('');
+    
+    loadBarangays(cityCode);
+    
+    if (cityCode && selectedProvince && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === selectedProvince);
+      const city = cities.find(c => c.code === cityCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode: selectedProvince,
+        provinceName: province?.name,
+        cityCode,
+        cityName: city?.name
+      });
+    }
+  };
+
+  const handleBarangayChange = (e) => {
+    const barangayCode = e.target.value;
+    setSelectedBarangay(barangayCode);
+    
+    if (barangayCode && selectedCity && selectedProvince && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === selectedProvince);
+      const city = cities.find(c => c.code === selectedCity);
+      const barangay = barangays.find(b => b.code === barangayCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode: selectedProvince,
+        provinceName: province?.name,
+        cityCode: selectedCity,
+        cityName: city?.name,
+        barangayCode,
+        barangayName: barangay?.name
+      });
+    }
+  };
+
+  const updateValue = (locationData) => {
+    onChange(locationData);
+  };
+
+  const formatDisplayValue = () => {
+    return formatPhilippinesAddress(value);
+  };
+
+  if (disabled) {
+    return (
+      <input
+        type="text"
+        value={formatDisplayValue()}
+        disabled
+        className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+        placeholder="No location specified"
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Region</label>
+          <select
+            value={selectedRegion}
+            onChange={handleRegionChange}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+            disabled={loading}
+          >
+            <option value="">Select Region</option>
+            {regions.map(region => (
+              <option key={region.code} value={region.code}>
+                {region.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Province</label>
+          <select
+            value={selectedProvince}
+            onChange={handleProvinceChange}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+            disabled={loading || !selectedRegion}
+          >
+            <option value="">Select Province</option>
+            {provinces.map(province => (
+              <option key={province.code} value={province.code}>
+                {province.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">City/Municipality</label>
+          <select
+            value={selectedCity}
+            onChange={handleCityChange}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+            disabled={loading || !selectedProvince}
+          >
+            <option value="">Select City/Municipality</option>
+            {cities.map(city => (
+              <option key={city.code} value={city.code}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Barangay</label>
+          <select
+            value={selectedBarangay}
+            onChange={handleBarangayChange}
+            className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
+            disabled={loading || !selectedCity}
+          >
+            <option value="">Select Barangay</option>
+            {barangays.map(barangay => (
+              <option key={barangay.code} value={barangay.code}>
+                {barangay.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      {formatDisplayValue() && (
+        <div className="text-sm text-gray-600 bg-gray-50 dark:bg-[#2a2b2c] rounded px-3 py-2">
+          <strong>Selected:</strong> {formatDisplayValue()}
         </div>
       )}
     </div>
@@ -1183,7 +1709,6 @@ export default function UserProfile() {
   useEffect(() => {
     if (id) {
       fetchProfile(id);
-      fetchSocialLinks(id);
     } else {
       const stored = localStorage.getItem('user');
       if (stored) {
@@ -1191,7 +1716,6 @@ export default function UserProfile() {
           const userObj = JSON.parse(stored);
           setUser(userObj);
           fetchProfile(userObj.id);
-          fetchSocialLinks(userObj.id);
         } catch (e) {
           setUser(null);
         }
@@ -1251,19 +1775,22 @@ export default function UserProfile() {
         console.error('Error fetching preferences:', err);
         setPreferences(null);
       }
+
+      // Fetch social links
+      try {
+        const links = await api.getUserSocialLinks(userId);
+        console.log('Fetched social links:', links);
+        setSocialLinks(links);
+      } catch (err) {
+        console.error('Error fetching social links:', err);
+        setSocialLinks({});
+      }
     } catch (err) {
       setError('Failed to load profile');
     }
   };
 
-  const fetchSocialLinks = async (userId) => {
-    try {
-      const links = await api.getUserSocialLinks(userId);
-      setSocialLinks(links);
-    } catch (err) {
-      setSocialLinks({});
-    }
-  };
+
 
   // Save handlers
   const handleSaveGeneral = async (localInfo) => {
@@ -1426,44 +1953,24 @@ export default function UserProfile() {
     }
   };
 
-  const handleSaveSocial = async () => {
+  const handleSaveSocial = async (updatedSocialLinks = null) => {
+    const linksToSave = updatedSocialLinks || socialLinks;
     console.log('handleSaveSocial called', {
-      first_name: generalInfo.firstName,
-      last_name: generalInfo.lastName,
-      email: generalInfo.email,
-      profile_image: user.profile_image,
-      birthdate: generalInfo.birthdate,
-      gender: generalInfo.gender,
-      contact_number: generalInfo.contact_number,
-      location: generalInfo.location,
-      introduction: about,
-      industry: employments[0]?.industry || '',
-      show_in_search: user.show_in_search,
-      show_in_messages: user.show_in_messages,
-      show_in_pages: user.show_in_pages,
-      social_links: socialLinks
+      social_links: linksToSave,
+      current_socialLinks: socialLinks
     });
     try {
-      await userProfileAPI.updateUserProfile(user.id, {
-        first_name: generalInfo.firstName,
-        last_name: generalInfo.lastName,
-        email: generalInfo.email,
-        profile_image: user.profile_image,
-        birthdate: generalInfo.birthdate,
-        gender: generalInfo.gender,
-        contact_number: generalInfo.contact_number,
-        location: generalInfo.location,
-        introduction: about,
-        industry: employments[0]?.industry || '',
-        show_in_search: user.show_in_search,
-        show_in_messages: user.show_in_messages,
-        show_in_pages: user.show_in_pages,
-        social_links: socialLinks
-      });
+      const result = await userProfileAPI.updateSocialLinks(user.id, linksToSave);
+      console.log('API result:', result);
+      // Update local state immediately with the result from the API
+      setSocialLinks(result || linksToSave);
+      console.log('Setting socialLinks to:', result || linksToSave);
       setIsEditingSocial(false);
-      fetchProfile(user.id);
+      // Refresh the entire profile to ensure consistency
+      await fetchProfile(user.id);
     } catch (err) {
-      alert('Failed to update social links.');
+      console.error('Error saving social links:', err);
+      alert('Failed to update social links: ' + err.message);
     }
   };
 
@@ -1527,34 +2034,40 @@ export default function UserProfile() {
               </div>
             </div>
           )}
-          <ul className="space-y-6">
-            <li 
-              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`} 
-              onClick={() => { setActiveSection('personal'); setIsSidebarOpen(false); }}
-            >
-              <FaUser /> Personal Details
-            </li>
-            <li 
-              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
-              onClick={() => { setActiveSection('academic'); setIsSidebarOpen(false); }}
-            >
-              <FaGraduationCap /> Academic Profile
-            </li>
-            <li 
-              className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
-              onClick={() => { setActiveSection('matchmaking'); setIsSidebarOpen(false); }}
-            >
-              <FaHandshake /> Matchmaking Preferences
-            </li>
-            {isOwnProfile && (
-              <li 
-                className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
-                onClick={() => { setActiveSection('privacy'); setIsSidebarOpen(false); }}
-              >
-                <FaLock /> Privacy Settings
-              </li>
-            )}
-          </ul>
+                        <ul className="space-y-6">
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`} 
+                  onClick={() => { setActiveSection('personal'); setIsSidebarOpen(false); }}
+                >
+                  <FaUser /> Personal Details
+                </li>
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('academic'); setIsSidebarOpen(false); }}
+                >
+                  <FaGraduationCap /> Academic Profile
+                </li>
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'social' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('social'); setIsSidebarOpen(false); }}
+                >
+                  <FaFacebook /> Social Media
+                </li>
+                <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('matchmaking'); setIsSidebarOpen(false); }}
+                >
+                  <FaHandshake /> Matchmaking Preferences
+                </li>
+                {isOwnProfile && (
+                  <li 
+                    className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                    onClick={() => { setActiveSection('privacy'); setIsSidebarOpen(false); }}
+                  >
+                    <FaLock /> Privacy Settings
+                  </li>
+                )}
+              </ul>
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
             <button 
               onClick={() => { navigate('/login'); localStorage.clear(); }} 
@@ -1636,6 +2149,7 @@ export default function UserProfile() {
         <ul className="space-y-6 text-left">
           <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'personal' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('personal')}><FaUser /> Personal Details</li>
           <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'academic' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('academic')}><FaGraduationCap /> Academic Profile</li>
+          <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'social' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('social')}><FaFacebook /> Social Media</li>
           <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('matchmaking')}><FaHandshake /> Matchmaking Preferences</li>
           {isOwnProfile && (
             <li className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'privacy' ? 'text-orange-500' : 'text-gray-700 hover:text-orange-400'}`} onClick={() => setActiveSection('privacy')}><FaLock /> Privacy Settings</li>
@@ -1791,6 +2305,15 @@ export default function UserProfile() {
         user={user}
         isOwnProfile={isOwnProfile}
       />
+      <SocialMediaLinksCard
+        socialLinks={socialLinks}
+        setSocialLinks={setSocialLinks}
+        isEditingSocial={isEditingSocial}
+        setIsEditingSocial={setIsEditingSocial}
+        handleSaveSocial={handleSaveSocial}
+        user={user}
+        isOwnProfile={isOwnProfile}
+      />
       <div className="lg:hidden">
         <ProfessionalBackgroundCard 
           employments={employments} 
@@ -1922,6 +2445,12 @@ export default function UserProfile() {
                   <FaGraduationCap /> Academic Profile
                 </li>
                 <li 
+                  className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'social' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
+                  onClick={() => { setActiveSection('social'); setIsSidebarOpen(false); }}
+                >
+                  <FaFacebook /> Social Media
+                </li>
+                <li 
                   className={`flex items-center gap-3 font-semibold cursor-pointer ${activeSection === 'matchmaking' ? 'text-orange-500' : 'text-gray-700 dark:text-gray-300 hover:text-orange-400'}`}
                   onClick={() => { setActiveSection('matchmaking'); setIsSidebarOpen(false); }}
                 >
@@ -1951,6 +2480,17 @@ export default function UserProfile() {
         <div className="flex-1 flex flex-col min-w-0">
           {activeSection === 'personal' && <PersonalSection />}
           {activeSection === 'academic' && <AcademicProfile />}
+          {activeSection === 'social' && (
+            <SocialMediaLinksCard
+              socialLinks={socialLinks}
+              setSocialLinks={setSocialLinks}
+              isEditingSocial={isEditingSocial}
+              setIsEditingSocial={setIsEditingSocial}
+              handleSaveSocial={handleSaveSocial}
+              user={user}
+              isOwnProfile={isOwnProfile}
+            />
+          )}
           {activeSection === 'matchmaking' && (
             <MatchmakingPreferencesCard
               preferences={preferences}
