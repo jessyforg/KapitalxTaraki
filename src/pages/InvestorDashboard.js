@@ -503,13 +503,45 @@ const InvestorDashboard = () => {
                   if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
                     const loc = preferences.preferred_location;
                     const parts = [];
-                    if (loc.barangay) parts.push(loc.barangay);
-                    if (loc.city) parts.push(loc.city);
-                    if (loc.province) parts.push(loc.province);
-                    if (loc.region) parts.push(loc.region);
+                    
+                    // Handle malformed data where actual location is in 'region' field
+                    if (loc.city) {
+                      parts.push(loc.city);
+                    } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                      parts.push(loc.region);
+                    }
+                    
+                    // Only add province if it's not malformed data (not 'mvp', 'ideation', etc.)
+                    if (loc.province && loc.province !== '' && 
+                        !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                      parts.push(loc.province);
+                    }
+                    
                     return parts.length > 0 ? parts.join(', ') : 'Not specified';
                   }
-                  return preferences?.preferred_location || fullProfile?.location || entrepreneur.location || 'Not specified';
+                  // Handle case where preferred_location is a string
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
+                    try {
+                      const loc = JSON.parse(preferences.preferred_location);
+                      const parts = [];
+                      
+                      if (loc.city) {
+                        parts.push(loc.city);
+                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                        parts.push(loc.region);
+                      }
+                      
+                      if (loc.province && loc.province !== '' && 
+                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                        parts.push(loc.province);
+                      }
+                      
+                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                    } catch (e) {
+                      return preferences.preferred_location;
+                    }
+                  }
+                  return fullProfile?.location || entrepreneur.location || 'Not specified';
                 })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
@@ -612,13 +644,45 @@ const InvestorDashboard = () => {
                   if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
                     const loc = preferences.preferred_location;
                     const parts = [];
-                    if (loc.barangay) parts.push(loc.barangay);
-                    if (loc.city) parts.push(loc.city);
-                    if (loc.province) parts.push(loc.province);
-                    if (loc.region) parts.push(loc.region);
+                    
+                    // Handle malformed data where actual location is in 'region' field
+                    if (loc.city) {
+                      parts.push(loc.city);
+                    } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                      parts.push(loc.region);
+                    }
+                    
+                    // Only add province if it's not malformed data (not 'mvp', 'ideation', etc.)
+                    if (loc.province && loc.province !== '' && 
+                        !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                      parts.push(loc.province);
+                    }
+                    
                     return parts.length > 0 ? parts.join(', ') : 'Not specified';
                   }
-                  return preferences?.preferred_location || investor.location || 'Not specified';
+                  // Handle case where preferred_location is a string
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
+                    try {
+                      const loc = JSON.parse(preferences.preferred_location);
+                      const parts = [];
+                      
+                      if (loc.city) {
+                        parts.push(loc.city);
+                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                        parts.push(loc.region);
+                      }
+                      
+                      if (loc.province && loc.province !== '' && 
+                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                        parts.push(loc.province);
+                      }
+                      
+                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                    } catch (e) {
+                      return preferences.preferred_location;
+                    }
+                  }
+                  return investor.location || 'Not specified';
                 })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
                 };
@@ -1388,5 +1452,6 @@ const InvestorDashboard = () => {
       </main>
     </div>
   );
-};
+  };
+
 export default InvestorDashboard; 

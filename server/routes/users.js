@@ -282,6 +282,132 @@ router.put('/2fa', auth, async (req, res) => {
   }
 });
 
+// Get all co-founders (exclude logged-in user) - MUST BE BEFORE /:id route
+router.get('/cofounders', auth, async (req, res) => {
+  try {
+    console.log('Fetching cofounders for user:', req.user.id);
+    
+    // Only return entrepreneurs with verification_status = 'verified'
+    // Use COALESCE and IFNULL to handle NULL values gracefully
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.first_name, u.last_name, u.email, u.introduction, u.profile_image, 
+             u.industry, u.location, u.role, u.verification_status,
+             up.preferred_location, up.preferred_industries, up.preferred_startup_stage
+      FROM users u
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.role = 'entrepreneur' 
+      AND u.id != ? 
+      AND u.verification_status = 'verified'
+      AND u.show_in_search = 1
+    `,
+      [req.user.id]
+    );
+    
+    console.log('Found cofounders count:', rows.length);
+    console.log('Cofounders data:', rows.map(r => ({ 
+      id: r.id, 
+      name: `${r.first_name || ''} ${r.last_name || ''}`.trim(), 
+      role: r.role, 
+      verified: r.verification_status,
+      preferences: !!r.preferred_industries 
+    })));
+
+    // Fetch skills for each user (gracefully handle if user_skills table doesn't exist)
+    const userIds = rows.map(u => u.id);
+    let skillsMap = {};
+    if (userIds.length > 0) {
+      try {
+        const [skillsRows] = await pool.query(
+          `SELECT user_id, skill_name, skill_level FROM user_skills WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
+          userIds
+        );
+        skillsMap = skillsRows.reduce((acc, skill) => {
+          if (!acc[skill.user_id]) acc[skill.user_id] = [];
+          acc[skill.user_id].push(skill.skill_name);
+          return acc;
+        }, {});
+        console.log('Skills map created:', Object.keys(skillsMap).length, 'users have skills');
+      } catch (skillsError) {
+        console.warn('user_skills table error, skipping skills:', skillsError.message);
+        skillsMap = {};
+      }
+    }
+
+    const cofounders = rows.map((u) => {
+      // Handle double-encoded JSON for preferred_industries with more robust error handling
+      let preferredIndustries = [];
+      if (u.preferred_industries) {
+        try {
+          // Handle both single and double-encoded JSON
+          let parsed = u.preferred_industries;
+          if (typeof parsed === 'string') {
+            parsed = JSON.parse(parsed);
+            // If it's still a string after first parse, parse again (double-encoded)
+            if (typeof parsed === 'string') {
+              parsed = JSON.parse(parsed);
+            }
+          }
+          preferredIndustries = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+        } catch (e) {
+          console.warn(`Error parsing preferred_industries for user ${u.id}:`, e.message, 'Raw value:', u.preferred_industries);
+          preferredIndustries = [];
+        }
+      }
+
+      // Handle JSON parsing for preferred_location
+      let preferredLocation = null;
+      if (u.preferred_location) {
+        try {
+          if (typeof u.preferred_location === 'string') {
+            preferredLocation = JSON.parse(u.preferred_location);
+          } else {
+            preferredLocation = u.preferred_location;
+          }
+        } catch (e) {
+          console.warn(`Error parsing preferred_location for user ${u.id}:`, e.message, 'Raw value:', u.preferred_location);
+          preferredLocation = null;
+        }
+      }
+
+      // Keep original database enum values - let frontend handle display mapping
+      let mappedStartupStage = u.preferred_startup_stage;
+
+      const result = {
+        id: u.id,
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Anonymous User',
+        email: u.email || '',
+        bio: u.introduction || "",
+        profile_image: u.profile_image || null,
+        industry: u.industry || null,
+        location: u.location || null,
+        preferred_location: preferredLocation,
+        preferred_industries: preferredIndustries,
+        preferred_startup_stage: mappedStartupStage || null,
+        skills: skillsMap[u.id] || [],
+        role: u.role || 'entrepreneur'
+      };
+
+      console.log(`Cofounder ${u.id} processed:`, {
+        name: result.name,
+        industry: result.industry,
+        preferred_industries: result.preferred_industries,
+        skills_count: result.skills.length
+      });
+
+      return result;
+    });
+
+    console.log('Successfully processed', cofounders.length, 'cofounders');
+    res.json(cofounders);
+  } catch (error) {
+    console.error("Error fetching co-founders:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+});
+
 // Get user profile
 router.get('/:id', auth, async (req, res) => {
   try {
@@ -606,6 +732,5 @@ router.get('/:id/social-links', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
 
 module.exports = router; 

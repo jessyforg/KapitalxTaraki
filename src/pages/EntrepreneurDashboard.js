@@ -364,6 +364,7 @@ const EntrepreneurDashboard = () => {
               console.log(`Attempting to fetch preferences for co-founder ${coFounder.id}`);
               const preferences = await getUserPreferences(coFounder.id);
               console.log(`EntrepreneurDashboard - Preferences for co-founder ${coFounder.id}:`, preferences);
+              console.log(`Raw preferred_location data:`, preferences?.preferred_location, 'Type:', typeof preferences?.preferred_location);
               
               // Parse preferred_industries if it's a string
               let preferredIndustries = [];
@@ -403,14 +404,122 @@ const EntrepreneurDashboard = () => {
                 display_location: (() => {
                   if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
                     const loc = preferences.preferred_location;
+                    console.log(`Processing co-founder ${coFounder.id} location:`, loc);
                     const parts = [];
-                    if (loc.barangay) parts.push(loc.barangay);
-                    if (loc.city) parts.push(loc.city);
-                    if (loc.province) parts.push(loc.province);
-                    if (loc.region) parts.push(loc.region);
+                    
+                    // Handle double-encoded JSON in region field
+                    if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
+                      try {
+                        const innerLoc = JSON.parse(loc.region);
+                        console.log(`Found double-encoded JSON in region:`, innerLoc);
+                        if (innerLoc.city) {
+                          console.log(`Adding city from inner JSON: ${innerLoc.city}`);
+                          parts.push(innerLoc.city);
+                        } else if (innerLoc.region) {
+                          console.log(`Adding region from inner JSON: ${innerLoc.region}`);
+                          parts.push(innerLoc.region);
+                        }
+                        if (innerLoc.province && innerLoc.province !== '' && 
+                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
+                          console.log(`Adding province from inner JSON: ${innerLoc.province}`);
+                          parts.push(innerLoc.province);
+                        }
+                      } catch (e) {
+                        console.log(`Error parsing double-encoded JSON:`, e);
+                        // Fall back to regular processing
+                        if (loc.city) {
+                          console.log(`Adding city: ${loc.city}`);
+                          parts.push(loc.city);
+                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                          console.log(`Adding region: ${loc.region}`);
+                          parts.push(loc.region);
+                        }
+                      }
+                    } else {
+                      // Regular processing for non-double-encoded data
+                      if (loc.city) {
+                        console.log(`Adding city: ${loc.city}`);
+                        parts.push(loc.city);
+                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                        console.log(`Adding region: ${loc.region}`);
+                        parts.push(loc.region);
+                      }
+                      
+                      // Only add province if it's not malformed data
+                      if (loc.province && loc.province !== '' && 
+                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                        console.log(`Adding province: ${loc.province}`);
+                        parts.push(loc.province);
+                      } else if (loc.province) {
+                        console.log(`Filtering out invalid province: ${loc.province}`);
+                      }
+                    }
+                    
+                    console.log(`Final location parts for co-founder ${coFounder.id}:`, parts);
                     return parts.length > 0 ? parts.join(', ') : 'Not specified';
                   }
-                  return preferences?.preferred_location || coFounder.location || 'Not specified';
+                  // Handle case where preferred_location is a string
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
+                    try {
+                      const loc = JSON.parse(preferences.preferred_location);
+                      console.log(`Processing co-founder ${coFounder.id} location from string:`, loc);
+                      const parts = [];
+                      
+                      // Handle double-encoded JSON in region field (same logic as above)
+                      if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
+                        try {
+                          const innerLoc = JSON.parse(loc.region);
+                          console.log(`Found double-encoded JSON in region from string:`, innerLoc);
+                          if (innerLoc.city) {
+                            console.log(`Adding city from inner JSON (string): ${innerLoc.city}`);
+                            parts.push(innerLoc.city);
+                          } else if (innerLoc.region) {
+                            console.log(`Adding region from inner JSON (string): ${innerLoc.region}`);
+                            parts.push(innerLoc.region);
+                          }
+                          if (innerLoc.province && innerLoc.province !== '' && 
+                              !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
+                            console.log(`Adding province from inner JSON (string): ${innerLoc.province}`);
+                            parts.push(innerLoc.province);
+                          }
+                        } catch (e) {
+                          console.log(`Error parsing double-encoded JSON from string:`, e);
+                          // Fall back to regular processing
+                          if (loc.city) {
+                            console.log(`Adding city from string: ${loc.city}`);
+                            parts.push(loc.city);
+                          } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                            console.log(`Adding region from string: ${loc.region}`);
+                            parts.push(loc.region);
+                          }
+                        }
+                      } else {
+                        // Regular processing
+                        if (loc.city) {
+                          console.log(`Adding city from string: ${loc.city}`);
+                          parts.push(loc.city);
+                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                          console.log(`Adding region from string: ${loc.region}`);
+                          parts.push(loc.region);
+                        }
+                        
+                        if (loc.province && loc.province !== '' && 
+                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                          console.log(`Adding province from string: ${loc.province}`);
+                          parts.push(loc.province);
+                        } else if (loc.province) {
+                          console.log(`Filtering out invalid province from string: ${loc.province}`);
+                        }
+                      }
+                      
+                      console.log(`Final location parts from string for co-founder ${coFounder.id}:`, parts);
+                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                    } catch (e) {
+                      console.log(`JSON parse error for co-founder ${coFounder.id}:`, e);
+                      return preferences.preferred_location;
+                    }
+                  }
+                  return coFounder.location || 'Not specified';
                 })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
@@ -495,14 +604,122 @@ const EntrepreneurDashboard = () => {
                 display_location: (() => {
                   if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
                     const loc = preferences.preferred_location;
+                    console.log(`Processing investor ${investor.id} location:`, loc);
                     const parts = [];
-                    if (loc.barangay) parts.push(loc.barangay);
-                    if (loc.city) parts.push(loc.city);
-                    if (loc.province) parts.push(loc.province);
-                    if (loc.region) parts.push(loc.region);
+                    
+                    // Handle double-encoded JSON in region field
+                    if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
+                      try {
+                        const innerLoc = JSON.parse(loc.region);
+                        console.log(`Found double-encoded JSON in investor region:`, innerLoc);
+                        if (innerLoc.city) {
+                          console.log(`Adding city from inner JSON (investor): ${innerLoc.city}`);
+                          parts.push(innerLoc.city);
+                        } else if (innerLoc.region) {
+                          console.log(`Adding region from inner JSON (investor): ${innerLoc.region}`);
+                          parts.push(innerLoc.region);
+                        }
+                        if (innerLoc.province && innerLoc.province !== '' && 
+                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
+                          console.log(`Adding province from inner JSON (investor): ${innerLoc.province}`);
+                          parts.push(innerLoc.province);
+                        }
+                      } catch (e) {
+                        console.log(`Error parsing double-encoded JSON (investor):`, e);
+                        // Fall back to regular processing
+                        if (loc.city) {
+                          console.log(`Adding city (investor): ${loc.city}`);
+                          parts.push(loc.city);
+                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                          console.log(`Adding region (investor): ${loc.region}`);
+                          parts.push(loc.region);
+                        }
+                      }
+                    } else {
+                      // Regular processing for non-double-encoded data
+                      if (loc.city) {
+                        console.log(`Adding city (investor): ${loc.city}`);
+                        parts.push(loc.city);
+                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                        console.log(`Adding region (investor): ${loc.region}`);
+                        parts.push(loc.region);
+                      }
+                      
+                      // Only add province if it's not malformed data
+                      if (loc.province && loc.province !== '' && 
+                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                        console.log(`Adding province (investor): ${loc.province}`);
+                        parts.push(loc.province);
+                      } else if (loc.province) {
+                        console.log(`Filtering out invalid province (investor): ${loc.province}`);
+                      }
+                    }
+                    
+                    console.log(`Final location parts for investor ${investor.id}:`, parts);
                     return parts.length > 0 ? parts.join(', ') : 'Not specified';
                   }
-                  return preferences?.preferred_location || investor.location || 'Not specified';
+                  // Handle case where preferred_location is a string
+                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
+                    try {
+                      const loc = JSON.parse(preferences.preferred_location);
+                      console.log(`Processing investor ${investor.id} location from string:`, loc);
+                      const parts = [];
+                      
+                      // Handle double-encoded JSON in region field (same logic as above)
+                      if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
+                        try {
+                          const innerLoc = JSON.parse(loc.region);
+                          console.log(`Found double-encoded JSON in investor region from string:`, innerLoc);
+                          if (innerLoc.city) {
+                            console.log(`Adding city from inner JSON (investor string): ${innerLoc.city}`);
+                            parts.push(innerLoc.city);
+                          } else if (innerLoc.region) {
+                            console.log(`Adding region from inner JSON (investor string): ${innerLoc.region}`);
+                            parts.push(innerLoc.region);
+                          }
+                          if (innerLoc.province && innerLoc.province !== '' && 
+                              !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
+                            console.log(`Adding province from inner JSON (investor string): ${innerLoc.province}`);
+                            parts.push(innerLoc.province);
+                          }
+                        } catch (e) {
+                          console.log(`Error parsing double-encoded JSON from investor string:`, e);
+                          // Fall back to regular processing
+                          if (loc.city) {
+                            console.log(`Adding city from string (investor): ${loc.city}`);
+                            parts.push(loc.city);
+                          } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                            console.log(`Adding region from string (investor): ${loc.region}`);
+                            parts.push(loc.region);
+                          }
+                        }
+                      } else {
+                        // Regular processing
+                        if (loc.city) {
+                          console.log(`Adding city from string (investor): ${loc.city}`);
+                          parts.push(loc.city);
+                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
+                          console.log(`Adding region from string (investor): ${loc.region}`);
+                          parts.push(loc.region);
+                        }
+                        
+                        if (loc.province && loc.province !== '' && 
+                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
+                          console.log(`Adding province from string (investor): ${loc.province}`);
+                          parts.push(loc.province);
+                        } else if (loc.province) {
+                          console.log(`Filtering out invalid province from string (investor): ${loc.province}`);
+                        }
+                      }
+                      
+                      console.log(`Final location parts from string for investor ${investor.id}:`, parts);
+                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
+                    } catch (e) {
+                      console.log(`JSON parse error for investor ${investor.id}:`, e);
+                      return preferences.preferred_location;
+                    }
+                  }
+                  return investor.location || 'Not specified';
                 })(),
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
@@ -1159,6 +1376,6 @@ const EntrepreneurDashboard = () => {
       </main>
     </div>
   );
-};
-
+  };
+  
 export default EntrepreneurDashboard;
