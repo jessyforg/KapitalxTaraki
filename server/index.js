@@ -1945,14 +1945,14 @@ app.put(
 			}
 
 			const { id } = req.params;
-			const { name, industry, location, description, startup_stage, approval_status } = req.body;
+			const { name, industry, location, description, startup_stage, approval_status, funding_status } = req.body;
 
 			// Update startup
 			await pool.query(
 				`UPDATE startups 
-				 SET name = ?, industry = ?, location = ?, description = ?, startup_stage = ?, approval_status = ?, updated_at = NOW()
+				 SET name = ?, industry = ?, location = ?, description = ?, startup_stage = ?, approval_status = ?, funding_status = ?, updated_at = NOW()
 				 WHERE startup_id = ?`,
-				[name, industry, location, description, startup_stage, approval_status, id]
+				[name, industry, location, description, startup_stage, approval_status, funding_status, id]
 			);
 
 			// Get updated startup with entrepreneur details
@@ -2618,6 +2618,10 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 		const [investorsResult] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'investor'");
 		const total_investors = investorsResult[0].count;
 
+		// Get total funded startups count
+		const [fundedStartupsResult] = await pool.query("SELECT COUNT(*) as count FROM startups WHERE approval_status = 'approved' AND funding_status = 'funded'");
+		const total_funded_startups = fundedStartupsResult[0].count;
+
 		// Get upcoming events count (if events table exists)
 		let total_upcoming_events = 0;
 		try {
@@ -2636,6 +2640,7 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 			total_startups,
 			total_entrepreneurs,
 			total_investors,
+			total_funded_startups,
 			total_upcoming_events
 		});
 	} catch (error) {
@@ -2654,6 +2659,56 @@ const documentsRouter = require('./routes/documents');
 
 // Register routes
 app.use('/api', documentsRouter);
+
+// Update startup funding status (admin only)
+app.put(
+  "/api/admin/startups/:id/funding-status",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ error: "Only admins can update startup funding status" });
+      }
+
+      const { id } = req.params;
+      const { funding_status } = req.body;
+
+      if (!funding_status || !['funded', 'not_funded'].includes(funding_status)) {
+        return res.status(400).json({ error: "Invalid funding status. Must be 'funded' or 'not_funded'" });
+      }
+
+      // Update startup funding status
+      await pool.query(
+        `UPDATE startups 
+         SET funding_status = ?, 
+             updated_at = NOW()
+         WHERE startup_id = ?`,
+        [funding_status, id]
+      );
+
+      // Get updated startup with entrepreneur details
+      const [rows] = await pool.query(
+        `SELECT s.*, 
+                CONCAT(u.first_name, ' ', u.last_name) as entrepreneur_name,
+                u.email as entrepreneur_email
+         FROM startups s
+         LEFT JOIN users u ON s.entrepreneur_id = u.id 
+         WHERE s.startup_id = ?`,
+        [id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Startup not found" });
+      }
+
+      res.json(rows[0]);
+    } catch (error) {
+      console.error("Error updating startup funding status:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

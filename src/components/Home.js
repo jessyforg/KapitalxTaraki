@@ -115,32 +115,11 @@ function Home() {
                 </div>
               </div>
 
-              {/* Funded Program Card */}
+              {/* Funded Startups Card */}
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
-                <div className="text-center flex flex-col items-center justify-center">
-                  {/* Radial bar chart mockup */}
-                  <div className="relative mb-4">
-                    <svg width="100" height="100" viewBox="0 0 100 100">
-                      {/* Background circles */}
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="#eee" strokeWidth="7" />
-                      <circle cx="50" cy="50" r="32" fill="none" stroke="#eee" strokeWidth="7" />
-                      <circle cx="50" cy="50" r="24" fill="none" stroke="#eee" strokeWidth="7" />
-                      {/* Data arcs */}
-                      <path d="M50 10 A40 40 0 0 1 90 50" stroke="#2563eb" strokeWidth="7" fill="none" /> {/* Alpha 60% */}
-                      <path d="M50 18 A32 32 0 0 1 82 50" stroke="#f43f5e" strokeWidth="7" fill="none" /> {/* Beta 50% */}
-                      <path d="M50 26 A24 24 0 0 1 74 50" stroke="#facc15" strokeWidth="7" fill="none" /> {/* Gamma 40% */}
-                    </svg>
-                  </div>
-                  {/* Legend */}
-                  <div className="flex flex-wrap justify-center gap-3 mt-2 mb-2">
-                    <div className="flex items-center gap-1"><span className="inline-block w-4 h-2 rounded bg-blue-600"></span><span className="text-xs text-white">Alpha</span></div>
-                    <div className="flex items-center gap-1"><span className="inline-block w-4 h-2 rounded bg-rose-500"></span><span className="text-xs text-white">Beta</span></div>
-                    <div className="flex items-center gap-1"><span className="inline-block w-4 h-2 rounded bg-yellow-400"></span><span className="text-xs text-white">Gamma</span></div>
-                  </div>
-                  {/* Funded Program label at the bottom */}
-                  <div className="mt-4 mb-2 flex flex-col items-center">
-                    <p className="text-gray-300 text-base sm:text-lg mb-1">Funded Program</p>
-                  </div>
+                <div className="text-center">
+                  <h3 className="text-3xl sm:text-4xl font-bold text-white mb-2">{stats.total_funded_startups || 0}</h3>
+                  <p className="text-gray-300 text-base sm:text-lg">Funded Startups</p>
                 </div>
               </div>
             </div>

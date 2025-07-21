@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiHome, FiUsers, FiBarChart2, FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiEye, FiPause, FiPlay, FiX, FiMenu, FiSettings, FiCheck, FiLogOut, FiClock } from 'react-icons/fi';
+import { FiHome, FiUsers, FiBarChart2, FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiEye, FiPause, FiPlay, FiX, FiMenu, FiSettings, FiCheck, FiLogOut, FiClock, FiDollarSign } from 'react-icons/fi';
 import { FaTicketAlt, FaUser, FaBell, FaLock, FaPalette, FaEnvelope, FaQuestionCircle, FaBuilding, FaChartLine, FaCalendarAlt, FaUsers } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import { HiOutlineDocumentText, HiOutlineLocationMarker } from 'react-icons/hi';
@@ -3224,7 +3224,8 @@ case 'sitePerformance':
       location: startup.location,
       description: startup.description,
       startup_stage: startup.startup_stage,
-      approval_status: startup.approval_status
+      approval_status: startup.approval_status,
+      funding_status: startup.funding_status || 'not_funded'
     });
     setShowEditStartupModal(true);
   };
@@ -4021,6 +4022,7 @@ case 'sitePerformance':
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Stage:</span> {formatStartupStage(selectedStartupModal.startup_stage)}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Founder:</span> {selectedStartupModal.entrepreneur_name}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Status:</span> {renderStatusBadge(selectedStartupModal.approval_status)}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Funding Status:</span> {selectedStartupModal.funding_status === 'funded' ? <span className="text-green-600">Funded</span> : <span className="text-gray-500">Not Funded</span>}</p>
               </div>
             </div>
 
@@ -4113,6 +4115,17 @@ case 'sitePerformance':
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Funding Status</label>
+              <select
+                value={editingStartup.funding_status}
+                onChange={(e) => setEditingStartup({ ...editingStartup, funding_status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="not_funded">Not Funded</option>
+                <option value="funded">Funded</option>
               </select>
             </div>
             <div>
@@ -4633,17 +4646,30 @@ case 'sitePerformance':
         </button>
 
         {startup.approval_status === 'approved' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSuspendStartup(startup.startup_id);
-              setShowActionDropdown(null);
-            }}
-            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-yellow-600"
-          >
-            <FiPause className="w-4 h-4" />
-            Suspend
-          </button>
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSuspendStartup(startup.startup_id);
+                setShowActionDropdown(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-yellow-600"
+            >
+              <FiPause className="w-4 h-4" />
+              Suspend
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleFundingStatus(startup.startup_id);
+                setShowActionDropdown(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-orange-800 flex items-center gap-2 text-green-600"
+            >
+              <FiDollarSign className="w-4 h-4" />
+              {startup.funding_status === 'funded' ? 'Mark as Not Funded' : 'Mark as Funded'}
+            </button>
+          </>
         )}
 
         {startup.approval_status === 'suspended' && (
@@ -5334,7 +5360,39 @@ case 'sitePerformance':
     </div>
   );
 
+  const handleToggleFundingStatus = async (startupId) => {
+    try {
+      const startup = startups.find(s => s.startup_id === startupId);
+      const newStatus = startup.funding_status === 'funded' ? 'not_funded' : 'funded';
+      
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/startups/${startupId}/funding-status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ funding_status: newStatus })
+      });
 
+      if (!res.ok) throw new Error('Failed to update funding status');
+
+      setStartups(startups.map(s => 
+        s.startup_id === startupId 
+          ? { ...s, funding_status: newStatus }
+          : s
+      ));
+      
+      setStartupActionNotification({ 
+        type: 'success', 
+        message: `Startup marked as ${newStatus === 'funded' ? 'Funded' : 'Not Funded'} successfully` 
+      });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    } catch (error) {
+      setStartupActionNotification({ type: 'error', message: error.message });
+      setTimeout(() => setStartupActionNotification(null), 3000);
+    }
+  };
 
   return (
     <>
