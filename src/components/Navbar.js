@@ -1129,14 +1129,20 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
 
                   {/* Unified Notification Component */}
                   {showNotifications && (
-                    <div className="tablet-m:absolute tablet-m:right-0 tablet-m:mt-2 tablet-m:w-96 tablet-m:max-w-sm fixed inset-0 z-[999] flex items-center justify-center">
-                      <div className="tablet-m:relative tablet-m:w-full">
+                    <div className={
+                      `z-[999] ${window.innerWidth < 768
+                        ? 'fixed inset-0 flex items-start justify-center pt-24' // mobile: below navbar
+                        : 'absolute right-0 mt-3 w-96 max-w-sm' // desktop/tablet: below bell
+                      }`
+                    } style={{ pointerEvents: 'auto' }}>
+                      <div className={window.innerWidth < 768 ? 'w-full max-w-md' : 'w-full'}>
                         {/* Backdrop for mobile only */}
-                        <div 
-                          className="tablet-m:hidden fixed inset-0 bg-black/50" 
-                          onClick={() => setShowNotifications(false)}
-                        />
-                        
+                        {window.innerWidth < 768 && (
+                          <div 
+                            className="fixed inset-0 bg-black/50 z-[-1]" 
+                            onClick={() => setShowNotifications(false)}
+                          />
+                        )}
                         <NotificationDropdown
                           notifications={notifications}
                           onNotificationClick={(notification) => {
@@ -1157,8 +1163,6 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                 <div
                   className="relative"
                   ref={msgDropdownRef}
-                  onMouseEnter={handleMsgDropdownOpen}
-                  onMouseLeave={handleMsgDropdownClose}
                 >
                   <button
                     className="relative flex items-center justify-center group"
@@ -1180,7 +1184,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                   <div className="hidden tablet-m:block">
                     {msgDropdownOpen && (
                       <div
-                        className="absolute right-0 mt-2 w-96 max-w-xs sm:max-w-sm md:max-w-md rounded-xl shadow-2xl z-50 bg-white border border-gray-200"
+                        className={
+                          `z-[999] animate-fadeIn absolute right-0 mt-3 w-96 max-w-sm bg-white border border-gray-200 rounded-xl shadow-2xl`
+                        }
+                        style={{ pointerEvents: 'auto' }}
                       >
                         <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>
                         <div className="max-h-96 overflow-y-auto">
@@ -1243,7 +1250,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                   </div>
                   {/* Mobile modal overlay */}
                   {msgDropdownOpen && (
-                    <div className="fixed inset-0 z-[999] flex items-center justify-center tablet-m:hidden bg-black bg-opacity-40">
+                    <div className="fixed inset-0 z-[999] flex items-start justify-center pt-24 tablet-m:hidden bg-black bg-opacity-40 animate-fadeIn">
                       <div className={`w-full max-w-md mx-auto bg-white dark:bg-trkblack rounded-2xl shadow-lg relative animate-fadeIn mt-20`}>
                         <button className="absolute top-2 right-2 text-gray-400 hover:text-orange-500 text-2xl z-20" style={{pointerEvents:'auto'}} onClick={() => setMsgDropdownOpen(false)} aria-label="Close messages">&times;</button>
                         <div className="p-4 border-b border-gray-200 font-semibold">Messages</div>

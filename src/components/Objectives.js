@@ -19,7 +19,7 @@ function Objective() {
 
   return (
     <div id="objectives" className="py-8 px-4 tablet:px-16 bg-transparent">
-      <h1 className="text-3xl font-bold text-center mb-8">Objectives</h1>
+      <h1 className="text-4xl sm:text-5xl font-bold text-center mb-8" data-aos="fade-up">Objectives</h1>
       <div className="grid grid-cols-1 tablet:grid-cols-3 gap-8">
         {/* Objective 1 */}
         <div className="bg-white rounded-xl shadow-lg flex flex-col items-center p-6" style={{ background: '#fff' }}>

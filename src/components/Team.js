@@ -9,6 +9,7 @@ function TarakiTeam() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [testimonialsVisible, setTestimonialsVisible] = useState(false);
 
   const getApiUrl = () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -43,6 +44,8 @@ function TarakiTeam() {
       easing: "ease",
       once: false,
     });
+
+    setTimeout(() => setTestimonialsVisible(true), 200); // slight delay for effect
   }, []);
 
   if (loading) {
@@ -59,7 +62,7 @@ function TarakiTeam() {
         <div className="cont tablet:px-8 phone:py-2">
           <section className="mt-16 tablet:mt-12 text-center">
             <h1
-              className="font-montserrat font-semibold text-md tablet:text-lg tablet-m:text-2xl laptop-s:text-3xl laptop-m:text-[2.2rem] desktop-m:text-[2.6rem] aos-init"
+              className="font-montserrat font-semibold text-md tablet:text-lg tablet-m:text-4xl laptop-s:text-5xl laptop-m:text-[2.2rem] desktop-m:text-[2.6rem] aos-init"
               data-aos="fade-down"
               data-aos-delay="200"
             >
@@ -107,6 +110,44 @@ function TarakiTeam() {
             ))}
           </div>
         </div>
+        {/* Testimonial Section */}
+        <section className="mt-20 mb-10">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-8">
+            {/* Testimonial 1 */}
+            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in' : ''}`}>
+              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“TARAKI has been instrumental in helping our startup grow. The support and mentorship are unmatched!”</p>
+              <div className="flex items-center gap-4">
+                <img src={defaultAvatar} alt="Testimonial 1" className="w-14 h-14 rounded-full border-2 border-orange-500" />
+                <div>
+                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Alex Rivera</div>
+                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Startup Founder</div>
+                </div>
+              </div>
+            </div>
+            {/* Testimonial 2 */}
+            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in testimonial-fade-delay-1' : ''}`}>
+              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“The community at TARAKI is so welcoming and collaborative. I’ve learned so much from the team and other entrepreneurs.”</p>
+              <div className="flex items-center gap-4">
+                <img src={defaultAvatar} alt="Testimonial 2" className="w-14 h-14 rounded-full border-2 border-orange-500" />
+                <div>
+                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Jamie Cruz</div>
+                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Entrepreneur</div>
+                </div>
+              </div>
+            </div>
+            {/* Testimonial 3 */}
+            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in testimonial-fade-delay-2' : ''}`}>
+              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“I highly recommend TARAKI for anyone looking to innovate and connect with like-minded individuals.”</p>
+              <div className="flex items-center gap-4">
+                <img src={defaultAvatar} alt="Testimonial 3" className="w-14 h-14 rounded-full border-2 border-orange-500" />
+                <div>
+                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Pat Santos</div>
+                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Investor</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   );

@@ -46,11 +46,11 @@ function TBI() {
   };
 
   return (
-    <>
-      <div className="font-montserrat mt-24 laptop-s:mt-32 desktop-s:mt-36 desktop-m:mt-40">
-        <h1 className="font-bold text-[1rem] laptop-s:text-xl desktop-s:text-2xl text-center">
-          Technological Business Incubators
-        </h1>
+    <>        
+    <h1 className="font-semibold text-4xl sm:text-5xl text-center">
+    Technological Business Incubators
+     </h1>
+      <div className="font-montserrat mt-6 laptop-s:mt-10 desktop-s:mt-12 desktop-m:mt-16">
         <div className="px-2 sm:px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* InTTO */}
@@ -157,7 +157,7 @@ function TBI() {
           </div>
         </div>
         <section id="mentors" className="my-16">
-          <h1 className="font-bold text-2xl md:text-3xl text-center mb-12 text-black dark:text-white">
+          <h1 className="font-semibold text-4xl md:text-5xl text-center mb-12 text-black dark:text-white">
             Our Mentors
           </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 px-4 md:px-8 max-w-7xl mx-auto">

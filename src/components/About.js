@@ -19,7 +19,7 @@ function About() {
             className="text-center tablet:text-left mt-16 tablet:mt-0"
           >
             <h1
-              className="font-semibold text-md font-montserrat tablet:text-lg tablet-m:text-2xl tablet:px-0 laptop-s:text-3xl laptop-m:text-[2.2rem] desktop-m:text-[2.6rem] aos-init"
+              className="font-bold text-4xl sm:text-5xl font-montserrat tablet:px-0 mb-4 aos-init"
               data-aos="fade-right"
             >
               About Us
