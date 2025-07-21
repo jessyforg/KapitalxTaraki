@@ -5505,6 +5505,23 @@ case 'sitePerformance':
         `}>
           {renderContent()}
         </main>
+
+        {/* Render all modals */}
+        {renderUserDetailsModal()}
+        {renderUserVerificationModal()}
+        {renderDeleteUserConfirmModal()}
+        {renderBulkUserActionModal()}
+        {renderEditUserModal()}
+        {renderStartupDetailsModal()}
+        {renderEditStartupModal()}
+        {renderDeleteStartupConfirmModal()}
+        {renderBulkStartupActionModal()}
+        {renderDeleteEventConfirmModal()}
+        {renderTicketModal()}
+        {renderPendingStartupModal()}
+        {renderDocumentPreviewModal()}
+        {renderUserActionDropdownPortal()}
+        {renderActionDropdownPortal()}
       </div>
     </>
   );

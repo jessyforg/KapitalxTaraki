@@ -2305,15 +2305,6 @@ export default function UserProfile() {
         user={user}
         isOwnProfile={isOwnProfile}
       />
-      <SocialMediaLinksCard
-        socialLinks={socialLinks}
-        setSocialLinks={setSocialLinks}
-        isEditingSocial={isEditingSocial}
-        setIsEditingSocial={setIsEditingSocial}
-        handleSaveSocial={handleSaveSocial}
-        user={user}
-        isOwnProfile={isOwnProfile}
-      />
       <div className="lg:hidden">
         <ProfessionalBackgroundCard 
           employments={employments} 
@@ -2333,17 +2324,56 @@ export default function UserProfile() {
     <div className="flex flex-col gap-6 min-h-[700px] max-w-[420px] w-full">
       {user && (
         <>
-      <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 flex items-center gap-4 mb-2">
-        {user.profile_image && user.profile_image.trim() !== '' ? (
-          <img src={user.profile_image} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
-        ) : (
-          <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center">
-            <FaUser className="text-white text-3xl" />
-          </div>
-        )}
-        <div>
-          <div className="font-bold text-lg text-gray-800">{user.first_name} {user.last_name}</div>
-          <div className="text-sm text-gray-500">System Developer</div>
+      <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200">
+        <h3 className="text-lg font-bold text-orange-600 mb-4">Social Links</h3>
+        <div className="flex flex-wrap gap-3">
+          {socialLinks.facebook_url && (
+            <a href={socialLinks.facebook_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+              <FaFacebook size={20} />
+            </a>
+          )}
+          {socialLinks.instagram_url && (
+            <a href={socialLinks.instagram_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-600 transition-colors">
+              <FaInstagram size={20} />
+            </a>
+          )}
+          {socialLinks.linkedin_url && (
+            <a href={socialLinks.linkedin_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-blue-800 rounded-full flex items-center justify-center text-white hover:bg-blue-900 transition-colors">
+              <FaLinkedin size={20} />
+            </a>
+          )}
+          {socialLinks.twitter_url && (
+            <a href={socialLinks.twitter_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors">
+              <FaTwitter size={20} />
+            </a>
+          )}
+          {socialLinks.whatsapp_url && (
+            <a href={socialLinks.whatsapp_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white hover:bg-green-600 transition-colors">
+              <FaWhatsapp size={20} />
+            </a>
+          )}
+          {socialLinks.telegram_url && (
+            <a href={socialLinks.telegram_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-600 transition-colors">
+              <FaTelegram size={20} />
+            </a>
+          )}
+          {socialLinks.microsoft_url && (
+            <a href={socialLinks.microsoft_url} target="_blank" rel="noopener noreferrer" 
+               className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white hover:bg-gray-700 transition-colors">
+              <FaMicrosoft size={20} />
+            </a>
+          )}
+          {!socialLinks.facebook_url && !socialLinks.instagram_url && !socialLinks.linkedin_url && 
+           !socialLinks.twitter_url && !socialLinks.whatsapp_url && !socialLinks.telegram_url && 
+           !socialLinks.microsoft_url && (
+            <div className="text-gray-500 text-sm">No social links added yet.</div>
+          )}
         </div>
       </div>
       <ProfessionalBackgroundCard 

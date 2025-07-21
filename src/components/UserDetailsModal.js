@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { validatePhoneNumber, validateDate } from '../utils/validation';
+import { fetchRegions, fetchProvinces, fetchCities, fetchBarangays } from '../services/locationAPI';
 
 const CAR_LOCATIONS = [
   '',
@@ -66,6 +67,327 @@ const SKILLS = [
   'Legal',
   'Other'
 ];
+
+const EDUCATION_LEVELS = [
+  'Elementary',
+  'High School',
+  'Senior High School',
+  'Vocational/Technical',
+  'Associate Degree',
+  'Bachelor\'s Degree',
+  'Master\'s Degree',
+  'Doctorate/PhD',
+  'Professional Degree',
+  'Other'
+];
+
+// Helper function to format Philippines addresses
+const formatPhilippinesAddress = (locationObj) => {
+  if (!locationObj || typeof locationObj !== 'object') {
+    return typeof locationObj === 'string' ? locationObj : '';
+  }
+
+  const parts = [];
+  if (locationObj.barangayName) parts.push(locationObj.barangayName);
+  if (locationObj.cityName) parts.push(locationObj.cityName);
+  if (locationObj.provinceName) parts.push(locationObj.provinceName);
+  if (locationObj.regionName) parts.push(locationObj.regionName);
+  return parts.join(', ');
+};
+
+// Philippines Location Selector Component
+function PhilippinesLocationSelector({ value, onChange, disabled = false }) {
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedBarangay, setSelectedBarangay] = useState('');
+
+  // Load regions on component mount
+  useEffect(() => {
+    const loadRegions = async () => {
+      try {
+        const regionData = await fetchRegions();
+        setRegions(regionData);
+      } catch (error) {
+        console.error('Error loading regions:', error);
+      }
+    };
+    loadRegions();
+  }, []);
+
+  // Parse the current value to set initial selections
+  useEffect(() => {
+    if (value && typeof value === 'object') {
+      setSelectedRegion(value.regionCode || '');
+      setSelectedProvince(value.provinceCode || '');
+      setSelectedCity(value.cityCode || '');
+      setSelectedBarangay(value.barangayCode || '');
+      
+      // Load the dependent dropdowns
+      if (value.regionCode) {
+        loadProvinces(value.regionCode);
+      }
+      if (value.provinceCode) {
+        loadCities(value.provinceCode);
+      }
+      if (value.cityCode) {
+        loadBarangays(value.cityCode);
+      }
+    } else if (typeof value === 'string' && value !== '') {
+      // If it's a string, clear selections and set as display text
+      setSelectedRegion('');
+      setSelectedProvince('');
+      setSelectedCity('');
+      setSelectedBarangay('');
+    }
+  }, [value]);
+
+  const loadProvinces = async (regionCode) => {
+    if (!regionCode) {
+      setProvinces([]);
+      setCities([]);
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const provinceData = await fetchProvinces(regionCode);
+      setProvinces(provinceData);
+      setCities([]);
+      setBarangays([]);
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCities = async (provinceCode) => {
+    if (!provinceCode) {
+      setCities([]);
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const cityData = await fetchCities(provinceCode);
+      setCities(cityData);
+      setBarangays([]);
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBarangays = async (cityCode) => {
+    if (!cityCode) {
+      setBarangays([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const barangayData = await fetchBarangays(cityCode);
+      setBarangays(barangayData);
+    } catch (error) {
+      console.error('Error loading barangays:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegionChange = (e) => {
+    const regionCode = e.target.value;
+    setSelectedRegion(regionCode);
+    setSelectedProvince('');
+    setSelectedCity('');
+    setSelectedBarangay('');
+    
+    loadProvinces(regionCode);
+    
+    if (regionCode) {
+      const region = regions.find(r => r.code === regionCode);
+      updateValue({ regionCode, regionName: region?.name });
+    } else {
+      updateValue(null);
+    }
+  };
+
+  const handleProvinceChange = (e) => {
+    const provinceCode = e.target.value;
+    setSelectedProvince(provinceCode);
+    setSelectedCity('');
+    setSelectedBarangay('');
+    
+    loadCities(provinceCode);
+    
+    if (provinceCode && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === provinceCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode,
+        provinceName: province?.name
+      });
+    }
+  };
+
+  const handleCityChange = (e) => {
+    const cityCode = e.target.value;
+    setSelectedCity(cityCode);
+    setSelectedBarangay('');
+    
+    loadBarangays(cityCode);
+    
+    if (cityCode && selectedProvince && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === selectedProvince);
+      const city = cities.find(c => c.code === cityCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode: selectedProvince,
+        provinceName: province?.name,
+        cityCode,
+        cityName: city?.name
+      });
+    }
+  };
+
+  const handleBarangayChange = (e) => {
+    const barangayCode = e.target.value;
+    setSelectedBarangay(barangayCode);
+    
+    if (barangayCode && selectedCity && selectedProvince && selectedRegion) {
+      const region = regions.find(r => r.code === selectedRegion);
+      const province = provinces.find(p => p.code === selectedProvince);
+      const city = cities.find(c => c.code === selectedCity);
+      const barangay = barangays.find(b => b.code === barangayCode);
+      updateValue({
+        regionCode: selectedRegion,
+        regionName: region?.name,
+        provinceCode: selectedProvince,
+        provinceName: province?.name,
+        cityCode: selectedCity,
+        cityName: city?.name,
+        barangayCode,
+        barangayName: barangay?.name
+      });
+    }
+  };
+
+  const updateValue = (locationData) => {
+    onChange(locationData);
+  };
+
+  const formatDisplayValue = () => {
+    return formatPhilippinesAddress(value);
+  };
+
+  if (disabled) {
+    return (
+      <input
+        type="text"
+        value={formatDisplayValue()}
+        disabled
+        className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+        placeholder="No location specified"
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-black mb-1">Region</label>
+          <select
+            value={selectedRegion}
+            onChange={handleRegionChange}
+            className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+            disabled={loading}
+          >
+            <option value="">Select Region</option>
+            {regions.map(region => (
+              <option key={region.code} value={region.code}>
+                {region.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm text-black mb-1">Province</label>
+          <select
+            value={selectedProvince}
+            onChange={handleProvinceChange}
+            className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+            disabled={loading || !selectedRegion}
+          >
+            <option value="">Select Province</option>
+            {provinces.map(province => (
+              <option key={province.code} value={province.code}>
+                {province.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-black mb-1">City/Municipality</label>
+          <select
+            value={selectedCity}
+            onChange={handleCityChange}
+            className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+            disabled={loading || !selectedProvince}
+          >
+            <option value="">Select City/Municipality</option>
+            {cities.map(city => (
+              <option key={city.code} value={city.code}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm text-black mb-1">Barangay</label>
+          <select
+            value={selectedBarangay}
+            onChange={handleBarangayChange}
+            className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+            disabled={loading || !selectedCity}
+          >
+            <option value="">Select Barangay</option>
+            {barangays.map(barangay => (
+              <option key={barangay.code} value={barangay.code}>
+                {barangay.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      {formatDisplayValue() && (
+        <div className="text-sm text-gray-600 bg-gray-50 rounded-full px-3 py-2">
+          <strong>Selected:</strong> {formatDisplayValue()}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const steps = [
   { label: 'Basic Information' },
@@ -220,6 +542,13 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     }));
   };
 
+  const handleLocationChange = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleMultiSelect = (name, value) => {
     setFormData(prev => ({
       ...prev,
@@ -277,11 +606,13 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       const validation = validatePhoneNumber(formData.contact_number, false);
       if (!validation.isValid) {
         setError(validation.message);
+        setLoading(false);
         return;
       }
     }
 
     try {
+      // Update the main profile data
       await api.updateUserProfile(user.id, formData);
       onComplete();
     } catch (err) {
@@ -332,20 +663,13 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                   autoComplete="bday"
                 />
               </div>
-              <div>
-                <label htmlFor="user-location" className="block text-sm font-medium text-black mb-1">Location</label>
-                <select
-                  id="user-location"
-                  name="location"
-                  value={formData.location ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  autoComplete="address-level1"
-                >
-                  {CAR_LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>{loc ? loc : 'Select location'}</option>
-                  ))}
-                </select>
+              <div className="md:col-span-2">
+                <label htmlFor="user-location" className="block text-sm font-medium text-black mb-1">Address</label>
+                <PhilippinesLocationSelector
+                  value={formData.location}
+                  onChange={value => handleLocationChange('location', value)}
+                  disabled={false}
+                />
               </div>
               <div>
                 <label htmlFor="user-contact_number" className="block text-sm font-medium text-black mb-1">Contact Number</label>
@@ -456,13 +780,18 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                   {formData.academic_profile?.map((edu, idx) => (
                     <div key={idx} className="bg-[#e7e7e7] p-6 rounded-xl">
                       <div className="grid grid-cols-2 gap-6 mb-4">
-                        <input
-                          type="text"
-                          value={edu.level || ''}
-                          onChange={e => handleAcademicChange(idx, 'level', e.target.value)}
-                          placeholder="Education Level"
-                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
-                        />
+                        <div>
+                          <select
+                            value={edu.level || ''}
+                            onChange={e => handleAcademicChange(idx, 'level', e.target.value)}
+                            className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                          >
+                            <option value="">Select Education Level</option>
+                            {EDUCATION_LEVELS.map((level) => (
+                              <option key={level} value={level}>{level}</option>
+                            ))}
+                          </select>
+                        </div>
                         <input
                           type="text"
                           value={edu.course || ''}
@@ -721,19 +1050,11 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               </div>
               <div>
                 <label htmlFor="user-preferred_location" className="block text-sm font-medium text-black mb-1">Preferred Location</label>
-                <select
-                  id="user-preferred_location"
-                  name="preferred_location"
-                  value={formData.preferred_location ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  autoComplete="off"
-                >
-                  <option value="">Select location</option>
-                  {CAR_LOCATIONS.filter(loc => loc).map((loc) => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+                <PhilippinesLocationSelector
+                  value={formData.preferred_location}
+                  onChange={value => handleLocationChange('preferred_location', value)}
+                  disabled={false}
+                />
               </div>
             </div>
           </div>

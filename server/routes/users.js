@@ -474,6 +474,38 @@ router.get('/:id', auth, async (req, res) => {
       userData.skills = [];
     }
 
+    // Get employment data
+    const [employment] = await pool.query(
+      'SELECT company, title, industry, hire_date, is_current FROM employment WHERE user_id = ? ORDER BY hire_date DESC',
+      [userId]
+    );
+    userData.employment = employment || [];
+
+    // Get academic profile data
+    const [academicProfile] = await pool.query(
+      'SELECT level, course, institution, address, graduation_date FROM academic_profile WHERE user_id = ? ORDER BY graduation_date DESC',
+      [userId]
+    );
+    userData.academic_profile = academicProfile || [];
+
+    // Get social links data
+    const [socialLinks] = await pool.query(
+      'SELECT facebook_url, twitter_url, instagram_url, linkedin_url, microsoft_url, whatsapp_url, telegram_url FROM user_social_links WHERE user_id = ?',
+      [userId]
+    );
+    userData.social_links = socialLinks[0] || {};
+
+    // Get skills from user_skills table (prioritize over JSON skills in preferences)
+    const [userSkills] = await pool.query(
+      'SELECT skill_name FROM user_skills WHERE user_id = ? ORDER BY created_at ASC',
+      [userId]
+    );
+    
+    // If we have skills in user_skills table, use those; otherwise use JSON skills from preferences
+    if (userSkills && userSkills.length > 0) {
+      userData.skills = userSkills.map(skill => skill.skill_name);
+    }
+
     res.json(userData);
   } catch (error) {
     console.error('Error getting user profile:', error);
@@ -914,7 +946,9 @@ router.put('/:id', auth, async (req, res) => {
       }
       if (location !== undefined) {
         updateFields.push('location = ?');
-        updateValues.push(location);
+        // Serialize location object to JSON string for storage
+        const locationData = location && typeof location === 'object' ? JSON.stringify(location) : location;
+        updateValues.push(locationData);
       }
       if (contact_number !== undefined) {
         updateFields.push('contact_number = ?');
@@ -1049,6 +1083,9 @@ router.put('/:id', auth, async (req, res) => {
 
           if (existingPrefs.length === 0) {
             // Insert new preferences
+            // Serialize preferred_location object to JSON string for storage
+            const preferredLocationData = preferred_location && typeof preferred_location === 'object' ? JSON.stringify(preferred_location) : preferred_location;
+            
             await connection.query(
               `INSERT INTO user_preferences (
                 user_id,
@@ -1063,7 +1100,7 @@ router.put('/:id', auth, async (req, res) => {
                 position_desired,
                 preferredIndustriesJson,
                 preferred_startup_stage,
-                preferred_location,
+                preferredLocationData,
                 skillsJson
               ]
             );
@@ -1086,7 +1123,9 @@ router.put('/:id', auth, async (req, res) => {
             }
             if (preferred_location !== undefined) {
               prefUpdateFields.push('preferred_location = ?');
-              prefUpdateValues.push(preferred_location);
+              // Serialize preferred_location object to JSON string for storage
+              const preferredLocationData = preferred_location && typeof preferred_location === 'object' ? JSON.stringify(preferred_location) : preferred_location;
+              prefUpdateValues.push(preferredLocationData);
             }
             if (skills !== undefined) {
               prefUpdateFields.push('skills = ?');
@@ -1107,7 +1146,31 @@ router.put('/:id', auth, async (req, res) => {
         }
       }
 
-      // 6. Handle social links (with error handling)
+      // 6. Handle user_skills table (store skills as individual records)
+      if (skills !== undefined && Array.isArray(skills)) {
+        try {
+          // Delete existing user skills
+          await connection.query(
+            'DELETE FROM user_skills WHERE user_id = ?',
+            [userId]
+          );
+          
+          // Insert new skills as individual records
+          for (const skill of skills) {
+            if (skill && skill.trim() !== '') {
+              await connection.query(
+                'INSERT INTO user_skills (user_id, skill_name, skill_level) VALUES (?, ?, ?)',
+                [userId, skill.trim(), 'intermediate']
+              );
+            }
+          }
+          console.log('Updated user_skills table successfully');
+        } catch (skillsError) {
+          console.log('User skills table error:', skillsError.message);
+        }
+      }
+
+      // 7. Handle social links (with error handling)
       if (facebook_url !== undefined || instagram_url !== undefined || linkedin_url !== undefined) {
         try {
           // Check if social links exist
