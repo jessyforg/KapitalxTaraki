@@ -21,6 +21,8 @@ import { updateProfilePhoto } from '../api/user';
 import axios from 'axios';
 import MobileSidebar from './MobileSidebar';
 import HamburgerButton from './HamburgerButton';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../utils/cropImage';
 
 // Message component for displaying success/error messages
 const Message = ({ type, message }) => {
@@ -1469,68 +1471,134 @@ function AdminDashboard() {
 
                   {/* Team Member Modal */}
                   {isTeamModalOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                          {selectedTeamMember ? 'Edit Team Member' : 'Add Team Member'}
-                        </h2>
-                        <form onSubmit={handleTeamMemberSubmit} className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                      <div className="bg-white rounded-lg p-6 w-full max-w-4xl relative flex flex-col md:flex-row gap-8">
+                        {/* Cropping area on the left */}
+                        <div className="flex-1 min-w-[300px] flex flex-col items-center justify-center">
+                          <h3 className="text-lg font-semibold mb-4">Crop Image</h3>
+                          <div className="mb-4 flex gap-4 items-center">
+                            <label className="font-medium">Aspect Ratio:</label>
+                            <select
+                              value={aspect}
+                              onChange={e => setAspect(Number(e.target.value))}
+                              className="border rounded px-2 py-1"
+                            >
+                              <option value={1}>1:1</option>
+                              <option value={4/3}>4:3</option>
+                              <option value={16/9}>16:9</option>
+                              <option value={3/4}>3:4</option>
+                              <option value={9/16}>9:16</option>
+                            </select>
+                            <label className="font-medium ml-6">Zoom:</label>
+                            <input
+                              type="range"
+                              min={0.5}
+                              max={3}
+                              step={0.01}
+                              value={zoom}
+                              onChange={e => setZoom(Number(e.target.value))}
+                              className="w-32 mx-2"
+                            />
+                            <span className="text-sm">{zoom.toFixed(2)}x</span>
+                          </div>
+                          <div className="relative w-full h-80 bg-gray-200 rounded-lg overflow-hidden">
+                            <Cropper
+                              image={croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image)))}
+                              crop={crop}
+                              zoom={zoom}
+                              aspect={aspect}
+                              onCropChange={setCrop}
+                              onZoomChange={setZoom}
+                              onCropComplete={onCropComplete}
+                            />
+                          </div>
+                          <button
+                            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded"
+                            onClick={async () => {
+                              try {
+                                const croppedImg = await getCroppedImg(
+                                  croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image))),
+                                  croppedAreaPixels
+                                );
+                                const arr = croppedImg.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                                for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+                                const file = new File([u8arr], 'cropped-image.jpg', { type: mime });
+                                setTeamMemberForm((prev) => ({ ...prev, image: file, imagePreview: croppedImg }));
+                                setCroppingImage(croppedImg);
+                              } catch (err) {
+                                alert('Failed to crop image');
+                              }
+                            }}
+                          >
+                            Crop & Set Preview
+                          </button>
+                        </div>
+                        {/* Form fields and preview on the right */}
+                        <form onSubmit={handleTeamMemberSubmit} className="flex-1 min-w-[300px] flex flex-col justify-between">
+                          <h3 className="text-lg font-semibold mb-4">Team Member Details</h3>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                             <input
                               type="text"
                               value={teamMemberForm.name}
-                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              onChange={e => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
                             <input
                               type="text"
                               value={teamMemberForm.position}
-                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              onChange={e => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                             <textarea
                               value={teamMemberForm.description}
-                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              onChange={e => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                               rows="4"
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image</label>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
                             <input
                               type="file"
-                              onChange={(e) => setTeamMemberForm({ ...teamMemberForm, image: e.target.files[0] })}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                              onChange={handleTeamImageChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                               accept="image/*"
                               {...(!selectedTeamMember && { required: true })}
                             />
                           </div>
-                          <div className="flex justify-end space-x-2 mt-6">
+                          {teamMemberForm.imagePreview && (
+                            <div className="mb-4 flex flex-col items-center">
+                              <img
+                                src={teamMemberForm.imagePreview}
+                                alt="Preview"
+                                className="w-full max-w-xs h-[260px] object-cover rounded-2xl border mb-2"
+                                style={{ objectPosition: 'top center' }}
+                              />
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2 justify-end mt-4">
                             <button
                               type="button"
                               onClick={() => {
                                 setIsTeamModalOpen(false);
                                 setSelectedTeamMember(null);
-                                setTeamMemberForm({ name: '', position: '', description: '', image: null });
+                                setTeamMemberForm({ name: '', position: '', description: '', image: null, imagePreview: null });
                               }}
-                              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                              className="px-4 py-2 bg-gray-300 rounded"
                             >
                               Cancel
                             </button>
-                            <button
-                              type="submit"
-                              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                            >
+                            <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded">
                               {selectedTeamMember ? 'Save Changes' : 'Add Member'}
                             </button>
                           </div>
@@ -5171,7 +5239,9 @@ case 'sitePerformance':
       fetchTeamMembers();
       setIsTeamModalOpen(false);
       setSelectedTeamMember(null);
-      setTeamMemberForm({ name: '', position: '', description: '', image: null });
+      setTeamMemberForm({ name: '', position: '', description: '', image: null, imagePreview: null });
+      setShowCropModal(false); // Ensure cropping modal is closed
+      setCroppingImage(null);  // Ensure cropping image is cleared
     } catch (error) {
       console.error('Error saving team member:', error);
       alert(error.message || 'Failed to save team member. Please try again.');
@@ -5251,7 +5321,7 @@ case 'sitePerformance':
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-4 md:px-8 mt-12">
         {teamMembers.map((member) => (
           <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden">
             <div className="aspect-[4/3] overflow-hidden">
@@ -5292,65 +5362,135 @@ case 'sitePerformance':
       </div>
 
       {isTeamModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <h2 className="text-2xl font-semibold mb-4">
-              {selectedTeamMember ? 'Edit Team Member' : 'Add Team Member'}
-            </h2>
-            <form onSubmit={handleTeamMemberSubmit}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl relative flex flex-col md:flex-row gap-8">
+            {/* Cropping area on the left */}
+            <div className="flex-1 min-w-[300px] flex flex-col items-center justify-center">
+              <h3 className="text-lg font-semibold mb-4">Crop Image</h3>
+              <div className="mb-4 flex gap-4 items-center">
+                <label className="font-medium">Aspect Ratio:</label>
+                <select
+                  value={aspect}
+                  onChange={e => setAspect(Number(e.target.value))}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value={1}>1:1</option>
+                  <option value={4/3}>4:3</option>
+                  <option value={16/9}>16:9</option>
+                  <option value={3/4}>3:4</option>
+                  <option value={9/16}>9:16</option>
+                </select>
+                <label className="font-medium ml-6">Zoom:</label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={e => setZoom(Number(e.target.value))}
+                  className="w-32 mx-2"
+                />
+                <span className="text-sm">{zoom.toFixed(2)}x</span>
+              </div>
+              <div className="relative w-full h-80 bg-gray-200 rounded-lg overflow-hidden">
+                <Cropper
+                  image={croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image)))}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={aspect}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              <button
+                className="mt-4 px-4 py-2 bg-orange-500 text-white rounded"
+                onClick={async () => {
+                  try {
+                    const croppedImg = await getCroppedImg(
+                      croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image))),
+                      croppedAreaPixels
+                    );
+                    const arr = croppedImg.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                    for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+                    const file = new File([u8arr], 'cropped-image.jpg', { type: mime });
+                    setTeamMemberForm((prev) => ({ ...prev, image: file, imagePreview: croppedImg }));
+                    setCroppingImage(croppedImg);
+                  } catch (err) {
+                    alert('Failed to crop image');
+                  }
+                }}
+              >
+                Crop & Set Preview
+              </button>
+            </div>
+            {/* Form fields and preview on the right */}
+            <form onSubmit={handleTeamMemberSubmit} className="flex-1 min-w-[300px] flex flex-col justify-between">
+              <h3 className="text-lg font-semibold mb-4">Team Member Details</h3>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input
                   type="text"
                   value={teamMemberForm.name}
-                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  onChange={e => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Position</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
                 <input
                   type="text"
                   value={teamMemberForm.position}
-                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  onChange={e => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   value={teamMemberForm.description}
-                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  onChange={e => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                   rows="4"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Image</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
                 <input
                   type="file"
-                  onChange={(e) => setTeamMemberForm({ ...teamMemberForm, image: e.target.files[0] })}
-                  className="w-full"
+                  onChange={handleTeamImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
                   accept="image/*"
                   {...(!selectedTeamMember && { required: true })}
                 />
               </div>
-              <div className="flex justify-end space-x-2">
+              {teamMemberForm.imagePreview && (
+                <div className="mb-4 flex flex-col items-center">
+                  <img
+                    src={teamMemberForm.imagePreview}
+                    alt="Preview"
+                    className="w-full max-w-xs h-[260px] object-cover rounded-2xl border mb-2"
+                    style={{ objectPosition: 'top center' }}
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 justify-end mt-4">
                 <button
                   type="button"
-                  onClick={() => setIsTeamModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                  onClick={() => {
+                    setIsTeamModalOpen(false);
+                    setSelectedTeamMember(null);
+                    setTeamMemberForm({ name: '', position: '', description: '', image: null, imagePreview: null });
+                  }}
+                  className="px-4 py-2 bg-gray-300 rounded"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Save
+                <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded">
+                  {selectedTeamMember ? 'Save Changes' : 'Add Member'}
                 </button>
               </div>
             </form>
@@ -5394,6 +5534,51 @@ case 'sitePerformance':
     }
   };
 
+  // Add state for cropping
+  const [croppingImage, setCroppingImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  // Add state for aspect ratio
+  const [aspect, setAspect] = useState(4 / 3);
+
+  // Handle image selection for cropping
+  const handleTeamImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCroppingImage(reader.result);
+        setShowCropModal(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle crop complete
+  const onCropComplete = (croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  // Handle crop confirm
+  const handleCropConfirm = async () => {
+    try {
+      const croppedImg = await getCroppedImg(
+        croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image))),
+        croppedAreaPixels
+      );
+      const arr = croppedImg.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+      const file = new File([u8arr], 'cropped-image.jpg', { type: mime });
+      setTeamMemberForm((prev) => ({ ...prev, image: file, imagePreview: croppedImg }));
+      setShowCropModal(false); // Close cropping modal
+      setCroppingImage(null);
+    } catch (err) {
+      alert('Failed to crop image');
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -5415,7 +5600,7 @@ case 'sitePerformance':
                 />
                 </div>
             <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{user?.name || 'Admin Demo'}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">ENTREPRENEUR</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[user?.role] || 'Admin'}</p>
             </div>
 
             {/* Navigation Links */}
@@ -5495,7 +5680,7 @@ case 'sitePerformance':
                   />
                 </div>
                 <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{user?.name || 'Admin Demo'}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">ENTREPRENEUR</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[user?.role] || 'Admin'}</p>
                 </div>
                 
               {/* Navigation Links */}
@@ -5580,6 +5765,142 @@ case 'sitePerformance':
         {renderDocumentPreviewModal()}
         {renderUserActionDropdownPortal()}
         {renderActionDropdownPortal()}
+        {showCropModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div className="bg-white rounded-lg p-6 w-full max-w-4xl relative flex flex-col md:flex-row gap-8">
+              {/* Cropping area on the left */}
+              <div className="flex-1 min-w-[300px] flex flex-col items-center justify-center">
+                <h3 className="text-lg font-semibold mb-4">Crop Image</h3>
+                <div className="mb-4 flex gap-4 items-center">
+                  <label className="font-medium">Aspect Ratio:</label>
+                  <select
+                    value={aspect}
+                    onChange={e => setAspect(Number(e.target.value))}
+                    className="border rounded px-2 py-1"
+                  >
+                    <option value={1}>1:1</option>
+                    <option value={4/3}>4:3</option>
+                    <option value={16/9}>16:9</option>
+                    <option value={3/4}>3:4</option>
+                    <option value={9/16}>9:16</option>
+                  </select>
+                  <label className="font-medium ml-6">Zoom:</label>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={3}
+                    step={0.01}
+                    value={zoom}
+                    onChange={e => setZoom(Number(e.target.value))}
+                    className="w-32 mx-2"
+                  />
+                  <span className="text-sm">{zoom.toFixed(2)}x</span>
+                </div>
+                <div className="relative w-full h-80 bg-gray-200 rounded-lg overflow-hidden">
+                  <Cropper
+                    image={croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image)))}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={aspect}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
+                </div>
+                <button
+                  className="mt-4 px-4 py-2 bg-orange-500 text-white rounded"
+                  onClick={async () => {
+                    try {
+                      const croppedImg = await getCroppedImg(
+                        croppingImage || teamMemberForm.imagePreview || (teamMemberForm.image && (typeof teamMemberForm.image === 'string' ? teamMemberForm.image : URL.createObjectURL(teamMemberForm.image))),
+                        croppedAreaPixels
+                      );
+                      const arr = croppedImg.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                      for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+                      const file = new File([u8arr], 'cropped-image.jpg', { type: mime });
+                      setTeamMemberForm((prev) => ({ ...prev, image: file, imagePreview: croppedImg }));
+                      setCroppingImage(croppedImg);
+                    } catch (err) {
+                      alert('Failed to crop image');
+                    }
+                  }}
+                >
+                  Crop & Set Preview
+                </button>
+              </div>
+              {/* Form fields and preview on the right */}
+              <form onSubmit={handleTeamMemberSubmit} className="flex-1 min-w-[300px] flex flex-col justify-between">
+                <h3 className="text-lg font-semibold mb-4">Team Member Details</h3>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={teamMemberForm.name}
+                    onChange={e => setTeamMemberForm({ ...teamMemberForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                  <input
+                    type="text"
+                    value={teamMemberForm.position}
+                    onChange={e => setTeamMemberForm({ ...teamMemberForm, position: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={teamMemberForm.description}
+                    onChange={e => setTeamMemberForm({ ...teamMemberForm, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
+                    rows="4"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                  <input
+                    type="file"
+                    onChange={handleTeamImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-orange-500"
+                    accept="image/*"
+                    {...(!selectedTeamMember && { required: true })}
+                  />
+                </div>
+                {teamMemberForm.imagePreview && (
+                  <div className="mb-4 flex flex-col items-center">
+                    <img
+                      src={teamMemberForm.imagePreview}
+                      alt="Preview"
+                      className="w-full max-w-xs h-[260px] object-cover rounded-2xl border mb-2"
+                      style={{ objectPosition: 'top center' }}
+                    />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 justify-end mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTeamModalOpen(false);
+                      setSelectedTeamMember(null);
+                      setTeamMemberForm({ name: '', position: '', description: '', image: null, imagePreview: null });
+                    }}
+                    className="px-4 py-2 bg-gray-300 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded">
+                    {selectedTeamMember ? 'Save Changes' : 'Add Member'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

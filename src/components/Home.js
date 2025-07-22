@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import tarakiLogo from "./imgs/TARAKI 10X WHITE.png";
 import video from "../components/imgs/taraki-home-video.webm";
+import Testimonials from "./Testimonials";
 
 function Home() {
   const [stats, setStats] = useState({
@@ -125,6 +126,8 @@ function Home() {
             </div>
           </div>
         </section>
+        {/* Add Testimonials Section here */}
+        <Testimonials />
       </div>
     </div>
   );

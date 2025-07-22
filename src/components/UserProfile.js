@@ -133,8 +133,25 @@ const formatGender = (gender) => {
     .join(' ');
 };
 
+// Add formatDisplayDate function
+const formatDisplayDate = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting display date:', error);
+    return dateString;
+  }
+};
+
 // Move these components outside the main function so they are not re-created on every render
-const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user, isOwnProfile }) => {
+const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral, setIsEditingGeneral, handleSaveGeneral, user, isOwnProfile, isEditingProfile, idPrefix }) => {
   const [validationError, setValidationError] = useState('');
   const [localInfo, setLocalInfo] = useState(generalInfo);
 
@@ -164,14 +181,16 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
     const newDate = e.target.value;
     handleChange('birthdate', newDate);
     
-    // Only validate complete dates
-    if (newDate.length === 10) {
+    // Validate the date
+    if (newDate) {
       const validation = validateDate(newDate, 'birthdate');
       if (!validation.isValid) {
         setValidationError(validation.message);
       } else {
         setValidationError('');
       }
+    } else {
+      setValidationError('');
     }
   };
 
@@ -181,16 +200,32 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
     handleChange('gender', newGender);
   };
 
-  // Handle phone change
-  const handlePhoneChange = (e) => {
-    const newPhone = e.target.value;
-    const validation = validatePhoneNumber(newPhone, true);
+  // Add function to handle phone number input
+  const handlePhoneInput = (e) => {
+    const { value } = e.target;
+    
+    // Only allow numbers and plus sign
+    const sanitizedValue = value.replace(/[^\d+]/g, '');
+    
+    // Ensure plus sign is only at the start
+    let formattedValue = sanitizedValue;
+    if (formattedValue.includes('+') && !formattedValue.startsWith('+')) {
+      formattedValue = formattedValue.replace('+', '');
+      if (!formattedValue.startsWith('+')) {
+        formattedValue = '+' + formattedValue;
+      }
+    }
+    
+    // Validate the number
+    const validation = validatePhoneNumber(formattedValue, true);
     if (!validation.isValid) {
       setValidationError(validation.message);
-      return;
-    }
+    } else {
     setValidationError('');
-    handleChange('contact_number', newPhone);
+    }
+    
+    // Update local info
+    handleChange('contact_number', formattedValue);
   };
 
   return (
@@ -208,7 +243,7 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
         <div>
           <div className="text-gray-600 mb-1">First Name</div>
           <input
-            id="general-firstName"
+            id={`${idPrefix}general-firstName`}
             name="general-firstName"
             type="text"
             value={localInfo.firstName || ''}
@@ -220,7 +255,7 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
         <div>
           <div className="text-gray-600 mb-1">Last Name</div>
           <input 
-            id="general-lastName" 
+            id={`${idPrefix}general-lastName`} 
             name="general-lastName" 
             type="text" 
             value={localInfo.lastName || ''} 
@@ -231,29 +266,26 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
         </div>
         <div>
           <div className="text-gray-600 mb-1">Date of Birth</div>
+          {isEditingGeneral ? (
           <input
-            id="general-birthdate"
-            name="general-birthdate"
+            id={`${idPrefix}general-birthdate`}
+              name="birthdate"
             type="date"
-            value={formatDate(localInfo.birthdate) || ''}
-            disabled={!isEditingGeneral}
+              value={localInfo.birthdate || ''}
             onChange={handleDateChange}
-            onBlur={(e) => {
-              const validation = validateDate(e.target.value, 'birthdate');
-              if (!validation.isValid) {
-                setValidationError(validation.message);
-              } else {
-                setValidationError('');
-              }
-            }}
             className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
           />
+          ) : (
+            <div className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold">
+              {localInfo.birthdate ? formatDisplayDate(localInfo.birthdate) : 'Not set'}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-gray-600 mb-1">Gender</div>
           {isEditingGeneral ? (
             <select
-              id="general-gender"
+              id={`${idPrefix}general-gender`}
               name="general-gender"
               value={localInfo.gender || ''}
               onChange={handleGenderChange}
@@ -266,7 +298,7 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
             </select>
           ) : (
             <input 
-              id="general-gender" 
+              id={`${idPrefix}general-gender`} 
               name="general-gender" 
               type="text" 
               value={formatGender(localInfo.gender)} 
@@ -276,21 +308,33 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
           )}
         </div>
         <div>
-          <div className="text-gray-600 mb-1">Phone</div>
+          <div className="text-gray-600 mb-1">Contact Number</div>
+          {isEditingGeneral ? (
+            <div className="relative">
           <input 
-            id="general-contact_number" 
-            name="general-contact_number" 
+            id={`${idPrefix}general-contact_number`} 
+                name="contact_number"
             type="tel"
             value={localInfo.contact_number || ''} 
-            disabled={!isEditingGeneral} 
-            onChange={handlePhoneChange}
+                onChange={handlePhoneInput}
+                placeholder="+63XXXXXXXXXX"
             className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold" 
           />
+              <span className="text-xs text-gray-500 mt-1 block">Format: +63XXXXXXXXXX</span>
+              {validationError && validationError.includes('phone') && (
+                <span className="text-xs text-red-500 mt-1 block">{validationError}</span>
+              )}
+            </div>
+          ) : (
+            <div className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold">
+              {localInfo.contact_number || 'Not set'}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-gray-600 mb-1">Email</div>
           <input 
-            id="general-email" 
+            id={`${idPrefix}general-email`} 
             name="general-email" 
             type="text" 
             value={localInfo.email || ''} 
@@ -309,7 +353,7 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
             />
           ) : (
             <input 
-              id="general-location" 
+              id={`${idPrefix}general-location`} 
               name="general-location" 
               type="text" 
               value={formatPhilippinesAddress(localInfo.location)} 
@@ -329,7 +373,7 @@ const GeneralInfo = React.memo(({ generalInfo, setGeneralInfo, isEditingGeneral,
   );
 });
 
-const AboutCard = React.memo(({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile }) => {
+const AboutCard = React.memo(({ about, setAbout, isEditingAbout, setIsEditingAbout, handleSaveAbout, user, isOwnProfile, idPrefix }) => {
   const textRef = useRef(about);
 
   useEffect(() => {
@@ -436,7 +480,7 @@ const ProfessionalBackgroundCard = React.memo(({ employments: initialEmployments
   };
 
   return (
-    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-orange-600">Professional Background</h3>
         {!isEditingProfessional && isOwnProfile && (
@@ -491,13 +535,16 @@ const ProfessionalBackgroundCard = React.memo(({ employments: initialEmployments
                   className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Industry"
                 />
+                <div className="w-1/2">
+                  <label htmlFor={`employment-date-${idx}`} className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Date Started</label>
                 <input
+                    id={`employment-date-${idx}`}
                   type="date"
                   value={emp.hire_date ? emp.hire_date.slice(0, 10) : ''}
                   onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
-                  className="w-1/2 bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
-                  placeholder="Hire Date"
+                    className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                 />
+                </div>
               </div>
               <div className="flex gap-2 mb-2">
                 <input
@@ -582,18 +629,20 @@ const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfil
   };
 
   return (
-    <div className="flex-1 bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200">
+    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-8 border border-gray-200 mb-6 w-full min-h-[320px] flex flex-col justify-between overflow-hidden">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-orange-600">Education</h2>
         {!isEditingAcademic && isOwnProfile && (
           <button onClick={() => setIsEditingAcademic(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
         )}
       </div>
+      <div className="flex-1 overflow-y-auto">
       {isEditingAcademic ? (
-        <div className="space-y-6">
-          {localAcademicProfile.map((profile, index) => (
-            <div key={`edit-${index}`} className="grid grid-cols-2 gap-4 border-b pb-4 last:border-b-0 last:pb-0">
               <div>
+            {localAcademicProfile.map((profile, index) => (
+              <div key={index} className="mb-4 border-b pb-4 last:border-b-0 last:pb-0">
+                <div className="flex gap-2 mb-2">
+                  <div className="w-1/2">
                 <div className="text-gray-600 mb-1">Level</div>
                 <input
                   type="text"
@@ -603,7 +652,7 @@ const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfil
                   placeholder="Education Level"
                 />
               </div>
-              <div>
+                  <div className="w-1/2">
                 <div className="text-gray-600 mb-1">Course</div>
                 <input
                   type="text"
@@ -612,6 +661,7 @@ const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfil
                   className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                   placeholder="Course Name"
                 />
+                  </div>
               </div>
               <div className="col-span-2">
                 <div className="text-gray-600 mb-1">Institution</div>
@@ -633,16 +683,17 @@ const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfil
                   placeholder="Institution Address"
                 />
               </div>
-              <div>
-                <div className="text-gray-600 mb-1">Graduation Date</div>
+                <div className="flex items-center justify-between">
+                  <div className="w-1/2">
+                    <label htmlFor={`education-date-${index}`} className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Graduation Date</label>
                 <input
+                      id={`education-date-${index}`}
                   type="date"
                   value={profile.graduation_date || ''}
                   onChange={e => handleProfileChange(index, 'graduation_date', e.target.value)}
                   className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-2 text-gray-700 font-semibold"
                 />
               </div>
-              <div className="flex items-end">
                 <button onClick={() => handleRemoveEducation(index)} className="text-red-500">Remove</button>
               </div>
             </div>
@@ -657,16 +708,17 @@ const AcademicProfileCard = React.memo(({ academicProfile: initialAcademicProfil
         <div className="space-y-6">
           {localAcademicProfile.length === 0 && <div className="text-gray-500">No education history added.</div>}
           {localAcademicProfile.map((profile, index) => (
-            <div key={`view-${index}`} className="border-b last:border-b-0 py-3">
-              <div className="font-semibold">{profile.level}</div>
-              <div className="text-gray-600">{profile.course}</div>
-              <div className="text-gray-500">{profile.institution}</div>
-              <div className="text-gray-500">{profile.address}</div>
-              <div className="text-gray-500">{profile.graduation_date ? new Date(profile.graduation_date).toLocaleDateString() : ''}</div>
+              <div key={`view-${index}`} className="border-b last:border-b-0 py-3 space-y-1">
+                <div><span className="font-semibold text-gray-700">Level:</span> <span className="font-medium">{profile.level}</span></div>
+                <div><span className="font-semibold text-gray-700">Course:</span> <span className="text-gray-600">{profile.course}</span></div>
+                <div><span className="font-semibold text-gray-700">Institution:</span> <span className="text-gray-600">{profile.institution}</span></div>
+                <div><span className="font-semibold text-gray-700">Address:</span> <span className="text-gray-600">{profile.address}</span></div>
+                <div><span className="font-semibold text-gray-700">Graduation Date:</span> <span className="text-gray-600">{profile.graduation_date ? new Date(profile.graduation_date).toLocaleDateString() : ''}</span></div>
             </div>
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 });
@@ -1114,9 +1166,9 @@ const MatchmakingPreferencesCard = React.memo(({ preferences, setPreferences, is
 });
 
 // Replace the SkillsCard component with this updated version
-function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkills, handleSaveSkills, user, isOwnProfile }) {
+function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkills, handleSaveSkills, user, isOwnProfile, cardClassName, isEditingProfile }) {
   return (
-    <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
+    <div className={cardClassName || "bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6"}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-orange-600">Skills</h2>
         {!isEditingSkills && isOwnProfile && (
@@ -1147,6 +1199,9 @@ function SkillsCard({ skills = [], setSkills, isEditingSkills, setIsEditingSkill
             </div>
           ))}
         </div>
+      )}
+      {isOwnProfile && isEditingProfile && !isEditingSkills && (
+        <button onClick={() => setIsEditingSkills(true)} className="mt-4 text-orange-500 font-semibold hover:underline">Edit</button>
       )}
     </div>
   );
@@ -1357,6 +1412,9 @@ const SocialMediaLinksCard = React.memo(({ socialLinks, setSocialLinks, isEditin
             );
           })}
         </div>
+      )}
+      {isOwnProfile && !isEditingSocial && (
+        <button onClick={() => setIsEditingSocial(true)} className="mt-4 text-orange-500 font-semibold hover:underline">Edit</button>
       )}
     </div>
   );
@@ -1705,6 +1763,9 @@ export default function UserProfile() {
   const [skills, setSkills] = useState([]);
   const [isEditingSkills, setIsEditingSkills] = useState(false);
 
+  // Add state for editing the whole profile
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
   // Fetch profile and social links only when id changes
   useEffect(() => {
     if (id) {
@@ -1736,6 +1797,8 @@ export default function UserProfile() {
         location: user?.location || ''
       });
     }
+    // Sync skills from user profile
+    setSkills(Array.isArray(user?.skills) ? user.skills : []);
   }, [user, isEditingGeneral]);
 
   // Sync employments with user only when user or isEditingProfessional changes
@@ -2167,14 +2230,33 @@ export default function UserProfile() {
     <>
       {/* Mobile Profile Section */}
       {user && (
-        <div className="lg:hidden bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-6">
-          <div className="flex flex-col items-center">
-            <div className="mb-6 relative group">
+        <div className="lg:hidden flex flex-col gap-6">
+          {/* Edit Profile Button (only for own profile) */}
+          {isOwnProfile && !isEditingProfile && (
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="self-end mb-2 px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold shadow hover:bg-orange-200 transition-colors"
+              aria-label="Edit Profile"
+            >
+              <span className="flex items-center gap-1"><FaEdit className="inline-block" /> Edit Profile</span>
+            </button>
+          )}
+          {isOwnProfile && isEditingProfile && (
+            <button
+              onClick={() => setIsEditingProfile(false)}
+              className="self-end mb-2 px-3 py-1 rounded-full bg-gray-200 text-gray-700 text-sm font-semibold shadow hover:bg-gray-300 transition-colors"
+              aria-label="Done Editing"
+            >
+              <span className="flex items-center gap-1"><FaTimes className="inline-block" /> Done</span>
+            </button>
+          )}
+          <div className="flex flex-col items-center mb-2">
+            <div className="mb-3 relative group">
         {user.profile_image && user.profile_image.trim() !== '' ? (
-                <img src={user.profile_image} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-orange-500 bg-gray-100" />
+                <img src={user.profile_image} alt="Profile" className="w-28 h-28 rounded-full object-cover border-4 border-orange-500 bg-gray-100 mb-2" />
         ) : (
-                <div className="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center">
-                  <FaUser className="text-white" size={64} />
+                <div className="w-28 h-28 rounded-full bg-orange-500 flex items-center justify-center mb-2">
+                  <FaUser className="text-white" size={60} />
           </div>
               )}
               {isOwnProfile && (
@@ -2241,87 +2323,128 @@ export default function UserProfile() {
       </div>
               )}
     </div>
-            <div className="text-center mb-4">
+            <div className="text-center mb-2">
               <h2 className="text-xl font-bold text-gray-800 dark:text-white">{user.first_name} {user.last_name}</h2>
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
-            <div className="w-full">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold text-orange-600">About</h3>
-                {!isEditingAbout && isOwnProfile && (
-                  <button onClick={() => setIsEditingAbout(true)} className="text-orange-500 text-sm font-semibold hover:underline">
-                    Edit
-                  </button>
-                )}
-              </div>
-              {isEditingAbout ? (
-                <div>
-                  <textarea 
-                    value={about} 
-                    onChange={e => setAbout(e.target.value)} 
-                    className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-[120px] resize-none" 
-                    placeholder="Tell us about yourself..."
-                  />
-                  <div className="flex gap-2 mt-4">
-                    <button onClick={handleSaveAbout} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
-                    <button onClick={() => { setIsEditingAbout(false); setAbout(user?.introduction || ''); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                  {about || 'No description provided.'}
-                </p>
+          </div>
+          {/* About Section with edit for mobile */}
+          <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">About</h2>
+              {!isEditingAbout && isOwnProfile && isEditingProfile && (
+                <button onClick={() => setIsEditingAbout(true)} className="text-orange-500 font-semibold hover:underline">Edit</button>
               )}
             </div>
+            {isEditingAbout ? (
+              <>
+                <textarea
+                  defaultValue={about}
+                  onChange={e => setAbout(e.target.value)}
+                  className="w-full bg-gray-100 dark:bg-[#232526] dark:text-white rounded px-3 py-3 text-gray-700 min-h-[120px] resize-none"
+                  placeholder="Tell us about yourself..."
+                />
+                <div className="flex gap-2 mt-4">
+                  <button onClick={handleSaveAbout} className="bg-orange-500 text-white px-4 py-2 rounded">Save</button>
+                  <button onClick={() => { setAbout(user?.introduction || ''); setIsEditingAbout(false); }} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 whitespace-pre-line min-h-[60px]">{about || 'No description provided.'}</p>
+            )}
           </div>
+          <GeneralInfo 
+            generalInfo={generalInfo} 
+            setGeneralInfo={setGeneralInfo} 
+            isEditingGeneral={isEditingGeneral} 
+            setIsEditingGeneral={setIsEditingGeneral} 
+            handleSaveGeneral={handleSaveGeneral} 
+            user={user} 
+            isOwnProfile={isOwnProfile}
+            isEditingProfile={isEditingProfile}
+            cardClassName="mb-4"
+            idPrefix="mobile-"
+          />
+          {/* Social Media Links as icons only, like desktop */}
+          <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-4">
+            <h3 className="text-lg font-bold text-orange-600 mb-4">Social Links</h3>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {socialLinks.facebook_url && (
+                <a href={socialLinks.facebook_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                  <FaFacebook size={20} />
+                </a>
+              )}
+              {socialLinks.instagram_url && (
+                <a href={socialLinks.instagram_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-600 transition-colors">
+                  <FaInstagram size={20} />
+                </a>
+              )}
+              {socialLinks.linkedin_url && (
+                <a href={socialLinks.linkedin_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-blue-800 rounded-full flex items-center justify-center text-white hover:bg-blue-900 transition-colors">
+                  <FaLinkedin size={20} />
+                </a>
+              )}
+              {socialLinks.twitter_url && (
+                <a href={socialLinks.twitter_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors">
+                  <FaTwitter size={20} />
+                </a>
+              )}
+              {socialLinks.whatsapp_url && (
+                <a href={socialLinks.whatsapp_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white hover:bg-green-600 transition-colors">
+                  <FaWhatsapp size={20} />
+                </a>
+              )}
+              {socialLinks.telegram_url && (
+                <a href={socialLinks.telegram_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-600 transition-colors">
+                  <FaTelegram size={20} />
+                </a>
+              )}
+              {socialLinks.microsoft_url && (
+                <a href={socialLinks.microsoft_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white hover:bg-gray-700 transition-colors">
+                  <FaMicrosoft size={20} />
+                </a>
+              )}
+              {!socialLinks.facebook_url && !socialLinks.instagram_url && !socialLinks.linkedin_url && 
+               !socialLinks.twitter_url && !socialLinks.whatsapp_url && !socialLinks.telegram_url && 
+               !socialLinks.microsoft_url && (
+                <div className="text-gray-500 text-sm">No social links added yet.</div>
+              )}
+            </div>
+            {/* Social Links Edit Button */}
+            {isOwnProfile && isEditingProfile && !isEditingSocial && (
+              <button onClick={() => setIsEditingSocial(true)} className="mt-4 text-orange-500 font-semibold hover:underline">Edit</button>
+            )}
+          </div>
+          <SkillsCard 
+            skills={skills}
+            setSkills={setSkills}
+            isEditingSkills={isEditingSkills}
+            setIsEditingSkills={setIsEditingSkills}
+            handleSaveSkills={handleSaveSkills}
+            user={user}
+            isOwnProfile={isOwnProfile}
+            cardClassName="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-4"
+            isEditingProfile={isEditingProfile}
+          />
+          <ProfessionalBackgroundCard 
+            employments={employments} 
+            setEmployments={setEmployments} 
+            isEditingProfessional={isEditingProfessional} 
+            setIsEditingProfessional={setIsEditingProfessional} 
+            handleSaveProfessional={handleSaveProfessional} 
+            user={user} 
+            isOwnProfile={isOwnProfile}
+            isEditingProfile={isEditingProfile}
+            cardClassName="mb-4"
+          />
         </div>
       )}
-      <GeneralInfo 
-        generalInfo={generalInfo} 
-        setGeneralInfo={setGeneralInfo} 
-        isEditingGeneral={isEditingGeneral} 
-        setIsEditingGeneral={setIsEditingGeneral} 
-        handleSaveGeneral={handleSaveGeneral} 
-        user={user} 
-        isOwnProfile={isOwnProfile}
-      />
-      <div className="hidden lg:block">
-        <AboutCard 
-          about={about} 
-          setAbout={setAbout} 
-          isEditingAbout={isEditingAbout} 
-          setIsEditingAbout={setIsEditingAbout} 
-          handleSaveAbout={handleSaveAbout} 
-          user={user} 
-          isOwnProfile={isOwnProfile}
-        />
-      </div>
-      <SkillsCard 
-        skills={skills}
-        setSkills={setSkills}
-        isEditingSkills={isEditingSkills}
-        setIsEditingSkills={setIsEditingSkills}
-        handleSaveSkills={handleSaveSkills}
-        user={user}
-        isOwnProfile={isOwnProfile}
-      />
-      <div className="lg:hidden">
-        <ProfessionalBackgroundCard 
-          employments={employments} 
-          setEmployments={setEmployments} 
-          isEditingProfessional={isEditingProfessional} 
-          setIsEditingProfessional={setIsEditingProfessional} 
-          handleSaveProfessional={handleSaveProfessional} 
-          user={user} 
-          isOwnProfile={isOwnProfile}
-        />
-      </div>
     </>
   );
 
   // Update the RightPanel component
   const RightPanel = () => (
-    <div className="flex flex-col gap-6 min-h-[700px] max-w-[420px] w-full">
+    <div className="flex flex-col gap-8 min-h-[700px] max-w-[420px] w-full">
       {user && (
         <>
       <div className="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200">
@@ -2384,6 +2507,16 @@ export default function UserProfile() {
         handleSaveProfessional={handleSaveProfessional} 
         user={user} 
         isOwnProfile={isOwnProfile}
+      />
+      <SkillsCard 
+        skills={skills}
+        setSkills={setSkills}
+        isEditingSkills={isEditingSkills}
+        setIsEditingSkills={setIsEditingSkills}
+        handleSaveSkills={handleSaveSkills}
+        user={user}
+        isOwnProfile={isOwnProfile}
+        cardClassName="bg-white dark:bg-[#232526] dark:text-white rounded-2xl shadow p-6 border border-gray-200 mb-4"
       />
         </>
       )}
@@ -2508,7 +2641,39 @@ export default function UserProfile() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
-          {activeSection === 'personal' && <PersonalSection />}
+          {/* Desktop view: About and General Information */}
+          <div className="hidden lg:block">
+            {activeSection === 'personal' && (
+              <>
+                <AboutCard
+                  about={about}
+                  setAbout={setAbout}
+                  isEditingAbout={isEditingAbout}
+                  setIsEditingAbout={setIsEditingAbout}
+                  handleSaveAbout={handleSaveAbout}
+                  user={user}
+                  isOwnProfile={isOwnProfile}
+                  idPrefix="desktop-"
+                />
+                <GeneralInfo
+                  generalInfo={generalInfo}
+                  setGeneralInfo={setGeneralInfo}
+                  isEditingGeneral={isEditingGeneral}
+                  setIsEditingGeneral={setIsEditingGeneral}
+                  handleSaveGeneral={handleSaveGeneral}
+                  user={user}
+                  isOwnProfile={isOwnProfile}
+                  isEditingProfile={true}
+                  cardClassName="mb-4"
+                  idPrefix="desktop-"
+                />
+              </>
+            )}
+          </div>
+          {/* Mobile view: PersonalSection already handles About and General Info */}
+          <div className="block lg:hidden">
+            <PersonalSection />
+          </div>
           {activeSection === 'academic' && <AcademicProfile />}
           {activeSection === 'social' && (
             <SocialMediaLinksCard

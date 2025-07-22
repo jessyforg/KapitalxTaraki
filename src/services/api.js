@@ -110,10 +110,17 @@ const api = {
 
   async updateUserProfile(userId, profileData) {
     try {
+      // Ensure skills is an array
+      const dataToSend = {
+        ...profileData,
+        skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+        preferred_industries: Array.isArray(profileData.preferred_industries) ? profileData.preferred_industries : []
+      };
+
       const response = await fetch(`${API_URL}/users/${userId}`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify(profileData),
+        body: JSON.stringify(dataToSend),
         credentials: 'include'
       });
       const data = await response.json();

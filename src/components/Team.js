@@ -4,6 +4,7 @@ import "aos/dist/aos.css";
 import "./styles.css";
 import axios from "axios";
 import defaultAvatar from './imgs/default-avatar.png';
+import Testimonials from "./Testimonials";
 
 function TarakiTeam() {
   const [teamMembers, setTeamMembers] = useState([]);
@@ -80,29 +81,28 @@ function TarakiTeam() {
             </p>
           </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-8 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-4 md:px-8 mt-12">
             {teamMembers.map((member) => (
-              <div key={member.id} className="bg-white rounded-lg overflow-hidden">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img 
-                    src={`${getBaseUrl()}${member.image_url}`}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('Image load error:', e.target.src);
-                      e.target.onerror = null;
-                      e.target.src = defaultAvatar;
-                    }}
-                  />
-                </div>
-                <div className="p-6">
-                  <h1 className="font-montserrat text-[1.8rem] font-semibold text-orange-600">
+              <div key={member.id} className="relative bg-white rounded-2xl overflow-hidden shadow-2xl team-card">
+                <img 
+                  src={`${getBaseUrl()}${member.image_url}`}
+                  alt={member.name}
+                  className="w-full h-full object-cover team-card-img"
+                  style={{ objectPosition: 'top center' }}
+                  onError={(e) => {
+                    console.error('Image load error:', e.target.src);
+                    e.target.onerror = null;
+                    e.target.src = defaultAvatar;
+                  }}
+                />
+                <div className="absolute bottom-0 left-0 w-full glass-card team-glass-card flex flex-col justify-end p-7" style={{height: '35%', minHeight: '180px', maxHeight: '260px', overflowY: 'auto'}}>
+                  <h1 className="font-montserrat text-[1.7rem] font-bold text-orange-200 drop-shadow mb-1 leading-tight">
                     {member.name}
                   </h1>
-                  <h2 className="font-montserrat text-[1.4rem] text-gray-900 mt-1">
+                  <h2 className="font-montserrat text-[1.2rem] text-gray-100 mb-1 drop-shadow leading-tight">
                     {member.position}
                   </h2>
-                  <p className="font-montserrat text-[1.1rem] text-gray-700 mt-4 leading-relaxed">
+                  <p className="font-montserrat text-[1.05rem] text-gray-100 leading-snug drop-shadow">
                     {member.description}
                   </p>
                 </div>
@@ -110,44 +110,7 @@ function TarakiTeam() {
             ))}
           </div>
         </div>
-        {/* Testimonial Section */}
-        <section className="mt-20 mb-10">
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-8">
-            {/* Testimonial 1 */}
-            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in' : ''}`}>
-              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“TARAKI has been instrumental in helping our startup grow. The support and mentorship are unmatched!”</p>
-              <div className="flex items-center gap-4">
-                <img src={defaultAvatar} alt="Testimonial 1" className="w-14 h-14 rounded-full border-2 border-orange-500" />
-                <div>
-                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Alex Rivera</div>
-                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Startup Founder</div>
-                </div>
-              </div>
-            </div>
-            {/* Testimonial 2 */}
-            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in testimonial-fade-delay-1' : ''}`}>
-              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“The community at TARAKI is so welcoming and collaborative. I’ve learned so much from the team and other entrepreneurs.”</p>
-              <div className="flex items-center gap-4">
-                <img src={defaultAvatar} alt="Testimonial 2" className="w-14 h-14 rounded-full border-2 border-orange-500" />
-                <div>
-                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Jamie Cruz</div>
-                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Entrepreneur</div>
-                </div>
-              </div>
-            </div>
-            {/* Testimonial 3 */}
-            <div className={`bg-white dark:bg-[#232526] rounded-xl shadow-lg p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700 testimonial-fade ${testimonialsVisible ? 'testimonial-fade-in testimonial-fade-delay-2' : ''}`}>
-              <p className="font-montserrat text-gray-700 dark:text-gray-200 text-lg mb-6 text-center">“I highly recommend TARAKI for anyone looking to innovate and connect with like-minded individuals.”</p>
-              <div className="flex items-center gap-4">
-                <img src={defaultAvatar} alt="Testimonial 3" className="w-14 h-14 rounded-full border-2 border-orange-500" />
-                <div>
-                  <div className="font-montserrat font-bold text-gray-900 dark:text-white">Pat Santos</div>
-                  <div className="font-montserrat text-sm text-gray-500 dark:text-gray-400">Investor</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Testimonials section removed as requested */}
       </div>
     </section>
   );

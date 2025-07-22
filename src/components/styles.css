@@ -467,3 +467,104 @@ input[type="time"]:focus {
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+.glass-card {
+  background: rgba(24, 24, 24, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+}
+
+/* Team Card Styles */
+.team-card {
+  min-width: 350px;
+  max-width: 420px;
+  min-height: 600px;
+  max-height: 680px;
+  border-radius: 1.2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  overflow: hidden;
+  position: relative;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.team-card-img {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  max-height: 680px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transform: scale(1);
+}
+
+.team-glass-card {
+  height: 35%;
+  min-height: 180px;
+  max-height: 260px;
+  background: rgba(24, 24, 24, 0.60);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom-left-radius: 1.2rem;
+  border-bottom-right-radius: 1.2rem;
+  border-top: 1.5px solid rgba(255,255,255,0.18);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  color: #fff;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow-y: auto;
+}
+
+.team-glass-card h1 {
+  font-size: 1.7rem;
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+  line-height: 1.1;
+}
+.team-glass-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+  line-height: 1.1;
+}
+.team-glass-card p {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .team-card, .team-card-img {
+    min-width: 90vw;
+    max-width: 98vw;
+    min-height: 350px;
+    max-height: 400px;
+  }
+  .team-glass-card {
+    min-height: 100px;
+    max-height: 140px;
+    padding: 1rem 0.7rem 0.7rem 0.7rem;
+    font-size: 0.92rem;
+  }
+  .team-glass-card h1 {
+    font-size: 1.1rem;
+  }
+  .team-glass-card h2 {
+    font-size: 0.98rem;
+  }
+  .team-glass-card p {
+    font-size: 0.92rem;
+  }
+}

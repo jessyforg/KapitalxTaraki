@@ -741,6 +741,13 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
     });
   };
 
+  // Add roleLabels object at the top of the component
+  const roleLabels = {
+    admin: 'Admin',
+    entrepreneur: 'Entrepreneur',
+    investor: 'Investor'
+  };
+
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
       <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-32'}`}>
@@ -807,7 +814,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
               }`}>
                 {isSearching ? (
                   <div className="p-4 text-center text-gray-500">Searching...</div>
-                ) : searchResults.length === 0 ? (
+                ) : !searchResults.length ? (
                   <div className="p-4 text-center text-gray-500">No results found</div>
                 ) : (
                   <div className="max-h-96 overflow-y-auto">
@@ -834,21 +841,15 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                             )}
                             <div className="flex-1 text-left">
                               <div className="font-semibold">{result.name}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">{result.role}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[result.role] || result.role}</div>
                             </div>
                           </>
                         ) : (
                           <>
                             {result.logo ? (
-                              <img
-                                src={result.logo}
-                                alt={result.name}
-                                className="w-10 h-10 rounded-lg object-cover border-2 border-orange-500"
-                              />
+                              <img src={result.logo} alt={result.name} className="w-10 h-10 rounded-lg object-cover border-2 border-orange-500" />
                             ) : (
-                              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white">
-                                {result.name.charAt(0).toUpperCase()}
-                              </div>
+                              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white">{result.name.charAt(0).toUpperCase()}</div>
                             )}
                             <div className="flex-1 text-left">
                               <div className="font-semibold">{result.name}</div>
@@ -1459,26 +1460,34 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
             <div className="mt-4 z-10">
               {isSearching ? (
                 <div className="p-4 text-center text-gray-500">Searching...</div>
-              ) : searchResults.length === 0 && searchQuery.trim() ? (
+              ) : !searchResults.length ? (
                 <div className="p-4 text-center text-gray-500">No results found</div>
               ) : (
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto">
                   {searchResults.map((result) => (
                     <button
                       key={`${result.type}-${result.id}`}
-                      onClick={() => { handleResultClick(result); setShowMobileSearch(false); }}
-                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${darkMode ? 'text-white' : 'text-gray-900'}`}
+                      onClick={() => handleResultClick(result)}
+                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
                     >
                       {result.type === 'user' ? (
                         <>
                           {result.profile_image ? (
-                            <img src={result.profile_image} alt={result.name} className="w-10 h-10 rounded-full object-cover border-2 border-orange-500" />
+                            <img
+                              src={result.profile_image}
+                              alt={result.name}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-orange-500"
+                            />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">{result.name.charAt(0).toUpperCase()}</div>
+                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                              {result.name.charAt(0).toUpperCase()}
+                            </div>
                           )}
                           <div className="flex-1 text-left">
                             <div className="font-semibold">{result.name}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">{result.role}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[result.role] || result.role}</div>
                           </div>
                         </>
                       ) : (

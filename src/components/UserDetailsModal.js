@@ -455,6 +455,23 @@ function TagMultiSelect({ id, name, options, selected, onChange, placeholder }) 
   );
 }
 
+// Add formatDisplayDate function
+const formatDisplayDate = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting display date:', error);
+    return dateString;
+  }
+};
+
 const UserDetailsModal = ({ user, onClose, onComplete }) => {
   const [formData, setFormData] = useState({
     gender: '',
@@ -528,12 +545,16 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       else if (name.includes('hire_date')) dateType = 'hire_date';
       else if (name.includes('graduation_date')) dateType = 'graduation_date';
       
-      const validation = validateDate(value, dateType);
-      if (!validation.isValid) {
-        setError(validation.message);
-        return;
+      if (value) {
+        const validation = validateDate(value, dateType);
+        if (!validation.isValid) {
+          setError(validation.message);
+          return;
+        }
+        setError('');
+      } else {
+        setError('');
       }
-      setError('');
     }
 
     setFormData(prev => ({
@@ -550,9 +571,11 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
   };
 
   const handleMultiSelect = (name, value) => {
+    // Ensure value is always an array
+    const arrayValue = Array.isArray(value) ? value : [];
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: arrayValue
     }));
   };
 
@@ -612,8 +635,17 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     }
 
     try {
+      // Prepare the data for submission
+      const dataToSubmit = {
+        ...formData,
+        // Ensure skills is properly formatted as an array
+        skills: Array.isArray(formData.skills) ? formData.skills : [],
+        // Ensure preferred_industries is properly formatted as an array
+        preferred_industries: Array.isArray(formData.preferred_industries) ? formData.preferred_industries : []
+      };
+
       // Update the main profile data
-      await api.updateUserProfile(user.id, formData);
+      await api.updateUserProfile(user.id, dataToSubmit);
       onComplete();
     } catch (err) {
       setError(err.message || 'Failed to update profile');
@@ -624,6 +656,37 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
 
   const handleSkip = () => {
     onComplete();
+  };
+
+  // Add function to handle phone number input
+  const handlePhoneInput = (e) => {
+    const { value } = e.target;
+    
+    // Only allow numbers and plus sign
+    const sanitizedValue = value.replace(/[^\d+]/g, '');
+    
+    // Ensure plus sign is only at the start
+    let formattedValue = sanitizedValue;
+    if (formattedValue.includes('+') && !formattedValue.startsWith('+')) {
+      formattedValue = formattedValue.replace('+', '');
+      if (!formattedValue.startsWith('+')) {
+        formattedValue = '+' + formattedValue;
+      }
+    }
+    
+    // Validate the number
+    const validation = validatePhoneNumber(formattedValue, true);
+    if (!validation.isValid) {
+      setError(validation.message);
+    } else {
+      setError('');
+    }
+    
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      contact_number: formattedValue
+    }));
   };
 
   // Step content rendering
@@ -653,15 +716,22 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               </div>
               <div>
                 <label htmlFor="user-birthdate" className="block text-sm font-medium text-black mb-1">Birthdate</label>
-                <input
-                  type="date"
-                  id="user-birthdate"
-                  name="birthdate"
-                  value={formData.birthdate ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  autoComplete="bday"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="user-birthdate"
+                    name="birthdate"
+                    value={formData.birthdate ?? ''}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                    autoComplete="bday"
+                  />
+                  {formData.birthdate && (
+                    <span className="text-sm text-gray-600 mt-1 block">
+                      {formatDisplayDate(formData.birthdate)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label htmlFor="user-location" className="block text-sm font-medium text-black mb-1">Address</label>
@@ -673,16 +743,22 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               </div>
               <div>
                 <label htmlFor="user-contact_number" className="block text-sm font-medium text-black mb-1">Contact Number</label>
-                <input
-                  type="tel"
-                  id="user-contact_number"
-                  name="contact_number"
-                  value={formData.contact_number ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
-                  placeholder="Your contact number"
-                  autoComplete="tel"
-                />
+                <div className="relative">
+                  <input
+                    type="tel"
+                    id="user-contact_number"
+                    name="contact_number"
+                    value={formData.contact_number ?? ''}
+                    onChange={handlePhoneInput}
+                    placeholder="+63XXXXXXXXXX"
+                    className="w-full p-2 bg-[#e7e7e7] text-black border border-slate-200 rounded-full focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none placeholder:text-black font-medium"
+                    autoComplete="tel"
+                  />
+                  <span className="text-xs text-gray-500 mt-1 block">Format: +63XXXXXXXXXX</span>
+                  {error && error.includes('phone') && (
+                    <span className="text-xs text-red-500 mt-1 block">{error}</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -722,12 +798,16 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-8">
-                          <input
-                            type="date"
-                            value={emp.hire_date || ''}
-                            onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
-                            className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
-                          />
+                          <div>
+                            <label htmlFor={`employment-date-${idx}`} className="block text-sm font-medium text-black mb-1">Date Started</label>
+                            <input
+                              id={`employment-date-${idx}`}
+                              type="date"
+                              value={emp.hire_date || ''}
+                              onChange={e => handleEmploymentChange(idx, 'hire_date', e.target.value)}
+                              className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                            />
+                          </div>
                           <label className="flex items-center gap-2">
                             <input
                               type="checkbox"
@@ -775,23 +855,18 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
               </div>
 
               <div>
-                <label htmlFor="user-education" className="block text-lg font-medium text-black mb-3">Education History</label>
+                <label htmlFor="user-education" className="block text-lg font-medium text-black mb-3">Education</label>
                 <div className="space-y-6">
                   {formData.academic_profile?.map((edu, idx) => (
                     <div key={idx} className="bg-[#e7e7e7] p-6 rounded-xl">
                       <div className="grid grid-cols-2 gap-6 mb-4">
-                        <div>
-                          <select
-                            value={edu.level || ''}
-                            onChange={e => handleAcademicChange(idx, 'level', e.target.value)}
-                            className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
-                          >
-                            <option value="">Select Education Level</option>
-                            {EDUCATION_LEVELS.map((level) => (
-                              <option key={level} value={level}>{level}</option>
-                            ))}
-                          </select>
-                        </div>
+                        <input
+                          type="text"
+                          value={edu.level || ''}
+                          onChange={e => handleAcademicChange(idx, 'level', e.target.value)}
+                          placeholder="Education Level"
+                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                        />
                         <input
                           type="text"
                           value={edu.course || ''}
@@ -800,29 +875,26 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-6 mb-4">
+                      <div className="mb-4">
                         <input
                           type="text"
                           value={edu.institution || ''}
                           onChange={e => handleAcademicChange(idx, 'institution', e.target.value)}
-                          placeholder="Institution"
-                          className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
-                        />
-                        <input
-                          type="text"
-                          value={edu.address || ''}
-                          onChange={e => handleAcademicChange(idx, 'address', e.target.value)}
-                          placeholder="Institution Address"
+                          placeholder="Institution Name"
                           className="w-full p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <input
-                          type="date"
-                          value={edu.graduation_date || ''}
-                          onChange={e => handleAcademicChange(idx, 'graduation_date', e.target.value)}
-                          className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
-                        />
+                        <div>
+                          <label htmlFor={`education-date-${idx}`} className="block text-sm font-medium text-black mb-1">Graduation Date</label>
+                          <input
+                            id={`education-date-${idx}`}
+                            type="date"
+                            value={edu.graduation_date || ''}
+                            onChange={e => handleAcademicChange(idx, 'graduation_date', e.target.value)}
+                            className="p-3 bg-white text-black border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF7A1A] focus:outline-none text-base"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -843,7 +915,6 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                         level: '',
                         course: '',
                         institution: '',
-                        address: '',
                         graduation_date: ''
                       }];
                       setFormData({ ...formData, academic_profile: newEducation });

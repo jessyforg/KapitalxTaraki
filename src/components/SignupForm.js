@@ -6,6 +6,7 @@ import UserDetailsModal from './UserDetailsModal';
 export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose }) {
   const [showTerms, setShowTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showRetypePassword, setShowRetypePassword] = useState(false);
   const [password, setPassword] = useState("");
   const [retypePassword, setRetypePassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -73,7 +74,15 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
         const fullUser = await api.getUserProfile(response.user.id);
         localStorage.setItem('user', JSON.stringify(fullUser));
         setRegisteredUser(fullUser);
-        setShowUserDetails(true);
+        
+        // Only show UserDetailsModal for non-admin users
+        if (role !== 'admin') {
+          setShowUserDetails(true);
+        } else {
+          // For admin users, directly call onAuthSuccess
+          if (onAuthSuccess) onAuthSuccess();
+        }
+        
         setVerificationSent(true);
       } else {
         throw new Error('Invalid response from server');
@@ -204,14 +213,34 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
               )}
             </span>
           </div>
-          <input
-            className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
-            type="password"
-            placeholder="Retype Password"
-            required
-            value={retypePassword}
-            onChange={e => setRetypePassword(e.target.value)}
-          />
+          <div className="relative">
+            <input
+              className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
+              type={showRetypePassword ? "text" : "password"}
+              placeholder="Retype Password"
+              required
+              value={retypePassword}
+              onChange={e => setRetypePassword(e.target.value)}
+            />
+            <span
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400 hover:text-orange-500"
+              onClick={() => setShowRetypePassword((prev) => !prev)}
+              tabIndex={0}
+              role="button"
+              aria-label={showRetypePassword ? "Hide password" : "Show password"}
+            >
+              {showRetypePassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 002.25 12s3.75 7.5 9.75 7.5c1.956 0 3.693-.377 5.18-1.01M6.228 6.228A10.45 10.45 0 0112 4.5c6 0 9.75 7.5 9.75 7.5a10.46 10.46 0 01-4.293 4.774M6.228 6.228l11.544 11.544M6.228 6.228L3 3m15 15l-3-3" />
+                </svg>
+              )}
+            </span>
+          </div>
           {passwordError && (
             <div className="text-red-500 text-xs text-center animate-pulse mt-1">{passwordError}</div>
           )}
