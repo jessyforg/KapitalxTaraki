@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const auth = require('../middleware/auth');
+// Profile view notifications are handled by the main /api/user/:id endpoint
 
 // Get pool from server/index.js
 const pool = require('../database/db').pool;
@@ -504,6 +505,65 @@ router.get('/:id', auth, async (req, res) => {
     // If we have skills in user_skills table, use those; otherwise use JSON skills from preferences
     if (userSkills && userSkills.length > 0) {
       userData.skills = userSkills.map(skill => skill.skill_name);
+    }
+
+    // Create profile view notification (only if viewing someone else's profile)
+    const viewedUserId = parseInt(userId);
+    const viewerUserId = req.user.id;
+    
+    if (viewedUserId !== viewerUserId) {
+             try {
+         // Check if we already sent a profile view notification recently (within last hour)
+        const [existingNotification] = await pool.query(
+          `SELECT notification_id FROM notifications 
+           WHERE user_id = ? AND sender_id = ? AND type = 'profile_view' 
+           AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+           ORDER BY created_at DESC LIMIT 1`,
+          [viewedUserId, viewerUserId]
+        );
+        
+                 // Only create notification if none exists in the last hour
+         if (!existingNotification || existingNotification.length === 0) {
+          
+          // Get viewer and profile owner info to determine context
+          const [viewerInfo] = await pool.query(
+            'SELECT CONCAT(first_name, " ", last_name) as full_name, role FROM users WHERE id = ?',
+            [viewerUserId]
+          );
+          const [profileOwnerInfo] = await pool.query(
+            'SELECT role FROM users WHERE id = ?',
+            [viewedUserId]
+          );
+          
+                     if (viewerInfo[0] && profileOwnerInfo[0]) {
+             // Import the notification helper here since we can't import at the top
+             const { createProfileViewNotification } = require('../utils/notificationHelper');
+             
+             // Determine context based on roles (works for all user types)
+             let context = 'profile';
+             if (viewerInfo[0].role === 'investor' && profileOwnerInfo[0].role === 'entrepreneur') {
+               context = 'startup';
+             } else if (viewerInfo[0].role === 'entrepreneur' && profileOwnerInfo[0].role === 'investor') {
+               context = 'investor';
+             } else if (viewerInfo[0].role === 'admin') {
+               context = 'admin_view';
+             } else if (profileOwnerInfo[0].role === 'admin') {
+               context = 'admin_profile';
+             }
+            
+                         await createProfileViewNotification(pool, {
+               profile_owner_id: viewedUserId,
+               viewer_id: viewerUserId,
+               viewer_name: viewerInfo[0].full_name,
+               viewer_role: viewerInfo[0].role,
+               context: context
+             });
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error creating profile view notification:', notificationError);
+        // Don't fail profile view if notification fails
+      }
     }
 
     res.json(userData);

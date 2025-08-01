@@ -1216,14 +1216,26 @@ const EntrepreneurDashboard = () => {
               </div>
               <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
                 {loading ? (
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
+                    <p className="text-gray-600 text-lg">Loading your startups...</p>
                   </div>
                 ) : error ? (
                   <div className="text-red-500 text-center">{error}</div>
                 ) : startups.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    You haven't created any startups yet.
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                      <i className="fas fa-rocket text-6xl"></i>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No startups listed yet</h3>
+                    <p className="text-gray-500 mb-6">Ready to launch your first startup? Create one to get started!</p>
+                    <button
+                      onClick={handleCreateStartup}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                    >
+                      <i className="fas fa-plus mr-2"></i>
+                      Create Your First Startup
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

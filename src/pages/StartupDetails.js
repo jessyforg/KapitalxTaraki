@@ -44,8 +44,17 @@ export default function StartupDetails() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-6xl mx-auto pt-24 pb-12">
+        {/* Back button */}
+        <button 
+          onClick={() => navigate(-1)} 
+          className="mb-6 bg-white text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-md border border-gray-200"
+        >
+          <i className="fas fa-arrow-left text-sm"></i>
+          Back
+        </button>
+        
         {/* Main Card: Two-column layout with description */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col md:flex-row items-stretch gap-8 border border-gray-200 mb-8 relative">
+        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col md:flex-row items-stretch gap-8 border border-gray-200 mb-8">
           {/* Logo */}
           <div className="flex flex-1 justify-center items-center min-w-[260px] min-h-[320px]">
             <div className="w-72 h-72 rounded-full border-4 border-orange-500 flex items-center justify-center overflow-hidden bg-white">
@@ -68,27 +77,57 @@ export default function StartupDetails() {
                 <div className="text-gray-700 font-semibold mb-1">Funding Stage: <span className="font-normal">{startup.funding_stage || 'Not Provided'}</span></div>
                 
                 {/* Social Media Links */}
-                <div className="flex gap-4 mt-4 mb-4">
-                  {startup.facebook_url && (
-                    <a href={startup.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">
-                      <i className="fab fa-facebook fa-lg"></i>
-                    </a>
-                  )}
-                  {startup.twitter_url && (
-                    <a href={startup.twitter_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-500">
-                      <i className="fab fa-twitter fa-lg"></i>
-                    </a>
-                  )}
-                  {startup.linkedin_url && (
-                    <a href={startup.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-800">
-                      <i className="fab fa-linkedin fa-lg"></i>
-                    </a>
-                  )}
-                  {startup.instagram_url && (
-                    <a href={startup.instagram_url} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700">
-                      <i className="fab fa-instagram fa-lg"></i>
-                    </a>
-                  )}
+                <div className="mt-4 mb-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Connect with us:</h4>
+                  <div className="flex gap-3">
+                    {startup.facebook_url && (
+                      <a 
+                        href={startup.facebook_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+                        title="Facebook"
+                      >
+                        <i className="fab fa-facebook-f"></i>
+                      </a>
+                    )}
+                    {startup.twitter_url && (
+                      <a 
+                        href={startup.twitter_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
+                        title="Twitter/X"
+                      >
+                        <i className="fab fa-twitter"></i>
+                      </a>
+                    )}
+                    {startup.linkedin_url && (
+                      <a 
+                        href={startup.linkedin_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white hover:bg-blue-800 transition-colors"
+                        title="LinkedIn"
+                      >
+                        <i className="fab fa-linkedin-in"></i>
+                      </a>
+                    )}
+                    {startup.instagram_url && (
+                      <a 
+                        href={startup.instagram_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-600 transition-colors"
+                        title="Instagram"
+                      >
+                        <i className="fab fa-instagram"></i>
+                      </a>
+                    )}
+                    {!startup.facebook_url && !startup.twitter_url && !startup.linkedin_url && !startup.instagram_url && (
+                      <span className="text-gray-500 text-sm">No social media links available</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Verification Status */}
@@ -139,14 +178,6 @@ export default function StartupDetails() {
               <div className="text-gray-700 whitespace-pre-line text-lg">{startup.description || 'Not Provided'}</div>
             </div>
           </div>
-          {/* Back button */}
-          <button 
-            onClick={() => navigate(-1)} 
-            className="absolute top-6 right-8 bg-orange-100 text-orange-600 hover:bg-orange-200 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
-          >
-            <i className="fas fa-arrow-left text-sm"></i>
-            Back
-          </button>
         </div>
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

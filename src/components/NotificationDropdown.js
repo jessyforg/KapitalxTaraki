@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaHandshake, FaEye, FaClipboardCheck, FaCalendarAlt, FaEnvelope, FaUserPlus, FaBell, FaTimes } from 'react-icons/fa';
+import { FaHandshake, FaEye, FaClipboardCheck, FaCalendarAlt, FaEnvelope, FaUserPlus, FaBell, FaTimes, FaFileAlt, FaUserCheck, FaBuilding } from 'react-icons/fa';
 
 const NotificationDropdown = ({ 
   notifications, 
@@ -26,6 +26,12 @@ const NotificationDropdown = ({
         return <FaEnvelope className="text-blue-500" />;
       case 'connection_request':
         return <FaUserPlus className="text-green-500" />;
+      case 'document_verification':
+        return <FaFileAlt className="text-purple-500" />;
+      case 'new_registration':
+        return <FaUserCheck className="text-indigo-500" />;
+      case 'startup_application':
+        return <FaBuilding className="text-yellow-500" />;
       default:
         return <FaBell className="text-gray-500" />;
     }

@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../database/db').pool;
+const { createWelcomeNotification } = require('../utils/notificationHelper');
 
 // Registration endpoint
 router.post('/register', async (req, res) => {
@@ -45,6 +46,18 @@ router.post('/register', async (req, res) => {
       'SELECT id, first_name, last_name, email, role FROM users WHERE id = ?',
       [result.insertId]
     );
+
+    // Create welcome notification for new user
+    try {
+      await createWelcomeNotification(pool, {
+        user_id: result.insertId,
+        user_name: `${first_name} ${last_name}`,
+        user_role: role
+      });
+    } catch (notificationError) {
+      console.error('Error creating welcome notification:', notificationError);
+      // Don't fail registration if notification fails
+    }
 
     res.status(201).json({
       message: 'Registration successful',

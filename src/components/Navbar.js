@@ -504,17 +504,21 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
   // Function to mark notification as read
   const handleMarkAsRead = async (notificationId) => {
     try {
+      console.log('🔔 Marking notification as read:', notificationId);
       await markNotificationAsRead(notificationId);
       
       // Update local state
-      setNotifications(prev => 
-        prev.map(notif => 
+      setNotifications(prev => {
+        const updated = prev.map(notif => 
           notif.id === notificationId 
-            ? { ...notif, is_read: true }
+            ? { ...notif, is_read: true, status: 'read' }
             : notif
-        )
-      );
+        );
+        console.log('🔔 Updated notifications state:', updated);
+        return updated;
+      });
       setUnreadNotifications(prev => Math.max(0, prev - 1));
+      console.log('🔔 Notification marked as read successfully');
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -596,6 +600,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
 
   // Add useCallback for notification handlers
   const handleNotificationClick = useCallback(async (notification) => {
+    console.log('🔔 Notification clicked:', notification);
+    console.log('🔔 is_read status:', notification.is_read, 'status:', notification.status);
+    console.log('🔔 sender_id:', notification.sender_id, 'metadata:', notification.metadata, 'url:', notification.url);
+    
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
@@ -608,20 +616,51 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         navigate('/matches');
         break;
       case 'profile_view':
-        navigate(`/profile/${notification.data?.sender_id}`);
+        // Use the sender_id (viewer's ID) or fall back to URL if available
+        const viewerId = notification.sender_id || notification.metadata?.viewer_id;
+        if (viewerId) {
+          navigate(`/profile/${viewerId}`);
+        } else if (notification.url) {
+          navigate(notification.url);
+        } else {
+          console.error('No viewer ID found in profile view notification:', notification);
+        }
         break;
       case 'startup_status':
       case 'program_status':
         navigate('/dashboard');
         break;
       case 'event_reminder':
-        navigate(`/events/${notification.data?.event_id}`);
+        // Use metadata or URL for event navigation
+        const eventId = notification.metadata?.event_id;
+        if (eventId) {
+          navigate(`/events/${eventId}`);
+        } else if (notification.url) {
+          navigate(notification.url);
+        } else {
+          navigate('/events');
+        }
         break;
       case 'message':
-        navigate(`/messages?chat_with=${notification.data?.sender_id}`);
+        // Use sender_id for message navigation
+        const messageSenderId = notification.sender_id || notification.metadata?.sender_id;
+        if (messageSenderId) {
+          navigate(`/messages?chat_with=${messageSenderId}`);
+        } else if (notification.url) {
+          navigate(notification.url);
+        } else {
+          navigate('/messages');
+        }
         break;
       case 'connection_request':
         navigate('/connections');
+        break;
+      case 'document_verification':
+        navigate('/profile/documents');
+        break;
+      case 'new_registration':
+      case 'startup_application':
+        navigate('/dashboard');
         break;
       default:
         // For other notification types, just close the dropdown

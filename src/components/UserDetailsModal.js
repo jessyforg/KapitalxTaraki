@@ -494,6 +494,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
     show_in_search: true,
     show_in_messages: true,
     show_in_pages: true,
+    is_founder: false,
   });
 
   const [step, setStep] = useState(0);
@@ -759,6 +760,20 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                     <span className="text-xs text-red-500 mt-1 block">{error}</span>
                   )}
                 </div>
+              </div>
+              <div className="md:col-span-2">
+                <label htmlFor="user-is_founder" className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="user-is_founder"
+                    name="is_founder"
+                    checked={formData.is_founder ?? false}
+                    onChange={handleChange}
+                    className="w-5 h-5 rounded text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-black font-medium">Are you a founder?</span>
+                </label>
+                <span className="text-xs text-gray-500 mt-1 block ml-8">Check this if you are a startup founder or co-founder</span>
               </div>
             </div>
           </div>
@@ -1064,7 +1079,18 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
         return (
           <div className="flex flex-col flex-1 justify-between h-full">
             <h3 className="text-lg font-semibold text-[#F04F06] mb-4">Matchmaking Preferences</h3>
-            <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
+            {!formData.is_founder ? (
+              <div className="flex flex-col flex-1 justify-center items-center text-center">
+                <div className="text-gray-500 text-lg mb-4">
+                  <i className="fas fa-info-circle text-orange-500 text-2xl mb-2"></i>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-700 mb-2">Matchmaking Preferences Skipped</h4>
+                <p className="text-gray-600">
+                  Since you're not a founder, we've skipped the matchmaking preferences section. You can always update your preferences later in your profile settings.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-y-6 flex-1 justify-evenly">
               <div>
                 <label htmlFor="user-skills" className="block text-sm font-medium text-black mb-1">Skills & Experience</label>
                 <TagMultiSelect
@@ -1128,6 +1154,7 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
                 />
               </div>
             </div>
+            )}
           </div>
         );
       case 4:

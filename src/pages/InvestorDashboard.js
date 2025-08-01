@@ -756,7 +756,21 @@ const InvestorDashboard = () => {
   const handleMatchStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/investor/match', { startup_id: startupId, match_score: 1.0 }, {
+      
+      // Find the startup to get its calculated match score
+      const startup = filteredAvailableStartups.find(s => s.startup_id === startupId);
+      const matchScore = startup ? startup.match_score : 0;
+      
+
+      
+      // Convert percentage to decimal (29% -> 0.29) for consistent storage
+      const normalizedScore = matchScore / 100;
+      
+      console.log(`   - Frontend calculated: ${matchScore}%`);
+      console.log(`   - Stored in database: ${normalizedScore} (decimal)`);
+      console.log(`   - Will display as: ${Math.round(normalizedScore * 100)}% on matches page`);
+      
+      await axios.post('/api/investor/match', { startup_id: startupId, match_score: normalizedScore }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh both lists

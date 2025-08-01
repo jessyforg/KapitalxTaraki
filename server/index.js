@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const { createProfileViewNotification, createDocumentVerificationNotification, createStartupApplicationNotification } = require('./utils/notificationHelper');
+const EventReminderService = require('./utils/eventReminderService');
 const app = express();
 
 // Middleware
@@ -408,6 +410,62 @@ app.get("/api/user/:id", authenticateToken, async (req, res) => {
 			preferred_location: parsedPreferredLocation,
 			skills: parsedSkills
 		};
+
+		// Create profile view notification (only if viewing someone else's profile)
+		const viewedUserId = parseInt(req.params.id);
+		const viewerUserId = req.user.id;
+		
+		if (viewedUserId !== viewerUserId) {
+			try {
+				// Check if we already sent a profile view notification recently (within last hour)
+				const [existingNotification] = await pool.query(
+					`SELECT notification_id FROM notifications 
+					 WHERE user_id = ? AND sender_id = ? AND type = 'profile_view' 
+					 AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+					 ORDER BY created_at DESC LIMIT 1`,
+					[viewedUserId, viewerUserId]
+				);
+				
+				// Only create notification if none exists in the last hour
+				if (!existingNotification || existingNotification.length === 0) {
+					// Get viewer and profile owner info to determine context
+					const [viewerInfo] = await pool.query(
+						'SELECT CONCAT(first_name, " ", last_name) as full_name, role FROM users WHERE id = ?',
+						[viewerUserId]
+					);
+					const [profileOwnerInfo] = await pool.query(
+						'SELECT role FROM users WHERE id = ?',
+						[viewedUserId]
+					);
+					
+					if (viewerInfo[0] && profileOwnerInfo[0]) {
+						// Determine context based on roles (works for all user types)
+						let context = 'profile';
+						if (viewerInfo[0].role === 'investor' && profileOwnerInfo[0].role === 'entrepreneur') {
+							context = 'startup';
+						} else if (viewerInfo[0].role === 'entrepreneur' && profileOwnerInfo[0].role === 'investor') {
+							context = 'investor';
+						} else if (viewerInfo[0].role === 'admin') {
+							context = 'admin_view';
+						} else if (profileOwnerInfo[0].role === 'admin') {
+							context = 'admin_profile';
+						}
+						
+						await createProfileViewNotification(pool, {
+							profile_owner_id: viewedUserId,
+							viewer_id: viewerUserId,
+							viewer_name: viewerInfo[0].full_name,
+							viewer_role: viewerInfo[0].role,
+							context: context
+						});
+					}
+				}
+			} catch (notificationError) {
+				console.error('Error creating profile view notification:', notificationError);
+				// Don't fail profile view if notification fails
+			}
+		}
+
 		res.json(userData);
 	} catch (error) {
 		console.error("Error getting user profile:", error);
@@ -835,6 +893,17 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 			]
 		);
 
+		// Send startup application notification
+		try {
+			await createStartupApplicationNotification(pool, {
+				entrepreneur_id: req.user.id,
+				startup_name: name,
+				application_status: 'under_review'
+			});
+		} catch (notificationError) {
+			console.error('Error creating startup application notification:', notificationError);
+		}
+
 		res.status(201).json({
 			message: "Startup created successfully",
 			startup_id: result.insertId,
@@ -1035,13 +1104,35 @@ app.post("/api/investor/match", authenticateToken, async (req, res) => {
 	}
 });
 
-// Get all matches for the logged-in investor
+// Get all matches for the logged-in user (investor or entrepreneur)
 app.get("/api/matches", authenticateToken, async (req, res) => {
 	try {
-		const investor_id = req.user.id;
-		const [rows] = await pool.query("SELECT * FROM matches WHERE investor_id = ?", [
-			investor_id,
-		]);
+		const userId = req.user.id;
+		const userRole = req.user.role;
+		const { type } = req.query; // 'investor' or 'entrepreneur'
+		
+		let query;
+		let params = [userId];
+		
+		if (type === 'entrepreneur' || userRole === 'entrepreneur') {
+			// Get matches for entrepreneur - show investors who matched with their startups
+			query = `
+				SELECT m.*, i.*, u.first_name, u.last_name, 
+				       CONCAT(u.first_name, ' ', u.last_name) as investor_name,
+				       s.name as startup_name, s.startup_id
+				FROM matches m
+				JOIN startups s ON m.startup_id = s.startup_id
+				JOIN investors i ON m.investor_id = i.investor_id
+				JOIN users u ON i.investor_id = u.id
+				WHERE s.entrepreneur_id = ?
+				ORDER BY m.created_at DESC
+			`;
+		} else {
+			// Get matches for investor
+			query = "SELECT * FROM matches WHERE investor_id = ?";
+		}
+		
+		const [rows] = await pool.query(query, params);
 		res.json(rows);
 	} catch (error) {
 		console.error("Error fetching matches:", error);
@@ -1061,6 +1152,9 @@ app.get("/api/investor/matches", authenticateToken, async (req, res) => {
        ORDER BY m.created_at DESC`,
 			[investor_id]
 		);
+		
+
+		
 		res.json(rows);
 	} catch (error) {
 		console.error("Error fetching matched startups:", error);
@@ -1592,6 +1686,25 @@ app.post(
 					new_status,
 					user_id,
 				]);
+
+				// Send document verification notification
+				try {
+					const [[documentInfo]] = await pool.query(
+						"SELECT document_type FROM Verification_Documents WHERE document_id = ?",
+						[doc_id]
+					);
+					
+					if (documentInfo) {
+						await createDocumentVerificationNotification(pool, {
+							user_id: user_id,
+							document_type: documentInfo.document_type,
+							verification_status: 'rejected',
+							rejection_reason: rejection_reason
+						});
+					}
+				} catch (notificationError) {
+					console.error('Error creating document verification notification:', notificationError);
+				}
 			}
 			res.json({ success: true });
 		} catch (error) {
@@ -1648,6 +1761,24 @@ app.post(
 					new_status,
 					user_id,
 				]);
+
+				// Send document verification notification
+				try {
+					const [[documentInfo]] = await pool.query(
+						"SELECT document_type FROM Verification_Documents WHERE document_id = ?",
+						[doc_id]
+					);
+					
+					if (documentInfo) {
+						await createDocumentVerificationNotification(pool, {
+							user_id: user_id,
+							document_type: documentInfo.document_type,
+							verification_status: 'approved'
+						});
+					}
+				} catch (notificationError) {
+					console.error('Error creating document verification notification:', notificationError);
+				}
 			}
 			res.json({ success: true });
 		} catch (error) {
@@ -1828,6 +1959,25 @@ app.post(
 				[req.user.id, approval_comment, id]
 			);
 
+			// Get startup info for notification
+			const [[startupInfo]] = await pool.query(
+				"SELECT entrepreneur_id, name FROM startups WHERE startup_id = ?",
+				[id]
+			);
+
+			// Send startup application notification
+			if (startupInfo) {
+				try {
+					await createStartupApplicationNotification(pool, {
+						entrepreneur_id: startupInfo.entrepreneur_id,
+						startup_name: startupInfo.name,
+						application_status: 'approved'
+					});
+				} catch (notificationError) {
+					console.error('Error creating startup application notification:', notificationError);
+				}
+			}
+
 			res.json({ message: "Startup approved successfully" });
 		} catch (error) {
 			console.error("Error approving startup:", error);
@@ -1864,6 +2014,25 @@ app.post(
        WHERE startup_id = ?`,
 				[req.user.id, approval_comment, id]
 			);
+
+			// Get startup info for notification
+			const [[startupInfo]] = await pool.query(
+				"SELECT entrepreneur_id, name FROM startups WHERE startup_id = ?",
+				[id]
+			);
+
+			// Send startup application notification
+			if (startupInfo) {
+				try {
+					await createStartupApplicationNotification(pool, {
+						entrepreneur_id: startupInfo.entrepreneur_id,
+						startup_name: startupInfo.name,
+						application_status: 'rejected'
+					});
+				} catch (notificationError) {
+					console.error('Error creating startup application notification:', notificationError);
+				}
+			}
 
 			res.json({ message: "Startup rejected successfully" });
 		} catch (error) {
@@ -2711,8 +2880,35 @@ app.put(
 );
 
 const PORT = process.env.PORT || 5000;
+
+// Initialize Event Reminder Service
+let eventReminderService;
+try {
+	eventReminderService = new EventReminderService(pool);
+	eventReminderService.start();
+} catch (error) {
+	console.error('Failed to start Event Reminder Service:', error);
+}
+
 app.listen(PORT, '0.0.0.0', () => {
 	console.log(`Server running on port ${PORT}`);
 	console.log(`Local access: http://localhost:${PORT}`);
 	console.log(`Network access: http://192.168.0.24:${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+	console.log('Shutting down server...');
+	if (eventReminderService) {
+		eventReminderService.stop();
+	}
+	process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+	console.log('Shutting down server...');
+	if (eventReminderService) {
+		eventReminderService.stop();
+	}
+	process.exit(0);
 });

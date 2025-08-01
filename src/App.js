@@ -29,6 +29,7 @@ import VerifyAccount from './pages/VerifyAccount';
 import Settings from './pages/Settings';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Notifications from './pages/Notifications';
+import Matches from './pages/Matches';
 
 function MainPage() {
   return (
@@ -72,6 +73,7 @@ function App() {
         <Route path="/verify-account" element={<ProtectedRoute><VerifyAccount /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

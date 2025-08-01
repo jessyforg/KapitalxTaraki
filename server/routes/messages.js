@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const auth = require('../middleware/auth');
+const { createMessageNotification, createConnectionRequestNotification } = require('../utils/notificationHelper');
 
 console.log('Messages routes loaded'); // DEBUG LOG
 
@@ -334,6 +335,25 @@ module.exports = (pool) => {
           );
         }
         
+        // Get sender info for notification
+        const [senderInfo] = await pool.query(
+          'SELECT CONCAT(first_name, " ", last_name) as full_name FROM users WHERE id = ?',
+          [senderId]
+        );
+        
+        // Create message notification for receiver
+        try {
+          await createMessageNotification(pool, {
+            receiver_id: receiverId,
+            sender_id: senderId,
+            sender_name: senderInfo[0]?.full_name || 'Someone',
+            message_preview: content || '[File attachment]'
+          });
+        } catch (notificationError) {
+          console.error('Error creating message notification:', notificationError);
+          // Don't fail the message sending if notification fails
+        }
+        
         await pool.query('COMMIT');
         res.json({ message: 'Message sent successfully' });
       } else {
@@ -366,6 +386,25 @@ module.exports = (pool) => {
             'INSERT INTO message_files (message_id, file_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
             [messageResult.insertId, file.originalname, file.path, file.size, file.mimetype]
           );
+        }
+        
+        // Get sender info for connection request notification
+        const [senderInfo] = await pool.query(
+          'SELECT CONCAT(first_name, " ", last_name) as full_name, role FROM users WHERE id = ?',
+          [senderId]
+        );
+        
+        // Create connection request notification
+        try {
+          await createConnectionRequestNotification(pool, {
+            target_user_id: receiverId,
+            requester_id: senderId,
+            requester_name: senderInfo[0]?.full_name || 'Someone',
+            requester_role: senderInfo[0]?.role || 'user'
+          });
+        } catch (notificationError) {
+          console.error('Error creating connection request notification:', notificationError);
+          // Don't fail the message sending if notification fails
         }
         
         await pool.query('COMMIT');

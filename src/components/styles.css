@@ -506,9 +506,9 @@ input[type="time"]:focus {
 }
 
 .team-glass-card {
-  height: 35%;
-  min-height: 180px;
-  max-height: 260px;
+  height: 45%;
+  min-height: 220px;
+  max-height: 300px;
   background: rgba(24, 24, 24, 0.60);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -517,7 +517,6 @@ input[type="time"]:focus {
   border-top: 1.5px solid rgba(255,255,255,0.18);
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   color: #fff;
-  padding: 2rem 1.5rem 1.5rem 1.5rem;
   position: absolute;
   left: 0;
   bottom: 0;
@@ -525,24 +524,23 @@ input[type="time"]:focus {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  overflow-y: auto;
+  justify-content: flex-start;
 }
 
 .team-glass-card h1 {
-  font-size: 1.7rem;
   font-weight: bold;
-  margin-bottom: 0.3rem;
-  line-height: 1.1;
+  line-height: 1.2;
+  word-wrap: break-word;
+  hyphens: auto;
 }
+
 .team-glass-card h2 {
-  font-size: 1.2rem;
-  margin-bottom: 0.2rem;
-  line-height: 1.1;
+  line-height: 1.2;
 }
+
 .team-glass-card p {
-  font-size: 1.05rem;
-  line-height: 1.25;
+  line-height: 1.4;
+  margin-bottom: 0;
 }
 
 @media (max-width: 900px) {
@@ -553,18 +551,14 @@ input[type="time"]:focus {
     max-height: 400px;
   }
   .team-glass-card {
-    min-height: 100px;
-    max-height: 140px;
-    padding: 1rem 0.7rem 0.7rem 0.7rem;
-    font-size: 0.92rem;
+    min-height: 160px;
+    max-height: 200px;
   }
-  .team-glass-card h1 {
-    font-size: 1.1rem;
-  }
-  .team-glass-card h2 {
-    font-size: 0.98rem;
-  }
-  .team-glass-card p {
-    font-size: 0.92rem;
+}
+
+@media (max-width: 768px) {
+  .team-glass-card {
+    min-height: 140px;
+    max-height: 180px;
   }
 }

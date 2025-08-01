@@ -1413,9 +1413,6 @@ const SocialMediaLinksCard = React.memo(({ socialLinks, setSocialLinks, isEditin
           })}
         </div>
       )}
-      {isOwnProfile && !isEditingSocial && (
-        <button onClick={() => setIsEditingSocial(true)} className="mt-4 text-orange-500 font-semibold hover:underline">Edit</button>
-      )}
     </div>
   );
 });

@@ -95,14 +95,14 @@ function TarakiTeam() {
                     e.target.src = defaultAvatar;
                   }}
                 />
-                <div className="absolute bottom-0 left-0 w-full glass-card team-glass-card flex flex-col justify-end p-7" style={{height: '35%', minHeight: '180px', maxHeight: '260px', overflowY: 'auto'}}>
-                  <h1 className="font-montserrat text-[1.7rem] font-bold text-orange-200 drop-shadow mb-1 leading-tight">
+                <div className="absolute bottom-0 left-0 w-full glass-card team-glass-card flex flex-col justify-start p-4 sm:p-5 md:p-6 lg:p-7" style={{height: '45%', minHeight: '220px', maxHeight: '300px'}}>
+                  <h1 className="font-montserrat text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-orange-200 drop-shadow mb-2 leading-tight break-words">
                     {member.name}
                   </h1>
-                  <h2 className="font-montserrat text-[1.2rem] text-gray-100 mb-1 drop-shadow leading-tight">
+                  <h2 className="font-montserrat text-sm sm:text-base md:text-lg lg:text-xl text-gray-100 mb-3 drop-shadow leading-tight">
                     {member.position}
                   </h2>
-                  <p className="font-montserrat text-[1.05rem] text-gray-100 leading-snug drop-shadow">
+                  <p className="font-montserrat text-sm sm:text-sm md:text-base lg:text-lg text-gray-100 leading-relaxed drop-shadow">
                     {member.description}
                   </p>
                 </div>
