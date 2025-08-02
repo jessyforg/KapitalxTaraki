@@ -684,8 +684,8 @@ The admin dashboard provides comprehensive platform management tools:
 
 ### Contact Information
 
-- **Email Support**: support@kapital-taraki.com
-- **Technical Support**: Available 24/7
+- **Email Support**: jes.ayson.perez@gmail.com
+- **Technical Support**: Available during 8 AM - 5 PM (this might change) :)
 - **Response Time**: 24-48 hours for standard inquiries
 - **Emergency Issues**: Use "High Priority" ticket option
 
