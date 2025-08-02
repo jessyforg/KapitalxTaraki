@@ -55,7 +55,7 @@ const locations = {
   ]
 };
 
-// Custom Select Component with arrow icon
+// Select Component with arrow icon
 const CustomSelect = ({ className, value, onChange, children, ...props }) => (
   <div className="relative">
     <select
@@ -300,7 +300,7 @@ const InvestorDashboard = () => {
     navigate(newUrl, { replace: true });
   };
 
-    // Enhanced user loading with preferences
+    // Load user with preferences
   useEffect(() => {
     const loadEnhancedUser = async () => {
       if (user) {

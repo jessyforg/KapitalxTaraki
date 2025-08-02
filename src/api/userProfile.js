@@ -26,7 +26,7 @@ const getHeaders = () => {
   }
 };
 
-// Helper function to compress image
+// Compress image
 const compressImage = (base64Image) => {
   return new Promise((resolve, reject) => {
     const img = new Image();

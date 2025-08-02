@@ -229,7 +229,7 @@ function AdminDashboard() {
     (!industryFilter || s.industry === industryFilter) &&
     (!locationFilter || s.location === locationFilter)
   );
-  // Helper function to calculate user status counts
+  // Calculate user status counts
   const getUserStatusCounts = () => {
     const counts = { active: 0, pending: 0, suspended: 0 };
     users.forEach(u => {
@@ -245,7 +245,7 @@ function AdminDashboard() {
     return counts;
   };
 
-  // Helper function to calculate startup status counts
+  // Calculate startup status counts
   const getStartupStatusCounts = () => {
     const counts = { approved: 0, pending: 0, suspended: 0 };
     startups.forEach(s => {
@@ -329,7 +329,6 @@ function AdminDashboard() {
 
   // Handle user edit
   const handleEditUser = (user) => {
-    // TODO: Implement user edit functionality
     console.log('Edit user:', user);
   };
 
@@ -732,7 +731,7 @@ function AdminDashboard() {
     setShowEventModal(true);
   };
 
-  // Note: Verification requests are now handled through the users tab interface
+
 
   // Handler for opening modal
   const handleOpenModal = async (docId) => {
@@ -1026,7 +1025,7 @@ function AdminDashboard() {
     return map[stage] || stage.charAt(0).toUpperCase() + stage.slice(1);
   };
 
-  // Helper function to convert text to title case
+  // Convert text to title case
   const toTitleCase = (str) => {
     if (!str) return '';
     return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
@@ -3140,7 +3139,7 @@ case 'sitePerformance':
     };
   }, [showActionDropdown, showUserActionDropdown]);
 
-  // Enhanced startup action handlers
+      // Startup action handlers
   const handleSuspendStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
@@ -3320,7 +3319,7 @@ case 'sitePerformance':
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [userDropdownPosition, setUserDropdownPosition] = useState({ top: 0, left: 0 });
 
-  // Enhanced user action handlers
+      // User action handlers
   const handleVerifyUser = async (userId, comment = '') => {
     try {
       const token = localStorage.getItem('token');

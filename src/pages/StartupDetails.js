@@ -10,7 +10,7 @@ export default function StartupDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Helper function to convert string to title case with special handling for MVP
+  // Convert string to title case with special handling for MVP
   const toTitleCase = (str) => {
     if (!str) return 'Not Provided';
     return str.split(' ')

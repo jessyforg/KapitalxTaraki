@@ -22,7 +22,7 @@ const getApiUrl = () => {
 // Use only the dynamic API URL, ignore environment variables
 const API_URL = getApiUrl();
 
-// Debug: Log the API URL being used
+
 console.log('🔧 DEBUG - API Configuration:');
 console.log('- Ignoring process.env.REACT_APP_API_URL (was causing issues)');
 console.log('- getApiUrl() returns:', getApiUrl());
@@ -31,7 +31,7 @@ console.log('- Current window.location.hostname:', typeof window !== 'undefined'
 console.log('- Current window.location.port:', typeof window !== 'undefined' ? window.location.port : 'N/A');
 console.log('- Current window.location.href:', typeof window !== 'undefined' ? window.location.href : 'N/A');
 
-// Helper function to get auth headers
+// Get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');

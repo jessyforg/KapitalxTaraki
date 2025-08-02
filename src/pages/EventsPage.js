@@ -149,7 +149,7 @@ function EventsPage() {
     return () => clearInterval(frequentInterval);
   }, [events]);
 
-  // Helper function to format time from 24-hour to 12-hour format
+  // Format time from 24-hour to 12-hour format
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const [hours, minutes] = timeStr.split(':');

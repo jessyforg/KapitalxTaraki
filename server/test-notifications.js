@@ -1,8 +1,5 @@
 /**
  * Test script for the notification system
- * Run with: node test-notifications.js
- * 
- * This script tests all notification types and functions
  */
 
 const {

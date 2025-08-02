@@ -1,5 +1,3 @@
-// Enhanced Matchmaking utility functions
-
 // Calculate match score between two users/entities
 export const calculateMatchScore = (entity1, entity2) => {
   if (!entity1 || !entity2) {
@@ -98,7 +96,7 @@ export const calculateMatchScore = (entity1, entity2) => {
   // Calculate final percentage based on available criteria
   const finalScore = Math.round((totalScore / maxPossibleScore) * 100);
   
-  // Enhanced logging with more details
+  // Log match calculation details
   console.log(`=== MATCH CALCULATION DEBUG ===`);
   console.log(`Entity1 raw:`, {
     industry: entity1.industry,
@@ -126,7 +124,7 @@ export const calculateMatchScore = (entity1, entity2) => {
   return finalScore;
 };
 
-// Enhanced industry matching with category grouping
+// Industry matching with category grouping
 const calculateIndustryMatch = (industry1, industry2) => {
   if (!industry1 || !industry2) return 0;
   
@@ -176,7 +174,7 @@ const calculateIndustryMatch = (industry1, industry2) => {
   return 0;
 };
 
-// Enhanced location matching with geographical proximity
+// Location matching with geographical proximity
 const calculateLocationMatch = (location1, location2) => {
   if (!location1 || !location2) return 0;
   
@@ -300,7 +298,7 @@ const calculateLocationMatch = (location1, location2) => {
   return 0;
 };
 
-// Enhanced stage matching with better mapping
+// Stage matching with mapping
 const calculateStageMatch = (stage1, stage2) => {
   if (!stage1 || !stage2) return 0;
   
@@ -377,7 +375,7 @@ const calculateSkillsMatch = (skills1, skills2) => {
   return commonSkills.length / allSkills.length;
 };
 
-// Enhanced startup-investor matching
+// Startup-investor matching
 export const matchStartupsWithInvestors = (startups, investors) => {
   return startups.map(startup => {
     const matches = investors.map(investor => ({
@@ -400,7 +398,7 @@ export const matchStartupsWithInvestors = (startups, investors) => {
   });
 };
 
-// Enhanced co-founder matching
+// Co-founder matching
 export const matchCoFounders = (coFounders) => {
   const matches = [];
   
@@ -425,7 +423,7 @@ export const matchCoFounders = (coFounders) => {
   return matches;
 };
 
-// Enhanced entrepreneur-investor matching
+// Entrepreneur-investor matching
 export const matchEntrepreneursWithInvestors = (entrepreneurs, investors) => {
   return entrepreneurs.map(entrepreneur => {
     const matches = investors.map(investor => ({
@@ -448,7 +446,7 @@ export const matchEntrepreneursWithInvestors = (entrepreneurs, investors) => {
   });
 };
 
-// Helper function to provide match reasons
+// Provide match reasons
 const getMatchReasons = (entity1, entity2) => {
   const reasons = [];
   
@@ -480,7 +478,7 @@ const getMatchReasons = (entity1, entity2) => {
   return reasons;
 };
 
-// Utility function to enhance user data with preferences for matching
+// Enhance user data with preferences for matching
 export const enhanceUserForMatching = async (user, preferences = null, getUserPreferencesFunc = null) => {
   // If preferences aren't provided, try to get them
   let userPrefs = preferences;

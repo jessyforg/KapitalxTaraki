@@ -109,48 +109,4 @@ const MinimalHeader = `
 </div>
 `;
 
-export { FloatingTopLeft, FloatingTopRight, FloatingActionButton, MinimalHeader };
-
-/* 
-USAGE INSTRUCTIONS:
-
-1. Copy any of the code blocks above
-2. Replace the current mobile header section in AdminDashboard.js
-3. Make sure to import FiMenu, FiX from 'react-icons/fi'
-
-UX COMPARISON:
-
-✅ CURRENT (Integrated Header):
-+ Most professional looking
-+ Familiar mobile app pattern  
-+ Space for branding and actions
-+ Consistent with modern UX
-- Takes up more vertical space
-
-✅ FLOATING TOP-LEFT:
-+ Traditional, familiar placement
-+ Minimal visual impact
-+ Quick to implement
-- Can interfere with content
-- Less discoverable
-
-✅ FLOATING TOP-RIGHT:
-+ Thumb-friendly for right-handed users
-+ Modern mobile pattern
-+ Good for secondary actions
-- Less conventional for primary nav
-
-✅ FLOATING ACTION BUTTON:
-+ Always accessible
-+ Very modern/trendy
-+ Great visual prominence
-- Can cover content
-- Might be unfamiliar to some users
-
-RECOMMENDATION:
-The current integrated header (Option 1) is the most user-friendly because:
-- Users expect primary navigation in a header
-- Provides space for other important actions
-- Follows established mobile UX patterns
-- Professional appearance
-*/ 
+export { FloatingTopLeft, FloatingTopRight, FloatingActionButton, MinimalHeader }; 

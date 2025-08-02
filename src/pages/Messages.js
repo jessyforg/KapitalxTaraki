@@ -102,7 +102,7 @@ const Messages = () => {
     }
   });
 
-  // Helper function to extract filename from path
+  // Extract filename from path
   const getFileNameFromPath = (filePath) => {
     if (!filePath) return '';
     return filePath.split(/[/\\]/).pop() || '';
@@ -112,7 +112,7 @@ const Messages = () => {
   const urlCache = useRef(new Map());
   const messagesCache = useRef(new Map());
 
-  // Helper function to get or create cached URL
+  // Get or create cached URL
   const getCachedFileUrl = (file) => {
     const cacheKey = `${file.id || file.file_id}_${file.name || file.filename}_${file.path}`;
     
@@ -133,7 +133,7 @@ const Messages = () => {
     return url;
   };
 
-  // Helper function to get cached processed message
+  // Get cached processed message
   const getCachedMessage = (msg) => {
     const cacheKey = `${msg.message_id}_${msg.content}_${msg.files?.length || 0}`;
     
@@ -219,7 +219,7 @@ const Messages = () => {
     }
   };
 
-  // Improved message comparison that considers cached objects
+  // Message comparison that considers cached objects
   const areMessagesEqual = (oldMessages, newMessages) => {
     if (oldMessages.length !== newMessages.length) {
       return false;
@@ -362,7 +362,7 @@ const Messages = () => {
       </div>
     );
   }, (prevProps, nextProps) => {
-    // Custom comparison function for better memoization
+    // Comparison function for memoization
     return (
       prevProps.src === nextProps.src &&
       prevProps.alt === nextProps.alt &&
@@ -705,7 +705,7 @@ const Messages = () => {
     setUser({ ...user, status: newStatus });
   };
 
-  // Helper function to clear caches when needed (less aggressive)
+  // Clear caches when needed
   const clearCaches = (clearAll = false) => {
     if (clearAll) {
       urlCache.current.clear();
@@ -881,7 +881,7 @@ const Messages = () => {
   } else {
     chatsToShow = conversations;
   }
-  console.log('chatsToShow:', chatsToShow); // DEBUG
+      console.log('chatsToShow:', chatsToShow);
 
   // Real-time polling for messages and conversations
   useEffect(() => {

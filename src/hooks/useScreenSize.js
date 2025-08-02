@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-// Custom hook for proper screen size detection
+// Hook for screen size detection
 export const useScreenSize = () => {
   const [screenSize, setScreenSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 0,

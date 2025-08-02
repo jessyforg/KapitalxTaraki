@@ -4,7 +4,7 @@ const path = require('path');
 const auth = require('../middleware/auth');
 const { createMessageNotification, createConnectionRequestNotification } = require('../utils/notificationHelper');
 
-console.log('Messages routes loaded'); // DEBUG LOG
+console.log('Messages routes loaded');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -23,10 +23,10 @@ module.exports = (pool) => {
 
   // Get latest message for each conversation (sent or received) for the logged-in user
   router.get('/preview', auth, async (req, res) => {
-    console.log('--- /preview route hit ---'); // DEBUG LOG
+    console.log('--- /preview route hit ---');
     try {
       const userId = req.user.id;
-      console.log('Preview endpoint called for user:', userId); // DEBUG LOG
+      console.log('Preview endpoint called for user:', userId);
       // Get the latest message for each conversation (between user and each other user)
       const query = `
         SELECT m.message_id, m.sender_id, m.receiver_id, m.content, m.sent_at, m.status,
@@ -56,7 +56,7 @@ module.exports = (pool) => {
       const [messages] = await pool.query(query, [
         userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId
       ]);
-      console.log('Preview messages:', messages); // DEBUG LOG
+      console.log('Preview messages:', messages);
       res.json(messages);
     } catch (error) {
       console.error('Error fetching message preview:', error);
@@ -299,7 +299,7 @@ module.exports = (pool) => {
       const content = req.body.content;
       const file = req.file;
       
-      // Debug log
+  
       console.log('Send message debug:', {
         body: req.body,
         file: req.file,

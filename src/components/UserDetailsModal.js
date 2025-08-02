@@ -81,7 +81,7 @@ const EDUCATION_LEVELS = [
   'Other'
 ];
 
-// Helper function to format Philippines addresses
+// Format Philippines addresses
 const formatPhilippinesAddress = (locationObj) => {
   if (!locationObj || typeof locationObj !== 'object') {
     return typeof locationObj === 'string' ? locationObj : '';
