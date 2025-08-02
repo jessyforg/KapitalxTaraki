@@ -2392,8 +2392,7 @@ app.delete("/api/events/:id", authenticateToken, async (req, res) => {
 	}
 });
 
-const eventsRouter = require("../taraki-backend/src/routes/events");
-app.use("/api/events", eventsRouter);
+
 
 // Get all startups matched with the logged-in investor
 app.get("/api/startups/matched", authenticateToken, async (req, res) => {
