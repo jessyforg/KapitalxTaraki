@@ -12,6 +12,9 @@ This project includes comprehensive documentation covering all aspects of the sy
 - **[DATABASE_DOCUMENTATION.md](DATABASE_DOCUMENTATION.md)** - Database schema and structure
 - **[FRONTEND_DOCUMENTATION.md](FRONTEND_DOCUMENTATION.md)** - React components and frontend architecture
 
+### 👥 User Documentation
+- **[USER_MANUAL.md](USER_MANUAL.md)** - Complete user manual with step-by-step workflows
+
 ### 🔔 Additional Documentation
 - **[NOTIFICATION_SYSTEM.md](NOTIFICATION_SYSTEM.md)** - Notification system implementation
 
