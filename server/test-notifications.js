@@ -15,12 +15,17 @@ const {
 
 const mysql = require('mysql2/promise');
 
-// Database configuration
+// Load environment variables if .env exists
+if (require('fs').existsSync('.env')) {
+  require('dotenv').config();
+}
+
+// Database configuration - uses environment variables for production, defaults for local dev
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'kapital_system',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'kapital_system',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

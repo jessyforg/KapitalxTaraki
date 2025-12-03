@@ -2,11 +2,17 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
+// Load environment variables if .env exists
+if (require('fs').existsSync('.env')) {
+  require('dotenv').config();
+}
+
 async function initializeDatabase() {
+  // Use environment variables if available, otherwise default to localhost for local development
   const connection = await mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: ''
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || ''
   });
 
   try {

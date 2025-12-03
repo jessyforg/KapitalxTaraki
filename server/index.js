@@ -1,3 +1,9 @@
+// Load environment variables (only if .env file exists - Railway uses direct env vars)
+// In Railway, environment variables are provided directly, so dotenv is optional
+if (require('fs').existsSync('.env')) {
+	require('dotenv').config();
+}
+
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
@@ -10,16 +16,48 @@ const { createProfileViewNotification, createDocumentVerificationNotification, c
 const EventReminderService = require('./utils/eventReminderService');
 const app = express();
 
+// CORS Configuration - supports both development and production
+const allowedOrigins = process.env.CORS_ORIGINS 
+	? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+	: ['http://localhost:3000', 'http://localhost:5000'];
+
+// Add development origins if in development mode
+if (process.env.NODE_ENV !== 'production') {
+	allowedOrigins.push(
+		"http://localhost:3000",
+		"http://localhost:5000",
+		/^http:\/\/192\.168\.\d+\.\d+:(3000|5000)$/
+	);
+}
+
 // Middleware
 app.use(
 	cors({
-		origin: [
-			"http://localhost:3000",
-			"http://192.168.0.24:3000",
-			"http://localhost:5000",
-			"http://192.168.0.24:5000",
-			/^http:\/\/192\.168\.\d+\.\d+:(3000|5000)$/  // Allow any device on local network for both ports
-		],
+		origin: function (origin, callback) {
+			// Allow requests with no origin (mobile apps, Postman, etc.)
+			if (!origin) return callback(null, true);
+			
+			// In development, allow all local origins
+			if (process.env.NODE_ENV !== 'production') {
+				return callback(null, true);
+			}
+			
+			// Check if origin is in allowed list
+			if (allowedOrigins.includes(origin)) {
+				return callback(null, true);
+			}
+			
+			// Check regex patterns for development
+			if (process.env.NODE_ENV !== 'production') {
+				for (const pattern of allowedOrigins) {
+					if (pattern instanceof RegExp && pattern.test(origin)) {
+						return callback(null, true);
+					}
+				}
+			}
+			
+			callback(new Error('Not allowed by CORS'));
+		},
 		credentials: true,
 	})
 );
@@ -33,8 +71,8 @@ app.use((err, req, res, next) => {
 	res.status(500).json({ error: "Internal server error" });
 });
 
-// JWT Secret
-const JWT_SECRET = "your-secret-key"; // In production, use environment variable
+// JWT Secret - use environment variable in production
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -75,13 +113,32 @@ const authenticateToken = (req, res, next) => {
 	}
 };
 
-// Database configuration
+// Database configuration - uses environment variables
+// In production (Railway), all these must be set via environment variables
+// In development, defaults to localhost for local MySQL
 const dbConfig = {
-	host: "localhost",
-	user: "root",
-	password: "", // Default XAMPP password is empty
-	database: "taraki_db",
+	host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : "localhost"),
+	user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : "root"),
+	password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : ""),
+	database: process.env.DB_NAME || (process.env.NODE_ENV === 'production' ? null : "taraki_db"),
 };
+
+// Validate required environment variables in production
+if (process.env.NODE_ENV === 'production') {
+	const required = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+	const missing = required.filter(key => !process.env[key]);
+	if (missing.length > 0) {
+		console.error('❌ Missing required database environment variables:', missing.join(', '));
+		console.error('   Please set these in Railway Dashboard → Variables');
+		process.exit(1);
+	}
+}
+
+// Debug: Log database configuration
+console.log('🔍 Database Config (index.js):');
+console.log('  NODE_ENV:', process.env.NODE_ENV || 'development');
+console.log('  DB_HOST from env:', process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'NOT SET - REQUIRED!' : 'NOT SET - using default localhost'));
+console.log('  Using host:', dbConfig.host);
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
