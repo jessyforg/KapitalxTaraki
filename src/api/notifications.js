@@ -1,35 +1,21 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:5000/api'; // Server-side rendering fallback
+  if (process.env.NODE_ENV === 'production') {
+    return API_BASE_URL;
   }
-  
-  const hostname = window.location.hostname;
-  const port = window.location.port;
-  
-  // Always point to the backend server on port 5000
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+  if (typeof window === 'undefined') {
     return 'http://localhost:5000/api';
   }
-  
-  // If accessing from network (e.g., 192.168.0.24:3000)
-  // Point to the backend server on the same host but port 5000
-  return `http://${hostname}:5000/api`;
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  }
+  return `http://${window.location.hostname}:5000/api`;
 };
 
-// Use only the dynamic API URL, ignore environment variables
 const API_URL = getApiUrl();
-
-
-console.log('🔧 DEBUG - API Configuration:');
-console.log('- Ignoring process.env.REACT_APP_API_URL (was causing issues)');
-console.log('- getApiUrl() returns:', getApiUrl());
-console.log('- Final API_URL being used:', API_URL);
-console.log('- Current window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
-console.log('- Current window.location.port:', typeof window !== 'undefined' ? window.location.port : 'N/A');
-console.log('- Current window.location.href:', typeof window !== 'undefined' ? window.location.href : 'N/A');
 
 // Get auth headers
 const getAuthHeaders = () => {

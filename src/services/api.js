@@ -1,11 +1,17 @@
+import { API_BASE_URL } from '../config/api.config';
+
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
+  // In production, always use the configured API URL
+  if (process.env.NODE_ENV === 'production') {
+    return API_BASE_URL;
+  }
+  
   if (typeof window === 'undefined') {
-    return 'http://localhost:5000/api'; // Server-side rendering fallback
+    return API_BASE_URL;
   }
   
   const hostname = window.location.hostname;
-  const port = window.location.port;
   
   // Always point directly to the backend server on port 5000
   if (hostname === 'localhost' || hostname === '127.0.0.1') {

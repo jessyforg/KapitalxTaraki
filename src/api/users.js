@@ -1,26 +1,20 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
-  if (typeof window === 'undefined') {
-    return '/api'; // Server-side rendering fallback
+  if (process.env.NODE_ENV === 'production') {
+    return API_BASE_URL;
   }
-  
-  const hostname = window.location.hostname;
-  const port = window.location.port;
-  
-  // If accessing from localhost (React dev server on port 3000)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Use relative URL - the proxy in package.json will forward to port 5000
+  if (typeof window === 'undefined') {
     return '/api';
   }
-  
-  // If accessing from network (e.g., 192.168.0.24:3000)
-  // Point to the backend server on the same host but port 5000
-  return `http://${hostname}:5000/api`;
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return '/api';
+  }
+  return `http://${window.location.hostname}:5000/api`;
 };
 
-// Use only the dynamic API URL, ignore environment variables
 const API_URL = getApiUrl();
 
 // Get all users with a specific role
