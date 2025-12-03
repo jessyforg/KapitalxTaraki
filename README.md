@@ -4,19 +4,24 @@ A comprehensive startup ecosystem platform connecting entrepreneurs, investors, 
 
 ## 📋 Documentation
 
-This project includes comprehensive documentation covering all aspects of the system:
+All documentation is organized in the `docs/` folder for easy navigation:
 
-### 📚 Core Documentation
-- **[SYSTEM_DOCUMENTATION.md](SYSTEM_DOCUMENTATION.md)** - Complete system overview, architecture, and setup guide
-- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Detailed API endpoints and usage
-- **[DATABASE_DOCUMENTATION.md](DATABASE_DOCUMENTATION.md)** - Database schema and structure
-- **[FRONTEND_DOCUMENTATION.md](FRONTEND_DOCUMENTATION.md)** - React components and frontend architecture
+### 🚀 Deployment Guides
+- **[START_HERE.md](START_HERE.md)** ⭐ - Start here for deployment
+- **[docs/deployment/](docs/deployment/)** - Complete deployment guides
+  - Railway setup, Hostinger configuration, troubleshooting
+
+### 🔧 Technical Documentation
+- **[docs/technical/](docs/technical/)** - Developer documentation
+  - [System Documentation](docs/technical/SYSTEM_DOCUMENTATION.md) - Complete system overview and architecture
+  - [API Documentation](docs/technical/API_DOCUMENTATION.md) - All API endpoints and usage
+  - [Database Documentation](docs/technical/DATABASE_DOCUMENTATION.md) - Database schema and structure
+  - [Frontend Documentation](docs/technical/FRONTEND_DOCUMENTATION.md) - React components and architecture
+  - [Notification System](docs/technical/NOTIFICATION_SYSTEM.md) - Notification system implementation
 
 ### 👥 User Documentation
-- **[USER_MANUAL.md](USER_MANUAL.md)** - Complete user manual with step-by-step workflows
-
-### 🔔 Additional Documentation
-- **[NOTIFICATION_SYSTEM.md](NOTIFICATION_SYSTEM.md)** - Notification system implementation
+- **[docs/user/](docs/user/)** - User guides
+  - [User Manual](docs/user/USER_MANUAL.md) - Complete user manual with step-by-step workflows
 
 ## 🚀 Quick Start
 
@@ -46,17 +51,24 @@ This project includes comprehensive documentation covering all aspects of the sy
 3. **Database setup**
    - Start XAMPP MySQL service
    - Import `database/taraki_db.sql` to create tables
-   - Update database credentials in `server/database/db.js`
+   - Database credentials are configured via environment variables
 
 4. **Environment configuration**
    ```bash
-   # Create .env file in server directory
+   # Create .env file in server directory (for local development)
+   # See server/ENV_VARIABLES_FOR_LOCAL.txt for local setup
+   # For production (Railway), see server/ENV_VARIABLES_FOR_RAILWAY.txt
+   
+   NODE_ENV=development
    JWT_SECRET=your-secret-key
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=
    DB_NAME=taraki_db
+   CORS_ORIGINS=http://localhost:3000,http://localhost:5000
    ```
+   
+   **Note:** The code now properly uses environment variables. In production (Railway), all database credentials must be set via Railway's environment variables. See [START_HERE.md](START_HERE.md) for deployment instructions.
 
 5. **Start development servers**
    ```bash
@@ -181,11 +193,12 @@ npm start
 cd server && npm run dev
 ```
 
-### Production
-- Build optimization
-- Environment variable configuration
-- SSL certificate setup
-- Database backup strategies
+### Production Deployment
+For production deployment to Railway + Hostinger:
+- See **[START_HERE.md](START_HERE.md)** for complete deployment guide
+- All deployment documentation is in **[docs/deployment/](docs/deployment/)**
+- Environment variables are configured in Railway Dashboard
+- Code automatically validates required environment variables in production
 
 ## 📈 Performance Optimization
 
