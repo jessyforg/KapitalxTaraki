@@ -13,11 +13,13 @@ function Home() {
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
-    // If we're accessing from localhost, use localhost
+    if (process.env.NODE_ENV === 'production') {
+      const apiConfig = require('../config/api.config');
+      return apiConfig.API_BASE_URL;
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
-    // Otherwise, use the same hostname as the frontend (for network access)
     return `http://${window.location.hostname}:5000/api`;
   };
 

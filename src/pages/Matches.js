@@ -2,23 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { FaHandshake, FaEye, FaBuilding, FaUser, FaCalendarAlt, FaStar, FaMapMarkerAlt, FaChevronRight, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:5000/api'; // Server-side rendering fallback
+  if (process.env.NODE_ENV === 'production') {
+    return API_BASE_URL;
   }
-  
-  const hostname = window.location.hostname;
-  
-  // Always point to the backend server on port 5000
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+  if (typeof window === 'undefined') {
     return 'http://localhost:5000/api';
   }
-  
-  // If accessing from network (e.g., 192.168.0.24:3000)
-  // Point to the backend server on the same host but port 5000
-  return `http://${hostname}:5000/api`;
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  }
+  return `http://${window.location.hostname}:5000/api`;
 };
 
 const API_URL = getApiUrl();

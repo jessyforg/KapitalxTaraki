@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaSearch, FaInbox, FaArchive, FaChevronDown, FaChevronUp, FaPaperclip, FaArrowLeft, FaInfoCircle, FaBell, FaBellSlash, FaFlag, FaUserCircle, FaTimes, FaEllipsisV, FaPlus } from 'react-icons/fa';
 import classNames from 'classnames';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 const Messages = () => {
   const navigate = useNavigate();
@@ -86,11 +87,14 @@ const Messages = () => {
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
-    // If we're accessing from localhost, use localhost
+    // Import API config dynamically
+    const { API_BASE_URL } = require('../config/api.config');
+    if (process.env.NODE_ENV === 'production') {
+      return API_BASE_URL;
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
-    // Otherwise, use the same hostname as the frontend (for network access)
     return `http://${window.location.hostname}:5000/api`;
   };
 

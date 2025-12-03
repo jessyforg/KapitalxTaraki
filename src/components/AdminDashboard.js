@@ -10,6 +10,7 @@ import { useBreakpoint, useScreenSize } from '../hooks/useScreenSize';
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
 import defaultAvatar from './imgs/default-avatar.png';
+import tarakiLogo from './imgs/taraki-logo-black.png';
 import { getTickets, updateTicket } from '../api/tickets';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -225,9 +226,79 @@ function AdminDashboard() {
   const [locationFilter, setLocationFilter] = useState('');
   const [roleFilterReport, setRoleFilterReport] = useState('');
   const [startupTab, setStartupTab] = useState('approved'); // 'approved' or 'pending'
+  
+  // Format location function
+  const formatLocation = (location) => {
+    if (!location) return '';
+    
+    // Convert to string first for easier handling
+    let locationStr = String(location);
+    
+    // If it's a JSON string, try to parse it
+    if (locationStr.trim().startsWith('{') || locationStr.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(locationStr);
+        return formatLocation(parsed);
+      } catch (e) {
+        // If parsing fails, check if it contains regionCode - skip these malformed entries
+        if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+          return ''; // Return empty string to filter out malformed JSON
+        }
+        return locationStr;
+      }
+    }
+    
+    // If it's an object, format it properly
+    if (typeof location === 'object' && location !== null) {
+      const parts = [];
+      
+      // Priority order: most specific to least specific
+      // Use "Name" versions first, then fallback to code versions
+      if (location.barangayName && String(location.barangayName).trim()) {
+        parts.push(String(location.barangayName).trim());
+      } else if (location.barangay && String(location.barangay).trim()) {
+        parts.push(String(location.barangay).trim());
+      }
+      
+      if (location.cityName && String(location.cityName).trim()) {
+        parts.push(String(location.cityName).trim());
+      } else if (location.city && String(location.city).trim()) {
+        parts.push(String(location.city).trim());
+      }
+      
+      if (location.provinceName && String(location.provinceName).trim()) {
+        parts.push(String(location.provinceName).trim());
+      } else if (location.province && String(location.province).trim()) {
+        parts.push(String(location.province).trim());
+      }
+      
+      if (location.regionName && String(location.regionName).trim()) {
+        // Clean up region name - remove "(Region X)" suffixes
+        const regionName = String(location.regionName).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+        if (regionName && regionName !== 'Region') {
+          parts.push(regionName);
+        }
+      } else if (location.region && String(location.region).trim()) {
+        const regionName = String(location.region).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+        if (regionName && regionName !== 'Region') {
+          parts.push(regionName);
+        }
+      }
+      
+      return parts.length > 0 ? parts.join(', ') : '';
+    }
+    
+    // For simple strings, check if it contains regionCode and skip if it does
+    if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+      return '';
+    }
+    
+    return locationStr.trim();
+  };
+
   const filteredStartups = startups.filter(s =>
     (!industryFilter || s.industry === industryFilter) &&
-    (!locationFilter || s.location === locationFilter)
+    (!locationFilter || formatLocation(s.location) === locationFilter)
   );
   // Calculate user status counts
   const getUserStatusCounts = () => {
@@ -304,7 +375,7 @@ function AdminDashboard() {
       
       // Report filters (for site performance)
       const matchesReportRole = !roleFilterReport || u.role === roleFilterReport;
-      const matchesLocation = !locationFilter || u.location === locationFilter;
+      const matchesLocation = !locationFilter || formatLocation(u.location) === locationFilter;
       const matchesIndustry = !industryFilter || u.industry === industryFilter;
       
       // For site performance tab, use report filters
@@ -312,19 +383,184 @@ function AdminDashboard() {
     });
   })();
   const exportToExcel = (data, filename) => {
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `${filename}.xlsx`);
-  };
-  const exportToPDF = (data, columns, filename) => {
-    const doc = new jsPDF();
-    autoTable(doc, {
-      head: [columns],
-      body: data.map(row => columns.map(col => row[col] || '')),
+    // Create header information
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    doc.save(`${filename}.pdf`);
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Create header rows
+    const exportedBy = user?.name || user?.first_name ? `${user.first_name} ${user.last_name}` : 'Unknown Admin';
+    const headerInfo = [
+      ['Performance Report'],
+      ['Generated on:', `${currentDate} at ${currentTime}`],
+      ['Exported by:', exportedBy],
+      ['Report Type:', reportType === 'startups' ? 'Startups Report' : 'Users Report'],
+      ['Total Records:', data.length.toString()],
+      [''], // Empty row for spacing
+    ];
+    
+    // Create footer information
+    const footerInfo = [
+      [''], // Empty row for spacing
+      ['Report Summary:'],
+      ['Generated by:', 'Taraki Admin Dashboard'],
+      ['Platform:', 'Taraki Startup Ecosystem'],
+      ['Contact:', 'tarakicar@gmail.com'],
+    ];
+    
+    // Convert data to worksheet
+    const ws = XLSX.utils.aoa_to_sheet(headerInfo);
+    
+    // Add the main data
+    XLSX.utils.sheet_add_json(ws, data, { origin: `A${headerInfo.length + 1}` });
+    
+    // Add footer
+    const dataEndRow = headerInfo.length + data.length + 1;
+    XLSX.utils.sheet_add_aoa(ws, footerInfo, { origin: `A${dataEndRow + 1}` });
+    
+    // Style the header
+    const headerRange = XLSX.utils.decode_range(ws['!ref']);
+    for (let row = 0; row < headerInfo.length - 1; row++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: row === 0 ? 16 : 12 },
+          fill: { fgColor: { rgb: 'F97316' } }
+        };
+      }
+    }
+    
+    // Auto-fit columns
+    const colWidths = [];
+    for (let col = 0; col <= headerRange.e.c; col++) {
+      let maxWidth = 10;
+      for (let row = 0; row <= headerRange.e.r; row++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (ws[cellAddress] && ws[cellAddress].v) {
+          maxWidth = Math.max(maxWidth, ws[cellAddress].v.toString().length);
+        }
+      }
+      colWidths.push({ wch: Math.min(maxWidth + 2, 50) });
+    }
+    ws['!cols'] = colWidths;
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Site Performance Report');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+  const exportToPDF = async (data, columns, filename) => {
+    const doc = new jsPDF();
+    
+    // Add header
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const exportedBy = user?.name || user?.first_name ? `${user.first_name} ${user.last_name}` : 'Unknown Admin';
+    
+    // Function to convert image to base64
+    const getImageBase64 = (imagePath) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+        img.src = imagePath;
+      });
+    };
+    
+    // Try to load the logo
+    let logoDataUrl = null;
+    try {
+      logoDataUrl = await getImageBase64(tarakiLogo);
+    } catch (error) {
+      console.warn('Could not load logo for PDF export');
+    }
+    
+    // Add logo to header if available
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, 'PNG', 20, 15, 25, 15);
+      // Position "Performance Report" next to logo
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(249, 115, 22);
+      doc.text('Performance Report', 50, 25);
+    } else {
+      // Fallback to text only
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(249, 115, 22);
+      doc.text('Performance Report', 20, 20);
+    }
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    const startY = logoDataUrl ? 35 : 30;
+    doc.text(`Generated on: ${currentDate} at ${currentTime}`, 20, startY);
+    doc.text(`Exported by: ${exportedBy}`, 20, startY + 7);
+    doc.text(`Report Type: ${reportType === 'startups' ? 'Startups Report' : 'Users Report'}`, 20, startY + 14);
+    doc.text(`Total Records: ${data.length}`, 20, startY + 21);
+    
+    // Add the table
+    autoTable(doc, {
+      head: [columns.map(col => col.replace(/_/g, ' ').toUpperCase())],
+      body: data.map(row => columns.map(col => row[col] || '')),
+      startY: startY + 30,
+      headStyles: {
+        fillColor: [249, 115, 22],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [255, 247, 237]
+      },
+      margin: { top: startY + 30, bottom: 40 },
+      didDrawPage: function (data) {
+        const pageHeight = doc.internal.pageSize.height;
+        const pageWidth = doc.internal.pageSize.width;
+        
+        // Add logo to footer if available
+        if (logoDataUrl) {
+          doc.addImage(logoDataUrl, 'PNG', pageWidth - 35, pageHeight - 25, 15, 9);
+        }
+        
+        // Footer line
+        doc.setDrawColor(249, 115, 22);
+        doc.setLineWidth(0.5);
+        doc.line(20, pageHeight - 30, pageWidth - (logoDataUrl ? 45 : 20), pageHeight - 30);
+        
+        // Footer text
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Generated by Taraki Admin Dashboard', 20, pageHeight - 22);
+        doc.text('Platform: Taraki Startup Ecosystem', 20, pageHeight - 17);
+        doc.text('Contact: tarakicar@gmail.com', 20, pageHeight - 12);
+        
+        // Page number
+        doc.text(`Page ${data.pageNumber}`, pageWidth - (logoDataUrl ? 45 : 30), pageHeight - 12);
+      }
+    });
+    
+    doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   // Handle user edit
@@ -1267,6 +1503,10 @@ function AdminDashboard() {
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      const apiConfig = require('../config/api.config');
+      return apiConfig.API_BASE_URL;
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
@@ -1274,6 +1514,10 @@ function AdminDashboard() {
   };
 
   const getBaseUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      const apiConfig = require('../config/api.config');
+      return apiConfig.API_BASE_URL.replace('/api', '');
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
     }
@@ -1398,12 +1642,13 @@ function AdminDashboard() {
       ...users.map(u => u.industry).filter(Boolean)
     ])
   ];
-  const allLocations = [
-    ...new Set([
-      ...startups.map(s => s.location).filter(Boolean),
-      ...users.map(u => u.location).filter(Boolean)
-    ])
+  
+  // Format and deduplicate locations
+  const formattedLocations = [
+    ...startups.map(s => formatLocation(s.location)).filter(loc => loc && loc.trim() && !loc.includes('regionCode')),
+    ...users.map(u => formatLocation(u.location)).filter(loc => loc && loc.trim() && !loc.includes('regionCode'))
   ];
+  const allLocations = [...new Set(formattedLocations)].sort();
 
   // Main content for each tab
   const renderContent = () => {
@@ -2159,7 +2404,7 @@ function AdminDashboard() {
                                   </div>
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Location:</span>
-                                    <div className="font-medium text-black dark:text-white">{user.location || 'N/A'}</div>
+                                    <div className="font-medium text-black dark:text-white">{formatLocation(user.location) || 'N/A'}</div>
                                   </div>
                                 </div>
                                 
@@ -2236,7 +2481,7 @@ function AdminDashboard() {
                           </td>
                                   
                                   <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{user.location || 'N/A'}</div>
+                                      <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatLocation(user.location) || 'N/A'}</div>
                             </td>
                                   
                                   <td className="px-4 py-3 w-[100px] truncate overflow-hidden whitespace-nowrap">
@@ -2311,24 +2556,24 @@ case 'sitePerformance':
     <div className={`flex flex-col gap-6 w-full border-2 border-orange-400 dark:border-orange-700 rounded-2xl shadow-lg p-6 ${darkMode ? 'bg-[#232323]' : 'bg-white'}`}> 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
+        <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6 max-w-[150px]">
           <option value="startups">Startups</option>
           <option value="users">Users</option>
         </select>
-        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
+        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6 max-w-[180px] truncate">
           <option value="">All Industries</option>
           {allIndustries.map(ind => (
-            <option key={ind} value={ind}>{ind}</option>
+            <option key={ind} value={ind} className="truncate">{ind}</option>
           ))}
         </select>
-        <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
+        <select value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6 max-w-[200px] truncate">
           <option value="">All Locations</option>
           {allLocations.map(loc => (
-            <option key={loc} value={loc}>{loc}</option>
+            <option key={loc} value={loc} className="truncate">{loc}</option>
           ))}
         </select>
         {reportType === 'users' && (
-          <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6">
+          <select value={roleFilterReport} onChange={e => setRoleFilterReport(e.target.value)} className="w-full sm:w-auto border rounded px-2 py-1 pr-6 max-w-[150px]">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
             <option value="entrepreneur">Entrepreneur</option>
@@ -2386,7 +2631,7 @@ case 'sitePerformance':
                     </div>
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Location:</span>
-                      <div className="font-medium text-black dark:text-white">{item.location || 'N/A'}</div>
+                      <div className="font-medium text-black dark:text-white">{formatLocation(item.location) || 'N/A'}</div>
                     </div>
                     {reportType === 'startups' && (
                       <>
@@ -2463,7 +2708,7 @@ case 'sitePerformance':
 
                   {/* Location */}
                       <td className="px-4 py-3 w-[120px] truncate overflow-hidden whitespace-nowrap">
-                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{item.location || 'N/A'}</div>
+                        <div className="text-xs xl:text-sm font-medium text-black dark:text-white group-hover:text-orange-600 truncate">{formatLocation(item.location) || 'N/A'}</div>
                   </td>
 
                       {/* Stage/Email */}
@@ -2645,7 +2890,7 @@ case 'sitePerformance':
                                   </div>
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Location:</span>
-                                    <div className="font-medium text-black dark:text-white">{startup.location || 'N/A'}</div>
+                                    <div className="font-medium text-black dark:text-white">{formatLocation(startup.location) || 'N/A'}</div>
                                   </div>
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Stage:</span>

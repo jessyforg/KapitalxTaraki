@@ -13,6 +13,11 @@ function TarakiTeam() {
   const [testimonialsVisible, setTestimonialsVisible] = useState(false);
 
   const getApiUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      // Import dynamically for components that can't use ES6 imports at top level
+      const apiConfig = require('../config/api.config');
+      return apiConfig.API_BASE_URL;
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
@@ -20,6 +25,10 @@ function TarakiTeam() {
   };
 
   const getBaseUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      const apiConfig = require('../config/api.config');
+      return apiConfig.API_BASE_URL.replace('/api', '');
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
     }
