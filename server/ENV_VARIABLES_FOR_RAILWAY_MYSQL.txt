@@ -1,0 +1,80 @@
+====================================
+RAILWAY ENVIRONMENT VARIABLES
+For Railway MySQL Database (RECOMMENDED)
+====================================
+
+STEP 1: Create MySQL Database on Railway
+- Railway Dashboard → + New → Database → Add MySQL
+- Wait for creation
+
+STEP 2: Get MySQL Connection Details
+- Click on MySQL service → Variables tab
+- Copy these values:
+  * MYSQLHOST
+  * MYSQLUSER
+  * MYSQLPASSWORD
+  * MYSQLDATABASE
+
+STEP 3: Update Backend Service Variables
+Add these to your BACKEND service (not MySQL service):
+
+Variable Name: NODE_ENV
+Value: production
+
+Variable Name: PORT
+Value: 5000
+
+Variable Name: DB_HOST
+Value: [PASTE MYSQLHOST VALUE FROM STEP 2]
+Example: mysql.railway.internal
+
+Variable Name: DB_USER
+Value: [PASTE MYSQLUSER VALUE FROM STEP 2]
+Example: root
+
+Variable Name: DB_PASSWORD
+Value: [PASTE MYSQLPASSWORD VALUE FROM STEP 2]
+Example: AbCdEf123456
+
+Variable Name: DB_NAME
+Value: [PASTE MYSQLDATABASE VALUE FROM STEP 2]
+Example: railway
+
+Variable Name: JWT_SECRET
+Value: a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1
+
+Variable Name: CORS_ORIGINS
+Value: https://taraki-car.com,https://www.taraki-car.com
+
+====================================
+STEP 4: Import Database
+====================================
+
+1. Click on MySQL service → Data tab
+2. Click "Query" or "Connect"
+3. Copy contents of: database/taraki_db.sql
+4. Paste and execute in Railway's query interface
+
+====================================
+IMPORTANT NOTES:
+====================================
+
+✅ Use Railway MySQL (not Hostinger) - it's free and works better
+✅ Backend and database on same platform = faster connection
+✅ Railway MySQL is included in free tier
+✅ Automatic backups included
+
+❌ Don't use Hostinger MySQL - Single Hosting doesn't allow remote access
+❌ Don't use localhost - that won't work
+
+====================================
+VERIFICATION:
+====================================
+
+After setup, check Backend Logs:
+- Should see: "Database connected successfully" ✅
+- Should NOT see: "ECONNREFUSED" errors ❌
+
+====================================
+
+

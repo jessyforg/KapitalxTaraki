@@ -1,0 +1,56 @@
+====================================
+RAILWAY ENVIRONMENT VARIABLES
+Copy these EXACT values to Railway
+====================================
+
+Add these one by one in Railway Dashboard → Variables:
+
+Variable Name: NODE_ENV
+Value: production
+
+Variable Name: PORT
+Value: 5000
+
+Variable Name: DB_HOST
+Value: srv1409.hstgr.io
+NOTE: This is your Hostinger MySQL hostname from Remote MySQL section
+Alternative IP: 153.92.15.62 (can use this instead if hostname doesn't work)
+
+Variable Name: DB_USER
+Value: u947925539_taraki
+
+Variable Name: DB_PASSWORD
+Value: Taraki2025
+
+Variable Name: DB_NAME
+Value: u947925539_taraki_db
+
+Variable Name: JWT_SECRET
+Value: a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1
+
+Variable Name: CORS_ORIGINS
+Value: https://taraki-car.com,https://www.taraki-car.com
+
+====================================
+IMPORTANT NOTES:
+====================================
+
+1. DB_HOST: Start with 'localhost'
+   - If Railway can't connect, get exact hostname from Hostinger hPanel
+   - Go to: Databases → MySQL Databases → look for "Database Host"
+   - Common values: mysql.hostinger.com, mysql123.hostinger.com
+
+2. JWT_SECRET: This is a secure random string
+   - Use this EXACT value - it's already generated
+   - Never share this publicly
+
+3. CORS_ORIGINS: Your domain with https://
+   - Include both with and without www
+   - Separated by comma, no spaces
+
+4. All passwords and sensitive data are from your Hostinger account
+   - Keep these secure
+   - Never commit to git
+
+====================================
+
