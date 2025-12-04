@@ -5704,7 +5704,11 @@ case 'sitePerformance':
                 className="w-full h-full rounded-full object-cover border-2 border-orange-500"
                 />
                 </div>
-            <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{user?.name || 'Admin Demo'}</h2>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">
+              {user?.first_name && user?.last_name 
+                ? `${user.first_name} ${user.last_name}` 
+                : user?.name || 'Admin'}
+            </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[user?.role] || 'Admin'}</p>
             </div>
 
@@ -5784,7 +5788,11 @@ case 'sitePerformance':
                     className="w-full h-full rounded-full object-cover border-2 border-orange-500"
                   />
                 </div>
-                <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{user?.name || 'Admin Demo'}</h2>
+                <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">
+              {user?.first_name && user?.last_name 
+                ? `${user.first_name} ${user.last_name}` 
+                : user?.name || 'Admin'}
+            </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[user?.role] || 'Admin'}</p>
                 </div>
                 
