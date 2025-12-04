@@ -22,12 +22,28 @@ export default function StartupDetails() {
       .join(' ');
   };
 
+  // Helper function to construct full URL for logo
+  const getLogoUrl = (logoUrl) => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http')) return logoUrl;
+    // If it's a relative path starting with /uploads, construct full URL
+    if (logoUrl.startsWith('/uploads')) {
+      return `${API_BASE_URL.replace('/api', '')}${logoUrl}`;
+    }
+    return logoUrl;
+  };
+
   useEffect(() => {
     const fetchStartup = async () => {
       try {
         const token = localStorage.getItem('token');
         const res = await axios.get(`${API_BASE_URL}/startups/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-        setStartup(res.data);
+        const startupData = res.data;
+        // Fix logo URL if it's a relative path
+        if (startupData.logo_url) {
+          startupData.logo_url = getLogoUrl(startupData.logo_url);
+        }
+        setStartup(startupData);
       } catch (err) {
         setError('Failed to fetch startup.');
       } finally {

@@ -1009,6 +1009,7 @@ function AdminDashboard() {
       if (!res.ok) throw new Error('Failed to approve document');
       handleCloseModal();
       fetchUsers(); // Refresh users to update verification status
+      fetchPendingVerificationUsers(); // Refresh pending list
     } catch (e) {
       setModalError(e.message);
     } finally {
@@ -1036,6 +1037,7 @@ function AdminDashboard() {
       if (!res.ok) throw new Error('Failed to reject document');
       handleCloseModal();
       fetchUsers(); // Refresh users to update verification status
+      fetchPendingVerificationUsers(); // Refresh pending list
     } catch (e) {
       setModalError(e.message);
     } finally {
@@ -3901,27 +3903,38 @@ case 'sitePerformance':
               <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Verification Documents</h3>
               {selectedUserModal.verification_documents && selectedUserModal.verification_documents.length > 0 ? (
                 <div className="space-y-3">
-                  {selectedUserModal.verification_documents.map((doc, index) => (
-                    <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-gray-800 dark:text-white">{doc.document_type}</h4>
-                        {doc.file_url && (
-                          <button
-                            onClick={() => window.open(doc.file_url, '_blank')}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                          >
-                            View Document
-                          </button>
+                  {selectedUserModal.verification_documents.map((doc, index) => {
+                    // Construct file URL from file_path
+                    const fileUrl = doc.file_path 
+                      ? (doc.file_path.startsWith('http') 
+                          ? doc.file_path 
+                          : `${API_BASE_URL.replace('/api', '')}${doc.file_path}`)
+                      : (doc.file_url || null);
+                    
+                    return (
+                      <div key={doc.document_id || index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-gray-800 dark:text-white">{doc.document_type}</h4>
+                          {fileUrl && (
+                            <button
+                              onClick={() => window.open(fileUrl, '_blank')}
+                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                            >
+                              View Document
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Status: {toTitleCase(doc.status || 'pending')}
+                        </p>
+                        {doc.uploaded_at && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                          </p>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Status: {doc.status}</p>
-                      {doc.uploaded_at && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-gray-500 dark:text-gray-400">No verification documents found.</p>
