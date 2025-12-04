@@ -2874,6 +2874,103 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 	}
 });
 
+// Admin: Get storage information
+app.get("/api/admin/storage-info", authenticateToken, async (req, res) => {
+	try {
+		if (req.user.role !== "admin") {
+			return res.status(403).json({ error: "Forbidden" });
+		}
+
+		const uploadsDir = path.join(__dirname, "uploads");
+		
+		const getDirectorySize = (dirPath) => {
+			if (!fs.existsSync(dirPath)) return 0;
+			let totalSize = 0;
+			try {
+				const files = fs.readdirSync(dirPath);
+				files.forEach(file => {
+					const filePath = path.join(dirPath, file);
+					const stats = fs.statSync(filePath);
+					if (stats.isDirectory()) {
+						totalSize += getDirectorySize(filePath);
+					} else {
+						totalSize += stats.size;
+					}
+				});
+			} catch (error) {
+				console.error(`Error reading directory ${dirPath}:`, error);
+			}
+			return totalSize;
+		};
+
+		const formatBytes = (bytes) => {
+			if (bytes === 0) return "0 Bytes";
+			const k = 1024;
+			const sizes = ["Bytes", "KB", "MB", "GB"];
+			const i = Math.floor(Math.log(bytes) / Math.log(k));
+			return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+		};
+
+		const countFiles = (dirPath) => {
+			if (!fs.existsSync(dirPath)) return 0;
+			let count = 0;
+			try {
+				const files = fs.readdirSync(dirPath);
+				files.forEach(file => {
+					const filePath = path.join(dirPath, file);
+					const stats = fs.statSync(filePath);
+					if (stats.isDirectory()) {
+						count += countFiles(filePath);
+					} else {
+						count++;
+					}
+				});
+			} catch (error) {
+				console.error(`Error counting files in ${dirPath}:`, error);
+			}
+			return count;
+		};
+
+		const totalSize = getDirectorySize(uploadsDir);
+		const profilePhotosSize = getDirectorySize(path.join(uploadsDir, "profile_photos"));
+		const teamSize = getDirectorySize(path.join(uploadsDir, "team"));
+		const messagesSize = getDirectorySize(path.join(uploadsDir, "messages"));
+		const verificationSize = getDirectorySize(path.join(uploadsDir, "verification_documents"));
+		const rootSize = totalSize - profilePhotosSize - teamSize - messagesSize - verificationSize;
+
+		res.json({
+			total: formatBytes(totalSize),
+			totalBytes: totalSize,
+			breakdown: {
+				profile_photos: {
+					size: formatBytes(profilePhotosSize),
+					files: countFiles(path.join(uploadsDir, "profile_photos"))
+				},
+				team: {
+					size: formatBytes(teamSize),
+					files: countFiles(path.join(uploadsDir, "team"))
+				},
+				messages: {
+					size: formatBytes(messagesSize),
+					files: countFiles(path.join(uploadsDir, "messages"))
+				},
+				verification_documents: {
+					size: formatBytes(verificationSize),
+					files: countFiles(path.join(uploadsDir, "verification_documents"))
+				},
+				other: {
+					size: formatBytes(rootSize),
+					files: countFiles(uploadsDir) - countFiles(path.join(uploadsDir, "profile_photos")) - countFiles(path.join(uploadsDir, "team")) - countFiles(path.join(uploadsDir, "messages")) - countFiles(path.join(uploadsDir, "verification_documents"))
+				}
+			},
+			totalFiles: countFiles(uploadsDir)
+		});
+	} catch (error) {
+		console.error("Error getting storage info:", error);
+		res.status(500).json({ error: "Failed to get storage info", details: error.message });
+	}
+});
+
 const ticketsRouter = require("./routes/tickets")(pool);
 app.use("/api/tickets", authenticateToken, ticketsRouter);
 
