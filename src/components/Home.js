@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import tarakiLogo from "./imgs/TARAKI 10X WHITE.png";
 import video from "../components/imgs/taraki-home-video.webm";
 import Testimonials from "./Testimonials";
+import { API_BASE_URL } from '../config/api.config';
 
 function Home() {
   const [stats, setStats] = useState({
@@ -14,8 +15,7 @@ function Home() {
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
     if (process.env.NODE_ENV === 'production') {
-      const apiConfig = require('../config/api.config');
-      return apiConfig.API_BASE_URL;
+      return API_BASE_URL;
     }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import { API_BASE_URL } from '../config/api.config';
 
 const fundingStages = [
   { value: 'pre_seed', label: 'Pre-Seed' },
@@ -42,7 +43,7 @@ export default function EditStartup() {
     const fetchStartup = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`/api/startups/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(`${API_BASE_URL}/startups/${id}`, { headers: { Authorization: `Bearer ${token}` } });
         setForm(res.data);
       } catch (err) {
         setError('Failed to fetch startup or not authorized.');
@@ -76,7 +77,7 @@ export default function EditStartup() {
         if (k !== 'logo_url') formData.append(k, v || '');
       });
       if (logoFile) formData.append('logo', logoFile);
-      await axios.put(`/api/startups/${id}`, formData, {
+      await axios.put(`${API_BASE_URL}/startups/${id}`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Startup updated successfully!');

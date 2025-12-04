@@ -6,6 +6,7 @@ import { calculateMatchScore, enhanceUserForMatching } from '../utils/matchmakin
 import { getCoFounders, getUserPreferences, getInvestors, getUserProfile } from '../api/users';
 import { useBreakpoint } from '../hooks/useScreenSize';
 import { FiSettings, FiMenu, FiX, FiChevronDown, FiLogOut } from 'react-icons/fi';
+import { API_BASE_URL } from '../config/api.config';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
@@ -335,7 +336,7 @@ const InvestorDashboard = () => {
     const fetchAvailableStartups = async () => {
       try {
         const token = localStorage.getItem('token');
-        const startupsRes = await axios.get('/api/startups', {
+        const startupsRes = await axios.get(`${API_BASE_URL}/startups`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('InvestorDashboard - Fetched startups from API:', startupsRes.data);
@@ -376,7 +377,7 @@ const InvestorDashboard = () => {
         }
 
         // First get the matches
-        const matchesRes = await axios.get(`/api/matches?user_id=${userId}&type=investor`, {
+        const matchesRes = await axios.get(`${API_BASE_URL}/matches?user_id=${userId}&type=investor`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -387,7 +388,7 @@ const InvestorDashboard = () => {
           // Fetch details for each startup
           const startupDetailsPromises = startupIds.map(async (startupId) => {
             try {
-              const startupRes = await axios.get(`/api/startups/${startupId}`, {
+              const startupRes = await axios.get(`${API_BASE_URL}/startups/${startupId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               
@@ -770,13 +771,13 @@ const InvestorDashboard = () => {
       console.log(`   - Stored in database: ${normalizedScore} (decimal)`);
       console.log(`   - Will display as: ${Math.round(normalizedScore * 100)}% on matches page`);
       
-      await axios.post('/api/investor/match', { startup_id: startupId, match_score: normalizedScore }, {
+      await axios.post(`${API_BASE_URL}/investor/match`, { startup_id: startupId, match_score: normalizedScore }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh both lists
       const [availableRes, matchedRes] = await Promise.all([
-        axios.get('/api/investor/available-startups', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/investor/matches', { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_BASE_URL}/investor/available-startups`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/investor/matches`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       setAvailableStartups(availableRes.data);
       setMatchedStartups(matchedRes.data);
@@ -788,13 +789,13 @@ const InvestorDashboard = () => {
   const handleUnmatchStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/investor/unmatch/${startupId}`, {
+      await axios.delete(`${API_BASE_URL}/investor/unmatch/${startupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh both lists
       const [availableRes, matchedRes] = await Promise.all([
-        axios.get('/api/investor/available-startups', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/investor/matches', { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_BASE_URL}/investor/available-startups`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/investor/matches`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       setAvailableStartups(availableRes.data);
       setMatchedStartups(matchedRes.data);

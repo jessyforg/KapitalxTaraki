@@ -6,6 +6,7 @@ import 'react-calendar/dist/Calendar.css';
 import eventImg1 from '../components/imgs/rc1.webp';
 import eventImg2 from '../components/imgs/rc2.webp';
 import Navbar from '../components/Navbar';
+import { API_BASE_URL } from '../config/api.config';
 
 // Add this function after the mockEvents array
 const truncateText = (text, maxLength = 100) => {
@@ -59,7 +60,7 @@ function EventsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch(`${API_BASE_URL}/events`);
         if (!res.ok) throw new Error('Failed to fetch events');
         let data = await res.json();
         // Convert event_date/time to JS Date objects for calendar
@@ -117,7 +118,7 @@ function EventsPage() {
       if (eventsNeedingChecks.length > 0) {
         const fetchEvents = async () => {
           try {
-            const res = await fetch('/api/events');
+            const res = await fetch(`${API_BASE_URL}/events`);
             if (!res.ok) throw new Error('Failed to fetch events');
             let data = await res.json();
             data = data.map(e => ({

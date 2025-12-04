@@ -1,13 +1,18 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 // Dynamic API URL that works for both localhost and network access
 const getApiUrl = () => {
+  // In production, always use the configured API URL
+  if (process.env.NODE_ENV === 'production') {
+    return API_BASE_URL;
+  }
+  
   if (typeof window === 'undefined') {
-    return '/api'; // Server-side rendering fallback
+    return API_BASE_URL; // Server-side rendering fallback
   }
   
   const hostname = window.location.hostname;
-  const port = window.location.port;
   
   // If accessing from localhost (React dev server on port 3000)
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -20,7 +25,7 @@ const getApiUrl = () => {
   return `http://${hostname}:5000/api`;
 };
 
-// Use only the dynamic API URL, ignore environment variables
+// Use only the dynamic API URL
 const API_URL = getApiUrl();
 
 // Update user profile

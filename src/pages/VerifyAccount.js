@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { validateDate } from '../utils/validation';
+import { API_BASE_URL } from '../config/api.config';
 
 export default function VerifyAccount() {
   const [status, setStatus] = useState('');
@@ -34,7 +35,7 @@ export default function VerifyAccount() {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/verification/status', {
+      const res = await fetch(`${API_BASE_URL}/verification/status`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch verification status');
@@ -63,7 +64,7 @@ export default function VerifyAccount() {
         if (k === 'document' && v) formData.append('document', v);
         else if (k !== 'document') formData.append(k, v);
       });
-      const res = await fetch('/api/verification/upload', {
+      const res = await fetch(`${API_BASE_URL}/verification/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -134,7 +135,7 @@ export default function VerifyAccount() {
         if (k === 'document' && v) formData.append('document', v);
         else if (k !== 'document') formData.append(k, v);
       });
-      const res = await fetch(`/api/verification/document/${editDoc.document_id}`, {
+      const res = await fetch(`${API_BASE_URL}/verification/document/${editDoc.document_id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -161,7 +162,7 @@ export default function VerifyAccount() {
     setSuccess('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/verification/document/${documentId}`, {
+      const res = await fetch(`${API_BASE_URL}/verification/document/${documentId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -182,7 +183,7 @@ export default function VerifyAccount() {
   async function handleViewDocument(doc) {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/verification/document/${doc.document_id}/view`, {
+      const res = await fetch(`${API_BASE_URL}/verification/document/${doc.document_id}/view`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch document');

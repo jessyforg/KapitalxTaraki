@@ -193,7 +193,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       const [firstName, ...lastNameParts] = editName.split(' ');
       const lastName = lastNameParts.join(' ');
       
-      const response = await axios.put(`/api/user/${user.id}`, {
+      const response = await axios.put(`${getApiUrl()}/user/${user.id}`, {
         first_name: firstName,
         last_name: lastName,
         email: editEmail,

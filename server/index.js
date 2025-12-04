@@ -1422,7 +1422,7 @@ app.get("/api/verification/status", authenticateToken, async (req, res) => {
 		);
 		// Get all documents
 		const [documents] = await pool.query(
-			"SELECT * FROM Verification_Documents WHERE user_id = ? ORDER BY uploaded_at DESC",
+			"SELECT * FROM verification_documents WHERE user_id = ? ORDER BY uploaded_at DESC",
 			[user_id]
 		);
 		res.json({
@@ -1459,7 +1459,7 @@ app.post(
 			fs.renameSync(file.path, newPath);
 			// Insert document record
 			await pool.query(
-				`INSERT INTO Verification_Documents (user_id, document_type, document_number, issue_date, expiry_date, issuing_authority, file_name, file_path, file_type, file_size, status)
+				`INSERT INTO verification_documents (user_id, document_type, document_number, issue_date, expiry_date, issuing_authority, file_name, file_path, file_type, file_size, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
 				[
 					user_id,
@@ -1480,7 +1480,7 @@ app.post(
         COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
         COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
-      FROM Verification_Documents WHERE user_id = ?`,
+      FROM verification_documents WHERE user_id = ?`,
 				[user_id]
 			);
 			let new_status = "pending";
@@ -1515,7 +1515,7 @@ app.put(
 			const doc_id = req.params.id;
 			// Get the document
 			const [[doc]] = await pool.query(
-				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				"SELECT * FROM verification_documents WHERE document_id = ?",
 				[doc_id]
 			);
 			if (!doc) return res.status(404).json({ error: "Document not found" });
@@ -1551,7 +1551,7 @@ app.put(
 			}
 			// Update document
 			await pool.query(
-				`UPDATE Verification_Documents SET document_type=?, document_number=?, issue_date=?, expiry_date=?, issuing_authority=?, file_name=?, file_path=?, file_type=?, file_size=?, status='pending', rejection_reason=NULL WHERE document_id=?`,
+				`UPDATE verification_documents SET document_type=?, document_number=?, issue_date=?, expiry_date=?, issuing_authority=?, file_name=?, file_path=?, file_type=?, file_size=?, status='pending', rejection_reason=NULL WHERE document_id=?`,
 				[
 					document_type,
 					document_number,
@@ -1571,7 +1571,7 @@ app.put(
         COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
         COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
-      FROM Verification_Documents WHERE user_id = ?`,
+      FROM verification_documents WHERE user_id = ?`,
 				[user_id]
 			);
 			let new_status = "pending";
@@ -1605,7 +1605,7 @@ app.delete(
 			const doc_id = req.params.id;
 			// Get the document
 			const [[doc]] = await pool.query(
-				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				"SELECT * FROM verification_documents WHERE document_id = ?",
 				[doc_id]
 			);
 			if (!doc) return res.status(404).json({ error: "Document not found" });
@@ -1616,7 +1616,7 @@ app.delete(
 				fs.unlinkSync(doc.file_path);
 			}
 			// Delete from database
-			await pool.query("DELETE FROM Verification_Documents WHERE document_id = ?", [
+			await pool.query("DELETE FROM verification_documents WHERE document_id = ?", [
 				doc_id,
 			]);
 			// Update user verification status
@@ -1625,7 +1625,7 @@ app.delete(
         COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
         COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
-      FROM Verification_Documents WHERE user_id = ?`,
+      FROM verification_documents WHERE user_id = ?`,
 				[user_id]
 			);
 			let new_status = "pending";
@@ -1659,7 +1659,7 @@ app.get(
 				return res.status(403).json({ error: "Forbidden" });
 			const [docs] = await pool.query(`
       SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified
-      FROM Verification_Documents vd
+      FROM verification_documents vd
       JOIN users u ON vd.user_id = u.id
       WHERE vd.status = 'pending'
       ORDER BY vd.uploaded_at ASC
@@ -1684,7 +1684,7 @@ app.get(
 			const [[doc]] = await pool.query(
 				`
       SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified
-      FROM Verification_Documents vd
+      FROM verification_documents vd
       JOIN users u ON vd.user_id = u.id
       WHERE vd.document_id = ?
     `,
@@ -1711,12 +1711,12 @@ app.post(
 			const admin_id = req.user.id;
 			// Update document status
 			await pool.query(
-				`UPDATE Verification_Documents SET status='approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=NULL WHERE document_id=?`,
+				`UPDATE verification_documents SET status='approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=NULL WHERE document_id=?`,
 				[admin_id, doc_id]
 			);
 			// Get user_id
 			const [[doc]] = await pool.query(
-				"SELECT user_id FROM Verification_Documents WHERE document_id = ?",
+				"SELECT user_id FROM verification_documents WHERE document_id = ?",
 				[doc_id]
 			);
 			if (doc) {
@@ -1727,7 +1727,7 @@ app.post(
           COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
           COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
           COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
-        FROM Verification_Documents WHERE user_id = ?`,
+        FROM verification_documents WHERE user_id = ?`,
 					[user_id]
 				);
 				let new_status = "pending";
@@ -1747,7 +1747,7 @@ app.post(
 				// Send document verification notification
 				try {
 					const [[documentInfo]] = await pool.query(
-						"SELECT document_type FROM Verification_Documents WHERE document_id = ?",
+						"SELECT document_type FROM verification_documents WHERE document_id = ?",
 						[doc_id]
 					);
 					
@@ -1786,12 +1786,12 @@ app.post(
 				return res.status(400).json({ error: "Rejection reason is required" });
 			// Update document status
 			await pool.query(
-				`UPDATE Verification_Documents SET status='not approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=? WHERE document_id=?`,
+				`UPDATE verification_documents SET status='not approved', reviewed_by=?, reviewed_at=NOW(), rejection_reason=? WHERE document_id=?`,
 				[admin_id, rejection_reason, doc_id]
 			);
 			// Get user_id
 			const [[doc]] = await pool.query(
-				"SELECT user_id FROM Verification_Documents WHERE document_id = ?",
+				"SELECT user_id FROM verification_documents WHERE document_id = ?",
 				[doc_id]
 			);
 			if (doc) {
@@ -1802,7 +1802,7 @@ app.post(
           COUNT(CASE WHEN status = 'not approved' THEN 1 END) as not_approved_count,
           COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
           COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count
-        FROM Verification_Documents WHERE user_id = ?`,
+        FROM verification_documents WHERE user_id = ?`,
 					[user_id]
 				);
 				let new_status = "pending";
@@ -1822,7 +1822,7 @@ app.post(
 				// Send document verification notification
 				try {
 					const [[documentInfo]] = await pool.query(
-						"SELECT document_type FROM Verification_Documents WHERE document_id = ?",
+						"SELECT document_type FROM verification_documents WHERE document_id = ?",
 						[doc_id]
 					);
 					
@@ -1855,7 +1855,7 @@ app.get(
 
 			// Get document details
 			const [[document]] = await pool.query(
-				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				"SELECT * FROM verification_documents WHERE document_id = ?",
 				[id]
 			);
 
@@ -1900,7 +1900,7 @@ app.get(
 
 			// Get document details
 			const [[document]] = await pool.query(
-				"SELECT * FROM Verification_Documents WHERE document_id = ?",
+				"SELECT * FROM verification_documents WHERE document_id = ?",
 				[id]
 			);
 

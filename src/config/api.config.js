@@ -3,8 +3,7 @@
 
 const API_CONFIG = {
   development: 'http://localhost:5000/api',
-  // TODO: Replace with your Railway backend URL after deployment
-  production: 'https://your-app.railway.app/api' // Replace with your Railway URL
+  production: 'https://taraki-production.up.railway.app/api'
 };
 
 // Get current environment

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { validatePhoneNumber } from '../utils/validation';
+import { API_BASE_URL } from '../config/api.config';
 
 const industries = {
   Technology: [
@@ -127,7 +128,7 @@ const CreateStartup = () => {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('logo', file);
-      const res = await axios.post('/api/upload-logo', formData, {
+      const res = await axios.post(`${API_BASE_URL}/upload-logo`, formData, {
         headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
       });
       setForm(f => ({ ...f, logo_url: res.data.url }));
@@ -168,7 +169,7 @@ const CreateStartup = () => {
       formData.append('document', file);
       formData.append('type', docType);
 
-      const res = await axios.post('/api/upload-document', formData, {
+      const res = await axios.post(`${API_BASE_URL}/upload-document`, formData, {
         headers: { 
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`
@@ -206,7 +207,7 @@ const CreateStartup = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/startups', form, {
+      await axios.post(`${API_BASE_URL}/startups`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       navigate('/entrepreneur-dashboard');

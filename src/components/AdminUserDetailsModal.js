@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiUser, FiFileText, FiDownload, FiEye } from 'react-icons/fi';
+import { API_BASE_URL } from '../config/api.config';
 
 const AdminUserDetailsModal = ({ user, onClose }) => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -17,7 +18,7 @@ const AdminUserDetailsModal = ({ user, onClose }) => {
     try {
       setLoadingDocuments(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/users/${user.id}/verification-documents`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${user.id}/verification-documents`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

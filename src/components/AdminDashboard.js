@@ -22,6 +22,7 @@ import { updateProfilePhoto } from '../api/user';
 import axios from 'axios';
 import MobileSidebar from './MobileSidebar';
 import HamburgerButton from './HamburgerButton';
+import { API_BASE_URL } from '../config/api.config';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 
@@ -572,7 +573,7 @@ function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/users', {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -590,7 +591,7 @@ function AdminDashboard() {
   // Fetch users with pending verification documents
   const fetchPendingVerificationUsers = async () => {
     try {
-      const response = await fetch('/api/admin/verification/pending', {
+      const response = await fetch(`${API_BASE_URL}/admin/verification/pending`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -728,7 +729,7 @@ function AdminDashboard() {
     try {
       // Save to backend
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/events', {
+      const res = await fetch(`${API_BASE_URL}/events`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -799,7 +800,7 @@ function AdminDashboard() {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/events/${eventToDelete.id}`, {
+      const res = await fetch(`${API_BASE_URL}/events/${eventToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -860,7 +861,7 @@ function AdminDashboard() {
     setStartupError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/startups', {
+      const res = await fetch(`${API_BASE_URL}/startups`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch startups');
@@ -885,7 +886,7 @@ function AdminDashboard() {
   async function handleAcceptStartup(id) {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${id}/approve`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -907,7 +908,7 @@ function AdminDashboard() {
   async function handleDeclineStartup(id) {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${id}/reject`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${id}/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -977,7 +978,7 @@ function AdminDashboard() {
     setModalOpen(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/verification/document/${docId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/verification/document/${docId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch document details');
@@ -1001,7 +1002,7 @@ function AdminDashboard() {
     setModalError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/verification/document/${selectedRequest.document_id}/approve`, {
+      const res = await fetch(`${API_BASE_URL}/admin/verification/document/${selectedRequest.document_id}/approve`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1024,7 +1025,7 @@ function AdminDashboard() {
     setModalError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/verification/document/${selectedRequest.document_id}/reject`, {
+      const res = await fetch(`${API_BASE_URL}/admin/verification/document/${selectedRequest.document_id}/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1275,7 +1276,7 @@ function AdminDashboard() {
       
       if (isEditMode && editingEvent) {
         // Update existing event
-        const res = await fetch(`/api/events/${editingEvent.id}`, {
+        const res = await fetch(`${API_BASE_URL}/events/${editingEvent.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1305,7 +1306,7 @@ function AdminDashboard() {
         setTimeout(() => setEventNotification(null), 3000); // Auto-dismiss after 3 seconds
       } else {
         // Create new event
-        const res = await fetch('/api/events', {
+        const res = await fetch(`${API_BASE_URL}/events`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1436,7 +1437,7 @@ function AdminDashboard() {
       if (newStatus !== event.status) {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch(`/api/events/${event.id}`, {
+          const res = await fetch(`${API_BASE_URL}/events/${event.id}`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -1477,7 +1478,7 @@ function AdminDashboard() {
     try {
       setEventsLoading(true);
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/events', {
+      const res = await fetch(`${API_BASE_URL}/events`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch events');
@@ -1504,8 +1505,7 @@ function AdminDashboard() {
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
     if (process.env.NODE_ENV === 'production') {
-      const apiConfig = require('../config/api.config');
-      return apiConfig.API_BASE_URL;
+      return API_BASE_URL;
     }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
@@ -1515,8 +1515,7 @@ function AdminDashboard() {
 
   const getBaseUrl = () => {
     if (process.env.NODE_ENV === 'production') {
-      const apiConfig = require('../config/api.config');
-      return apiConfig.API_BASE_URL.replace('/api', '');
+      return API_BASE_URL.replace('/api', '');
     }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
@@ -3388,7 +3387,7 @@ case 'sitePerformance':
   const handleSuspendStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${startupId}/suspend`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${startupId}/suspend`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3415,7 +3414,7 @@ case 'sitePerformance':
   const handleReactivateStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${startupId}/reactivate`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${startupId}/reactivate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3442,7 +3441,7 @@ case 'sitePerformance':
   const handleDeleteStartup = async (startupId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${startupId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${startupId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -3480,7 +3479,7 @@ case 'sitePerformance':
   const handleSaveStartupEdit = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${editingStartup.startup_id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${editingStartup.startup_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3530,7 +3529,7 @@ case 'sitePerformance':
   const handleBulkAction = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/startups/bulk-action', {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/bulk-action`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3568,7 +3567,7 @@ case 'sitePerformance':
   const handleVerifyUser = async (userId, comment = '') => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${userId}/verify`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/verify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3599,7 +3598,7 @@ case 'sitePerformance':
   const handleRejectUser = async (userId, reason) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${userId}/reject`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3630,7 +3629,7 @@ case 'sitePerformance':
   const handleSuspendUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${userId}/suspend`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/suspend`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3657,7 +3656,7 @@ case 'sitePerformance':
   const handleReactivateUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${userId}/reactivate`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/reactivate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3684,7 +3683,7 @@ case 'sitePerformance':
   const handleDeleteUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -3723,7 +3722,7 @@ case 'sitePerformance':
   const handleSaveUserEdit = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3771,7 +3770,7 @@ case 'sitePerformance':
   const handleBulkUserAction = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/users/bulk-action', {
+      const res = await fetch(`${API_BASE_URL}/admin/users/bulk-action`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3815,7 +3814,7 @@ case 'sitePerformance':
     try {
       // Fetch user's verification documents
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/users/${user.id}/verification-documents`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${user.id}/verification-documents`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -5614,7 +5613,7 @@ case 'sitePerformance':
       const newStatus = startup.funding_status === 'funded' ? 'not_funded' : 'funded';
       
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/admin/startups/${startupId}/funding-status`, {
+      const res = await fetch(`${API_BASE_URL}/admin/startups/${startupId}/funding-status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

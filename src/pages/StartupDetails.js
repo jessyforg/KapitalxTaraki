@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import { API_BASE_URL } from '../config/api.config';
 
 export default function StartupDetails() {
   const { id } = useParams();
@@ -25,7 +26,7 @@ export default function StartupDetails() {
     const fetchStartup = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`/api/startups/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(`${API_BASE_URL}/startups/${id}`, { headers: { Authorization: `Bearer ${token}` } });
         setStartup(res.data);
       } catch (err) {
         setError('Failed to fetch startup.');

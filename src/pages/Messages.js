@@ -87,8 +87,6 @@ const Messages = () => {
 
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
-    // Import API config dynamically
-    const { API_BASE_URL } = require('../config/api.config');
     if (process.env.NODE_ENV === 'production') {
       return API_BASE_URL;
     }

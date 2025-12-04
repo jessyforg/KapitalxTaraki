@@ -6,6 +6,7 @@ import { calculateMatchScore, enhanceUserForMatching } from '../utils/matchmakin
 import { getCoFounders, getInvestors, getUserPreferences } from '../api/users';
 import { useBreakpoint } from '../hooks/useScreenSize';
 import { FiSettings, FiMenu, FiX, FiChevronDown, FiLogOut } from 'react-icons/fi';
+import { API_BASE_URL } from '../config/api.config';
 
 const sidebarLinks = [
   { key: 'startups', label: 'Startups', icon: 'fa-building' },
@@ -337,7 +338,7 @@ const EntrepreneurDashboard = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/startups', {
+        const res = await fetch(`${API_BASE_URL}/startups`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch startups');
