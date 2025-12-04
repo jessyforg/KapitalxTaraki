@@ -859,11 +859,21 @@ const InvestorDashboard = () => {
             {(() => {
               // Helper function to construct full URL for logo
               const getLogoUrl = (logoUrl) => {
-                if (!logoUrl) return null;
-                if (logoUrl.startsWith('http')) return logoUrl;
+                if (!logoUrl || logoUrl.trim() === '') {
+                  return null;
+                }
+                if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+                  return logoUrl;
+                }
                 // If it's a relative path starting with /uploads, construct full URL
                 if (logoUrl.startsWith('/uploads')) {
-                  return `${API_BASE_URL.replace('/api', '')}${logoUrl}`;
+                  const baseUrl = API_BASE_URL.replace('/api', '');
+                  return `${baseUrl}${logoUrl}`;
+                }
+                // If it doesn't start with /, add it
+                if (!logoUrl.startsWith('/')) {
+                  const baseUrl = API_BASE_URL.replace('/api', '');
+                  return `${baseUrl}/uploads/${logoUrl}`;
                 }
                 return logoUrl;
               };

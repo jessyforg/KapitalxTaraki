@@ -24,11 +24,26 @@ export default function StartupDetails() {
 
   // Helper function to construct full URL for logo
   const getLogoUrl = (logoUrl) => {
-    if (!logoUrl) return null;
-    if (logoUrl.startsWith('http')) return logoUrl;
+    if (!logoUrl || logoUrl.trim() === '') {
+      console.log('No logo URL provided');
+      return null;
+    }
+    if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+      return logoUrl;
+    }
     // If it's a relative path starting with /uploads, construct full URL
     if (logoUrl.startsWith('/uploads')) {
-      return `${API_BASE_URL.replace('/api', '')}${logoUrl}`;
+      const baseUrl = API_BASE_URL.replace('/api', '');
+      const fullUrl = `${baseUrl}${logoUrl}`;
+      console.log('Constructed logo URL:', fullUrl, 'from:', logoUrl);
+      return fullUrl;
+    }
+    // If it doesn't start with /, add it
+    if (!logoUrl.startsWith('/')) {
+      const baseUrl = API_BASE_URL.replace('/api', '');
+      const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
+      console.log('Constructed logo URL (added /uploads):', fullUrl, 'from:', logoUrl);
+      return fullUrl;
     }
     return logoUrl;
   };

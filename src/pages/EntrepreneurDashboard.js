@@ -1243,12 +1243,28 @@ const EntrepreneurDashboard = () => {
                     {startups.map((startup) => {
                       // Helper function to construct full URL for logo
                       const getLogoUrl = (logoUrl) => {
-                        if (!logoUrl) return null;
-                        if (logoUrl.startsWith('http')) return logoUrl;
+                        if (!logoUrl || logoUrl.trim() === '') {
+                          console.log('No logo URL for startup:', startup.name);
+                          return null;
+                        }
+                        if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+                          return logoUrl;
+                        }
                         // If it's a relative path starting with /uploads, construct full URL
                         if (logoUrl.startsWith('/uploads')) {
-                          return `${API_BASE_URL.replace('/api', '')}${logoUrl}`;
+                          const baseUrl = API_BASE_URL.replace('/api', '');
+                          const fullUrl = `${baseUrl}${logoUrl}`;
+                          console.log('Constructed logo URL:', fullUrl, 'from:', logoUrl);
+                          return fullUrl;
                         }
+                        // If it doesn't start with /, add it
+                        if (!logoUrl.startsWith('/')) {
+                          const baseUrl = API_BASE_URL.replace('/api', '');
+                          const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
+                          console.log('Constructed logo URL (added /uploads):', fullUrl, 'from:', logoUrl);
+                          return fullUrl;
+                        }
+                        console.log('Logo URL unchanged:', logoUrl);
                         return logoUrl;
                       };
                       const logoUrl = getLogoUrl(startup.logo_url);
@@ -1261,13 +1277,25 @@ const EntrepreneurDashboard = () => {
                       >
                         {/* Logo or placeholder */}
                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                                                      {logoUrl ? (
-                              <img src={logoUrl} alt={startup.name} className="object-contain h-32 w-32" />
-                            ) : (
-                              <div className="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center">
-                                <i className="fas fa-building text-white text-5xl"></i>
-                              </div>
-                            )}
+                          {logoUrl ? (
+                            <img 
+                              src={logoUrl} 
+                              alt={startup.name} 
+                              className="object-contain h-32 w-32"
+                              onError={(e) => {
+                                console.error('Failed to load logo:', logoUrl, 'for startup:', startup.name);
+                                e.target.style.display = 'none';
+                                if (e.target.nextElementSibling) {
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center ${logoUrl ? 'hidden' : ''}`}
+                          >
+                            <i className="fas fa-building text-white text-5xl"></i>
+                          </div>
                         </div>
                         {/* Info section */}
                         <div className="w-full px-5 py-4 flex flex-col items-start flex-1">
