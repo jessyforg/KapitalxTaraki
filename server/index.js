@@ -927,12 +927,38 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 		}
 
 		// Insert into startups table with explicit pending status
+		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+		// const [result] = await pool.query(
+		// 	`INSERT INTO startups 
+		//   (entrepreneur_id, name, industry, description, location, funding_needed, 
+		//    pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage, 
+		//    website, startup_stage, approval_status, created_at, updated_at)
+		//  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())`,
+		// 	[
+		// 		req.user.id,
+		// 		name,
+		// 		industry,
+		// 		description,
+		// 		location,
+		// 		funding_needed,
+		// 		pitch_deck_url,
+		// 		business_plan_url,
+		// 		logo_url,
+		// 		video_url,
+		// 		funding_stage,
+		// 		website,
+		// 		startup_stage,
+		// 	]
+		// );
+
+		// AUTOMATIC APPROVAL FOR TESTING - TO BE RESTORED LATER
+		// Insert into startups table with automatic approved status
 		const [result] = await pool.query(
 			`INSERT INTO startups 
         (entrepreneur_id, name, industry, description, location, funding_needed, 
          pitch_deck_url, business_plan_url, logo_url, video_url, funding_stage, 
          website, startup_stage, approval_status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', NOW(), NOW())`,
 			[
 				req.user.id,
 				name,
@@ -951,11 +977,22 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 		);
 
 		// Send startup application notification
+		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+		// try {
+		// 	await createStartupApplicationNotification(pool, {
+		// 		entrepreneur_id: req.user.id,
+		// 		startup_name: name,
+		// 		application_status: 'under_review'
+		// 	});
+		// } catch (notificationError) {
+		// 	console.error('Error creating startup application notification:', notificationError);
+		// }
+		// AUTOMATIC APPROVAL NOTIFICATION FOR TESTING
 		try {
 			await createStartupApplicationNotification(pool, {
 				entrepreneur_id: req.user.id,
 				startup_name: name,
-				application_status: 'under_review'
+				application_status: 'approved'
 			});
 		} catch (notificationError) {
 			console.error('Error creating startup application notification:', notificationError);
@@ -987,11 +1024,12 @@ app.get("/api/startups", authenticateToken, async (req, res) => {
     `;
 		const params = [];
 
-		// If not admin, only show approved startups or user's own startups
-		if (userRole !== "admin") {
-			query += ` AND (s.approval_status = 'approved' OR s.entrepreneur_id = ?)`;
-			params.push(userId);
-		}
+    // If not admin, only show approved startups or user's own startups
+    // COMMENTED OUT FOR TESTING - show all startups without approval gating
+    // if (userRole !== "admin") {
+    //   query += ` AND (s.approval_status = 'approved' OR s.entrepreneur_id = ?)`;
+    //   params.push(userId);
+    // }
 
 		// Add filters if provided
 		if (req.query.industry) {
@@ -1027,6 +1065,18 @@ app.get("/api/startups", authenticateToken, async (req, res) => {
 app.get("/api/users/role/investor", authenticateToken, async (req, res) => {
 	try {
 		// Only return investors with verification_status = 'verified'
+		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+		// const [rows] = await pool.query(`
+		//   SELECT u.*, i.preferred_industries, i.preferred_locations, i.funding_stage_preferences,
+		//          up.preferred_location
+		//   FROM users u
+		//   LEFT JOIN investors i ON u.id = i.investor_id
+		//   LEFT JOIN user_preferences up ON u.id = up.user_id
+		//   WHERE u.role = 'investor' 
+		//   AND u.verification_status = 'verified'
+		//   AND u.show_in_search = 1
+		// `);
+		// Return all investors regardless of verification status
 		const [rows] = await pool.query(`
       SELECT u.*, i.preferred_industries, i.preferred_locations, i.funding_stage_preferences,
              up.preferred_location
@@ -1034,7 +1084,6 @@ app.get("/api/users/role/investor", authenticateToken, async (req, res) => {
       LEFT JOIN investors i ON u.id = i.investor_id
       LEFT JOIN user_preferences up ON u.id = up.user_id
       WHERE u.role = 'investor' 
-      AND u.verification_status = 'verified'
       AND u.show_in_search = 1
     `);
 
@@ -1279,8 +1328,14 @@ app.delete(
 app.get("/api/entrepreneurs", authenticateToken, async (req, res) => {
 	try {
 		// Only return verified entrepreneurs
+		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+		// const [rows] = await pool.query(
+		// 	'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ? AND verification_status = "verified"',
+		// 	["entrepreneur", req.user.id]
+		// );
+		// Return all entrepreneurs regardless of verification status
 		const [rows] = await pool.query(
-			'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ? AND verification_status = "verified"',
+			'SELECT id, first_name, last_name, email, introduction, profile_image, industry FROM users WHERE role = ? AND id != ?',
 			["entrepreneur", req.user.id]
 		);
 		const entrepreneurs = rows.map((u) => ({
@@ -1658,10 +1713,10 @@ app.get(
 			if (req.user.role !== "admin")
 				return res.status(403).json({ error: "Forbidden" });
 			const [docs] = await pool.query(`
-      SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified
+      SELECT vd.*, u.first_name, u.last_name, u.email, u.role, u.is_verified, u.verification_status
       FROM verification_documents vd
       JOIN users u ON vd.user_id = u.id
-      WHERE vd.status = 'pending'
+      WHERE vd.status = 'pending' AND u.verification_status != 'verified'
       ORDER BY vd.uploaded_at ASC
     `);
 			res.json(docs);
@@ -2474,12 +2529,21 @@ app.get("/api/startups/matched", authenticateToken, async (req, res) => {
 // Get all entrepreneurs
 app.get("/api/users/role/entrepreneur", authenticateToken, async (req, res) => {
 	try {
+		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+		// const [rows] = await pool.query(`
+		//   SELECT u.*, up.preferred_location, up.preferred_industries, up.preferred_startup_stage
+		//   FROM users u
+		//   LEFT JOIN user_preferences up ON u.id = up.user_id
+		//   WHERE u.role = 'entrepreneur'
+		//   AND u.verification_status = 'verified'
+		//   AND u.show_in_search = 1
+		// `);
+		// Return all entrepreneurs regardless of verification status
 		const [rows] = await pool.query(`
       SELECT u.*, up.preferred_location, up.preferred_industries, up.preferred_startup_stage
       FROM users u
       LEFT JOIN user_preferences up ON u.id = up.user_id
       WHERE u.role = 'entrepreneur'
-      AND u.verification_status = 'verified'
       AND u.show_in_search = 1
     `);
 

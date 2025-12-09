@@ -5,7 +5,7 @@ import api from '../services/api';
 import userProfileAPI from '../api/userProfile';
 import { fetchRegions, fetchProvinces, fetchCities, fetchBarangays } from '../services/locationAPI';
 import {
-  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit, FaTwitter, FaInstagram
+  FaUser, FaBars, FaFacebook, FaLinkedin, FaWhatsapp, FaTelegram, FaMicrosoft, FaBell, FaEnvelope, FaUserCircle, FaRegCalendarAlt, FaHandshake, FaLock, FaSignOutAlt, FaGraduationCap, FaTimes, FaEdit, FaTwitter, FaInstagram, FaGoogle
 } from 'react-icons/fa';
 import { validatePhoneNumber, validateDate } from '../utils/validation';
 import MobileSidebar from './MobileSidebar';
@@ -847,7 +847,7 @@ function PrivacySettingsCard({ user, setUser, fetchProfile }) {
           <div className="mb-2 font-semibold text-lg">Social Sign-in</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 bg-white border rounded shadow px-3 py-2">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
+              <FaGoogle className="text-red-600 w-5 h-5" />
               <span className="font-medium">Google</span>
               <span className="text-xl font-bold ml-auto">+</span>
             </div>

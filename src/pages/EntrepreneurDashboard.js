@@ -55,6 +55,51 @@ const locations = {
   ]
 };
 
+// Normalize any location value (object or JSON/string) into a readable string
+const formatLocationValue = (location) => {
+  if (!location) return '';
+
+  // String handling
+  if (typeof location === 'string') {
+    const trimmed = location.trim();
+    // If it's already plain text and not JSON-like, return it
+    if (!trimmed.startsWith('{') && !trimmed.includes('regionCode')) {
+      return trimmed;
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      return formatLocationValue(parsed);
+    } catch {
+      return '';
+    }
+  }
+
+  // Object handling
+  if (typeof location === 'object' && !Array.isArray(location)) {
+    const loc = location;
+    const parts = [];
+
+    if (loc.barangayName && String(loc.barangayName).trim()) parts.push(String(loc.barangayName).trim());
+    if (loc.cityName && String(loc.cityName).trim()) parts.push(String(loc.cityName).trim());
+    else if (loc.city) parts.push(String(loc.city).trim());
+
+    if (loc.provinceName && String(loc.provinceName).trim()) parts.push(String(loc.provinceName).trim());
+    else if (loc.province) parts.push(String(loc.province).trim());
+
+    if (loc.regionName && String(loc.regionName).trim()) {
+      const regionName = String(loc.regionName).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+      if (regionName && regionName !== 'Region') parts.push(regionName);
+    } else if (loc.region) {
+      const regionName = String(loc.region).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+      if (regionName && regionName !== 'Region') parts.push(regionName);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : '';
+  }
+
+  return '';
+};
+
 // Select Component with arrow icon
 const CustomSelect = ({ className, value, onChange, children, ...props }) => (
   <div className="relative">
@@ -396,132 +441,13 @@ const EntrepreneurDashboard = () => {
               
               return {
                 ...coFounder,
-                // Always prioritize preferences over basic profile data
                 preferred_location: preferences?.preferred_location,
                 preferred_industries: Array.isArray(preferredIndustries) ? preferredIndustries : [],
                 preferred_startup_stage: preferences?.preferred_startup_stage,
-                // Use preferences first, only fall back to profile if preferences don't exist
                 display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (coFounder.industry || 'Not specified'),
-                display_location: (() => {
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
-                    const loc = preferences.preferred_location;
-                    console.log(`Processing co-founder ${coFounder.id} location:`, loc);
-                    const parts = [];
-                    
-                    // Handle double-encoded JSON in region field
-                    if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
-                      try {
-                        const innerLoc = JSON.parse(loc.region);
-                        console.log(`Found double-encoded JSON in region:`, innerLoc);
-                        if (innerLoc.city) {
-                          console.log(`Adding city from inner JSON: ${innerLoc.city}`);
-                          parts.push(innerLoc.city);
-                        } else if (innerLoc.region) {
-                          console.log(`Adding region from inner JSON: ${innerLoc.region}`);
-                          parts.push(innerLoc.region);
-                        }
-                        if (innerLoc.province && innerLoc.province !== '' && 
-                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
-                          console.log(`Adding province from inner JSON: ${innerLoc.province}`);
-                          parts.push(innerLoc.province);
-                        }
-                      } catch (e) {
-                        console.log(`Error parsing double-encoded JSON:`, e);
-                        // Fall back to regular processing
-                        if (loc.city) {
-                          console.log(`Adding city: ${loc.city}`);
-                          parts.push(loc.city);
-                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                          console.log(`Adding region: ${loc.region}`);
-                          parts.push(loc.region);
-                        }
-                      }
-                    } else {
-                      // Regular processing for non-double-encoded data
-                      if (loc.city) {
-                        console.log(`Adding city: ${loc.city}`);
-                        parts.push(loc.city);
-                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                        console.log(`Adding region: ${loc.region}`);
-                        parts.push(loc.region);
-                      }
-                      
-                      // Only add province if it's not malformed data
-                      if (loc.province && loc.province !== '' && 
-                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                        console.log(`Adding province: ${loc.province}`);
-                        parts.push(loc.province);
-                      } else if (loc.province) {
-                        console.log(`Filtering out invalid province: ${loc.province}`);
-                      }
-                    }
-                    
-                    console.log(`Final location parts for co-founder ${coFounder.id}:`, parts);
-                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                  }
-                  // Handle case where preferred_location is a string
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
-                    try {
-                      const loc = JSON.parse(preferences.preferred_location);
-                      console.log(`Processing co-founder ${coFounder.id} location from string:`, loc);
-                      const parts = [];
-                      
-                      // Handle double-encoded JSON in region field (same logic as above)
-                      if (loc.region && loc.region.startsWith('{') && loc.region.includes('"region"')) {
-                        try {
-                          const innerLoc = JSON.parse(loc.region);
-                          console.log(`Found double-encoded JSON in region from string:`, innerLoc);
-                          if (innerLoc.city) {
-                            console.log(`Adding city from inner JSON (string): ${innerLoc.city}`);
-                            parts.push(innerLoc.city);
-                          } else if (innerLoc.region) {
-                            console.log(`Adding region from inner JSON (string): ${innerLoc.region}`);
-                            parts.push(innerLoc.region);
-                          }
-                          if (innerLoc.province && innerLoc.province !== '' && 
-                              !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(innerLoc.province.toLowerCase())) {
-                            console.log(`Adding province from inner JSON (string): ${innerLoc.province}`);
-                            parts.push(innerLoc.province);
-                          }
-                        } catch (e) {
-                          console.log(`Error parsing double-encoded JSON from string:`, e);
-                          // Fall back to regular processing
-                          if (loc.city) {
-                            console.log(`Adding city from string: ${loc.city}`);
-                            parts.push(loc.city);
-                          } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                            console.log(`Adding region from string: ${loc.region}`);
-                            parts.push(loc.region);
-                          }
-                        }
-                      } else {
-                        // Regular processing
-                        if (loc.city) {
-                          console.log(`Adding city from string: ${loc.city}`);
-                          parts.push(loc.city);
-                        } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                          console.log(`Adding region from string: ${loc.region}`);
-                          parts.push(loc.region);
-                        }
-                        
-                        if (loc.province && loc.province !== '' && 
-                            !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                          console.log(`Adding province from string: ${loc.province}`);
-                          parts.push(loc.province);
-                        } else if (loc.province) {
-                          console.log(`Filtering out invalid province from string: ${loc.province}`);
-                        }
-                      }
-                      
-                      console.log(`Final location parts from string for co-founder ${coFounder.id}:`, parts);
-                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                    } catch (e) {
-                      console.log(`JSON parse error for co-founder ${coFounder.id}:`, e);
-                      return preferences.preferred_location;
-                    }
-                  }
-                  return coFounder.location || 'Not specified';
-                })(),
+                display_location: formatLocationValue(preferences?.preferred_location)
+                  || formatLocationValue(coFounder.location)
+                  || 'Not specified',
                 display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
               };
             } catch (error) {
@@ -547,6 +473,13 @@ const EntrepreneurDashboard = () => {
           .map(coFounder => ({
             ...coFounder,
             match_score: calculateMatchScore(currentUser, coFounder)
+          }))
+          .map(coFounder => ({
+            ...coFounder,
+            display_location: formatLocationValue(coFounder.preferred_location)
+              || formatLocationValue(coFounder.display_location)
+              || formatLocationValue(coFounder.location)
+              || 'Not specified'
           }));
         
         setCoFounders(coFoundersWithMatches);
@@ -746,6 +679,15 @@ const EntrepreneurDashboard = () => {
           .map(investor => ({
             ...investor,
             match_score: calculateMatchScore(currentUserForInvestors, investor)
+          }))
+          .map(investor => ({
+            ...investor,
+            display_location: formatLocationValue(investor.preferred_location)
+              || formatLocationValue(investor.display_location)
+              || formatLocationValue(investor.location)
+              || 'Not specified',
+            display_industry: investor.display_industry || investor.industry || 'Not specified',
+            display_startup_stage: investor.display_startup_stage || investor.preferred_startup_stage || 'Not specified'
           }));
         
         setInvestors(investorsWithMatches);
@@ -823,6 +765,10 @@ const EntrepreneurDashboard = () => {
                      (!coFounderFilters.location || c.display_location === coFounderFilters.location))
         .map((coFounder, idx) => {
           const displayUser = coFounder.id === user?.id ? (enhancedUser || coFounder) : coFounder;
+          const displayLocation = formatLocationValue(displayUser.display_location) 
+            || formatLocationValue(displayUser.preferred_location) 
+            || formatLocationValue(displayUser.location) 
+            || 'Not specified';
           return (
             <div
               key={displayUser.id || idx}
@@ -856,7 +802,7 @@ const EntrepreneurDashboard = () => {
                 <div className="text-sm text-gray-500 mb-2">
                   <span className="font-semibold">Preferred Location:</span>{' '}
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs whitespace-nowrap">
-                    {displayUser.display_location || 'Not specified'}
+                    {displayLocation}
                   </span>
                 </div>
                               <div className="text-sm text-gray-500 mb-2">
@@ -886,14 +832,14 @@ const EntrepreneurDashboard = () => {
                   <button
                     onClick={() => handleViewProfile(displayUser.id)}
                     className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
-                    disabled={!isUserVerified}
+                    // disabled={!isUserVerified} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
                   >
                     View Profile
                   </button>
                   <button
                     onClick={() => handleMessage(displayUser.id)}
                     className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
-                    disabled={!isUserVerified}
+                    // disabled={!isUserVerified} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
                   >
                     Message
                   </button>
@@ -974,14 +920,14 @@ const EntrepreneurDashboard = () => {
                 <button
                   onClick={() => handleViewProfile(investor.id)}
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
-                  disabled={!isUserVerified}
+                  // disabled={!isUserVerified} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
                 >
                   View Profile
                 </button>
                 <button
                   onClick={() => handleMessage(investor.id)}
                   className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-full transition-colors text-sm"
-                  disabled={!isUserVerified}
+                  // disabled={!isUserVerified} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
                 >
                   Message
                 </button>
@@ -1144,6 +1090,7 @@ const EntrepreneurDashboard = () => {
         ${isDesktop ? 'p-6 lg:p-10 mt-24 ml-72' : 'p-3 pt-24'}
       `}>
         {/* Verification Banner */}
+        {/* COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
         {user && user.verification_status !== 'verified' && (
           <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
             <div className="flex items-center gap-3 mb-2">
@@ -1158,6 +1105,7 @@ const EntrepreneurDashboard = () => {
             <button className="w-fit bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold mt-2" onClick={() => navigate('/verify-account')}>Verify Your Account</button>
           </div>
         )}
+        */}
         {activeSection === 'startups' && (
           <div>
             <h1 className="dashboard-section-header text-3xl font-bold mb-2">Startups</h1>
@@ -1209,7 +1157,7 @@ const EntrepreneurDashboard = () => {
                 <button
                   onClick={handleCreateStartup}
                   className="w-full md:w-auto flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={user && user.verification_status !== 'verified'}
+                  // disabled={user && user.verification_status !== 'verified'} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Create Startup

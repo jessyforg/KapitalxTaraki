@@ -539,11 +539,57 @@ const UserDetailsModal = ({ user, onClose, onComplete }) => {
       setError('');
     }
 
-    // Validate dates
-    if (type === 'date') {
+    // Handle date changes - preserve month and day when year is changed
+    if (type === 'date' && name === 'birthdate') {
+      if (value) {
+        // If we have an existing date, try to preserve month and day when only year changes
+        const currentDate = formData.birthdate;
+        if (currentDate) {
+          try {
+            const current = new Date(currentDate + 'T00:00:00'); // Add time to avoid timezone issues
+            const newDate = new Date(value + 'T00:00:00');
+            
+            // Check if the new date has been reset to Jan 1 (default when only year is changed)
+            // and the original date was not Jan 1
+            if (newDate.getMonth() === 0 && newDate.getDate() === 1 && 
+                !(current.getMonth() === 0 && current.getDate() === 1)) {
+              // User likely only changed the year, preserve month and day
+              const preservedDate = new Date(
+                newDate.getFullYear(),
+                current.getMonth(),
+                current.getDate()
+              );
+              // Verify the preserved date is valid (handles edge cases like Feb 30)
+              if (preservedDate.getFullYear() === newDate.getFullYear() &&
+                  preservedDate.getMonth() === current.getMonth() && 
+                  preservedDate.getDate() === current.getDate()) {
+                // Format as YYYY-MM-DD
+                const year = preservedDate.getFullYear();
+                const month = String(preservedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(preservedDate.getDate()).padStart(2, '0');
+                value = `${year}-${month}-${day}`;
+              }
+            }
+          } catch (e) {
+            // If date parsing fails, use the new value as-is
+            console.error('Date parsing error:', e);
+          }
+        }
+        
+        let dateType = 'birthdate';
+        const validation = validateDate(value, dateType);
+        if (!validation.isValid) {
+          setError(validation.message);
+          return;
+        }
+        setError('');
+      } else {
+        setError('');
+      }
+    } else if (type === 'date') {
+      // Handle other date fields
       let dateType = 'general';
-      if (name === 'birthdate') dateType = 'birthdate';
-      else if (name.includes('hire_date')) dateType = 'hire_date';
+      if (name.includes('hire_date')) dateType = 'hire_date';
       else if (name.includes('graduation_date')) dateType = 'graduation_date';
       
       if (value) {

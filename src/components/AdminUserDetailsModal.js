@@ -51,13 +51,104 @@ const AdminUserDetailsModal = ({ user, onClose }) => {
     return window.location.origin;
   };
 
-  const handleViewDocument = (document) => {
-    if (document.file_path) {
-      const apiBase = getApiBase();
-      const token = localStorage.getItem('token');
-      // Open with token as query param for secure access in new tab
-      window.open(`${apiBase}/api/verification/document/${document.document_id}/view?token=${encodeURIComponent(token)}`, '_blank');
+  // Format location from JSON to human-readable string
+  const formatLocation = (location) => {
+    if (!location) return '';
+    
+    // Check if it's an object FIRST, before converting to string
+    if (typeof location === 'object' && location !== null && !Array.isArray(location)) {
+      const parts = [];
+      
+      // Priority order: most specific to least specific
+      // Use "Name" versions first, then fallback to code versions
+      if (location.barangayName && String(location.barangayName).trim()) {
+        parts.push(String(location.barangayName).trim());
+      } else if (location.barangay && String(location.barangay).trim()) {
+        parts.push(String(location.barangay).trim());
+      }
+      
+      if (location.cityName && String(location.cityName).trim()) {
+        parts.push(String(location.cityName).trim());
+      } else if (location.city && String(location.city).trim()) {
+        parts.push(String(location.city).trim());
+      }
+      
+      if (location.provinceName && String(location.provinceName).trim()) {
+        parts.push(String(location.provinceName).trim());
+      } else if (location.province && String(location.province).trim()) {
+        parts.push(String(location.province).trim());
+      }
+      
+      if (location.regionName && String(location.regionName).trim()) {
+        // Clean up region name - remove "(Region X)" suffixes
+        const regionName = String(location.regionName).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+        if (regionName && regionName !== 'Region') {
+          parts.push(regionName);
+        }
+      } else if (location.region && String(location.region).trim()) {
+        const regionName = String(location.region).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+        if (regionName && regionName !== 'Region') {
+          parts.push(regionName);
+        }
+      }
+      
+      return parts.length > 0 ? parts.join(', ') : '';
     }
+    
+    // Convert to string for string-based checks
+    let locationStr = String(location);
+    
+    // If it's a JSON string, try to parse it
+    if (locationStr.trim().startsWith('{') || locationStr.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(locationStr);
+        return formatLocation(parsed);
+      } catch (e) {
+        // If parsing fails, check if it contains regionCode - skip these malformed entries
+        if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+          return ''; // Return empty string to filter out malformed JSON
+        }
+        return locationStr;
+      }
+    }
+    
+    // For simple strings, check if it contains regionCode and skip if it does
+    if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+      return '';
+    }
+    
+    // If it's "[object Object]", return empty string
+    if (locationStr === '[object Object]') {
+      return '';
+    }
+    
+    return locationStr.trim();
+  };
+
+  const handleViewDocument = (document) => {
+    if (document.document_id) {
+      setViewingDocument(document);
+      setZoomLevel(100);
+    }
+  };
+
+  const closeDocumentViewer = () => {
+    setViewingDocument(null);
+    setZoomLevel(100);
+  };
+
+  const getDocumentViewUrl = (document) => {
+    if (!document || !document.document_id) return null;
+    const apiBase = getApiBase();
+    const token = localStorage.getItem('token');
+    return `${apiBase}/api/verification/document/${document.document_id}/view?token=${encodeURIComponent(token)}`;
+  };
+
+  const isImageDocument = (document) => {
+    if (!document) return false;
+    const fileType = document.file_type || '';
+    const fileName = document.file_name || '';
+    return fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
   };
 
   const handleDownloadDocument = (document) => {
@@ -140,7 +231,7 @@ const AdminUserDetailsModal = ({ user, onClose }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <div className="p-3 bg-gray-50 rounded-lg">{user?.location || 'N/A'}</div>
+            <div className="p-3 bg-gray-50 rounded-lg">{formatLocation(user?.location) || 'N/A'}</div>
           </div>
           
           <div>
@@ -292,6 +383,83 @@ const AdminUserDetailsModal = ({ user, onClose }) => {
                 Download
               </a>
             </div>
+            
+            {/* Inline Document Viewer */}
+            {viewingDocument && viewingDocument.document_id === doc.document_id && (
+              <div className="mt-4 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-300">
+                  <span className="text-sm font-medium text-gray-700">
+                    {viewingDocument.document_type} - {viewingDocument.file_name || 'Document'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
+                      className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={zoomLevel <= 50}
+                    >
+                      -
+                    </button>
+                    <span className="text-xs text-gray-600 min-w-[50px] text-center">{zoomLevel}%</span>
+                    <button
+                      onClick={() => setZoomLevel(prev => Math.min(200, prev + 25))}
+                      className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={zoomLevel >= 200}
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => setZoomLevel(100)}
+                      className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={closeDocumentViewer}
+                      className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                    >
+                      <FiX className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-auto max-h-[500px] bg-gray-200 p-4" style={{ scrollBehavior: 'smooth' }}>
+                  <div className="flex items-center justify-center w-full">
+                    {isImageDocument(viewingDocument) ? (
+                      <div style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center' }}>
+                        <img
+                          src={getDocumentViewUrl(viewingDocument)}
+                          alt={viewingDocument.document_type || 'Document'}
+                          className="max-w-full h-auto shadow-lg"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const errorDiv = e.target.parentElement.parentElement.querySelector('.error-message');
+                            if (errorDiv) errorDiv.style.display = 'block';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ width: `${zoomLevel}%`, height: 'auto' }}>
+                        <iframe
+                          src={getDocumentViewUrl(viewingDocument)}
+                          className="w-full border-none shadow-lg"
+                          style={{ minHeight: `${600 * (zoomLevel / 100)}px` }}
+                          title={viewingDocument.document_type || 'Document'}
+                        />
+                      </div>
+                    )}
+                    <div className="error-message text-center text-gray-500 p-8" style={{ display: 'none' }}>
+                      <p className="mb-2">Failed to load document.</p>
+                      <a
+                        href={`${getApiBase()}/api/verification/document/${viewingDocument.document_id}/download?token=${encodeURIComponent(localStorage.getItem('token'))}`}
+                        download={viewingDocument.file_name || 'document'}
+                        className="text-blue-500 hover:underline"
+                      >
+                        Click here to download instead
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

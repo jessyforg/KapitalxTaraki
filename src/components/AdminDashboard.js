@@ -182,6 +182,8 @@ function AdminDashboard() {
   const [userActionNotification, setUserActionNotification] = useState(null);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUserModal, setSelectedUserModal] = useState(null);
+  const [viewingDocument, setViewingDocument] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
   const [userTab, setUserTab] = useState('active'); // 'active', 'suspended', 'pending'
   const [showUserVerificationModal, setShowUserVerificationModal] = useState(false);
   const [verificationAction, setVerificationAction] = useState(null); // 'approve' or 'reject'
@@ -232,25 +234,8 @@ function AdminDashboard() {
   const formatLocation = (location) => {
     if (!location) return '';
     
-    // Convert to string first for easier handling
-    let locationStr = String(location);
-    
-    // If it's a JSON string, try to parse it
-    if (locationStr.trim().startsWith('{') || locationStr.trim().startsWith('[')) {
-      try {
-        const parsed = JSON.parse(locationStr);
-        return formatLocation(parsed);
-      } catch (e) {
-        // If parsing fails, check if it contains regionCode - skip these malformed entries
-        if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
-          return ''; // Return empty string to filter out malformed JSON
-        }
-        return locationStr;
-      }
-    }
-    
-    // If it's an object, format it properly
-    if (typeof location === 'object' && location !== null) {
+    // Check if it's an object FIRST, before converting to string
+    if (typeof location === 'object' && location !== null && !Array.isArray(location)) {
       const parts = [];
       
       // Priority order: most specific to least specific
@@ -289,8 +274,30 @@ function AdminDashboard() {
       return parts.length > 0 ? parts.join(', ') : '';
     }
     
+    // Convert to string for string-based checks
+    let locationStr = String(location);
+    
+    // If it's a JSON string, try to parse it
+    if (locationStr.trim().startsWith('{') || locationStr.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(locationStr);
+        return formatLocation(parsed);
+      } catch (e) {
+        // If parsing fails, check if it contains regionCode - skip these malformed entries
+        if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+          return ''; // Return empty string to filter out malformed JSON
+        }
+        return locationStr;
+      }
+    }
+    
     // For simple strings, check if it contains regionCode and skip if it does
     if (locationStr.includes('regionCode') || locationStr.includes('"regionCode"')) {
+      return '';
+    }
+    
+    // If it's "[object Object]", return empty string
+    if (locationStr === '[object Object]') {
       return '';
     }
     
@@ -337,6 +344,10 @@ function AdminDashboard() {
     // For pending tab, use pendingVerificationUsers (users who have submitted documents)
     if (activeTab === 'users' && userTab === 'pending') {
       return pendingVerificationUsers.filter(u => {
+        // Exclude verified users
+        const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
+        if (isVerified) return false;
+        
         // Search query filter
         const matchesSearch = !searchQuery || 
           (u.first_name && u.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -602,20 +613,33 @@ function AdminDashboard() {
       const userMap = new Map();
       data.forEach(doc => {
         if (!userMap.has(doc.user_id)) {
-          userMap.set(doc.user_id, {
-            id: doc.user_id,
-            first_name: doc.first_name,
-            last_name: doc.last_name,
-            email: doc.email,
-            role: doc.role,
-            is_verified: doc.is_verified,
-            verification_status: 'pending',
-            verification_documents: []
-          });
+          // Use actual verification_status from server, default to 'pending' if not provided
+          const verificationStatus = doc.verification_status || 'pending';
+          // Only include users who are not verified
+          if (verificationStatus !== 'verified') {
+            userMap.set(doc.user_id, {
+              id: doc.user_id,
+              first_name: doc.first_name,
+              last_name: doc.last_name,
+              email: doc.email,
+              role: doc.role,
+              is_verified: doc.is_verified,
+              verification_status: verificationStatus,
+              verification_documents: []
+            });
+          }
         }
-        userMap.get(doc.user_id).verification_documents.push(doc);
+        // Only add documents to users who are in the map (not verified)
+        if (userMap.has(doc.user_id)) {
+          userMap.get(doc.user_id).verification_documents.push(doc);
+        }
       });
-      setPendingVerificationUsers(Array.from(userMap.values()));
+      // Filter out any users that are verified
+      const pendingUsers = Array.from(userMap.values()).filter(u => {
+        const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
+        return !isVerified;
+      });
+      setPendingVerificationUsers(pendingUsers);
     } catch (err) {
       console.error('Error fetching pending verification users:', err);
     }
@@ -1659,29 +1683,29 @@ function AdminDashboard() {
           switch (activeTab) {
             case 'team':
               return (
-                <div className="bg-white dark:bg-[#232323] rounded-xl shadow-lg p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Team Management</h2>
+                <div className="bg-white dark:bg-[#232323] rounded-xl shadow-lg p-4 sm:p-6 w-full overflow-x-hidden">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Team Management</h2>
                     <button
                       onClick={() => {
                         setSelectedTeamMember(null);
                         setTeamMemberForm({ name: '', position: '', description: '', image: null });
                         setIsTeamModalOpen(true);
                       }}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+                      className="w-full sm:w-auto px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                     >
                       <FiPlus size={20} />
-                      Add Team Member
+                      <span className="text-sm sm:text-base">Add Team Member</span>
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full">
                     {teamMembers.map((member) => (
-                      <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden">
-                        <div className="aspect-[4/3] overflow-hidden">
+                      <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden w-full min-w-0">
+                        <div className="aspect-[4/3] overflow-hidden w-full">
                           <img 
                             src={member.image_url ? `${getBaseUrl()}${member.image_url}` : defaultAvatar}
                             alt={member.name}
-                            className="w-full h-48 object-cover"
+                            className="w-full h-full object-cover"
                             style={{ objectPosition: 'top center' }}
                             onError={(e) => {
                               console.error('Image load error:', e.target.src);
@@ -1690,21 +1714,21 @@ function AdminDashboard() {
                             }}
                           />
                         </div>
-                        <div className="p-4">
-                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{member.name}</h3>
-                          <p className="text-gray-600 dark:text-gray-300">{member.position}</p>
-                          <p className="mt-2 text-gray-700 dark:text-gray-400">{member.description}</p>
-                          <div className="mt-4 flex justify-end space-x-2">
+                        <div className="p-3 sm:p-4">
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white break-words">{member.name}</h3>
+                          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 break-words">{member.position}</p>
+                          <p className="mt-2 text-sm sm:text-base text-gray-700 dark:text-gray-400 line-clamp-3 break-words">{member.description}</p>
+                          <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2 sm:space-x-2 sm:space-y-0">
                             <button
                               onClick={() => handleEditTeamMember(member)}
-                              className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center gap-1"
+                              className="w-full sm:w-auto px-3 py-1.5 sm:py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center justify-center gap-1 text-sm"
                             >
                               <FiEdit2 size={16} />
                               Edit
                             </button>
                             <button
                               onClick={() => handleDeleteTeamMember(member.id)}
-                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                              className="w-full sm:w-auto px-3 py-1.5 sm:py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center justify-center gap-1 text-sm"
                             >
                               <FiTrash2 size={16} />
                               Delete
@@ -3580,14 +3604,9 @@ case 'sitePerformance':
 
       if (!res.ok) throw new Error('Failed to verify user');
 
-      setUsers(users.map(u => 
-        u.id === userId 
-          ? { ...u, is_verified: true, verification_status: 'verified' }
-          : u
-      ));
-      
-      // Remove from pending verification users
-      setPendingVerificationUsers(pendingVerificationUsers.filter(u => u.id !== userId));
+      // Refresh users and pending verification list from server
+      await fetchUsers();
+      await fetchPendingVerificationUsers();
       
       setUserActionNotification({ type: 'success', message: 'User verified successfully' });
       setTimeout(() => setUserActionNotification(null), 3000);
@@ -3611,14 +3630,9 @@ case 'sitePerformance':
 
       if (!res.ok) throw new Error('Failed to reject user verification');
 
-      setUsers(users.map(u => 
-        u.id === userId 
-          ? { ...u, is_verified: false, verification_status: 'not approved' }
-          : u
-      ));
-      
-      // Remove from pending verification users
-      setPendingVerificationUsers(pendingVerificationUsers.filter(u => u.id !== userId));
+      // Refresh users and pending verification list from server
+      await fetchUsers();
+      await fetchPendingVerificationUsers();
       
       setUserActionNotification({ type: 'success', message: 'User verification rejected' });
       setTimeout(() => setUserActionNotification(null), 3000);
@@ -3893,7 +3907,7 @@ case 'sitePerformance':
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Name:</span> {selectedUserModal.first_name} {selectedUserModal.last_name}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Email:</span> {selectedUserModal.email}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Role:</span> {roleLabels[selectedUserModal.role] || selectedUserModal.role}</p>
-                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Location:</span> {selectedUserModal.location || 'Not provided'}</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Location:</span> {formatLocation(selectedUserModal.location) || 'Not provided'}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Industry:</span> {selectedUserModal.industry || 'Not provided'}</p>
                 <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Status:</span> {renderUserStatusBadge(selectedUserModal)}</p>
               </div>
@@ -3904,25 +3918,42 @@ case 'sitePerformance':
               {selectedUserModal.verification_documents && selectedUserModal.verification_documents.length > 0 ? (
                 <div className="space-y-3">
                   {selectedUserModal.verification_documents.map((doc, index) => {
-                    // Construct file URL from file_path
-                    const fileUrl = doc.file_path 
-                      ? (doc.file_path.startsWith('http') 
-                          ? doc.file_path 
-                          : `${API_BASE_URL.replace('/api', '')}${doc.file_path}`)
-                      : (doc.file_url || null);
+                    const getDocumentViewUrl = (document) => {
+                      if (!document || !document.document_id) return null;
+                      const token = localStorage.getItem('token');
+                      const baseUrl = API_BASE_URL.replace('/api', '');
+                      return `${baseUrl}/api/verification/document/${document.document_id}/view?token=${encodeURIComponent(token)}`;
+                    };
+
+                    const isImageDocument = (document) => {
+                      if (!document) return false;
+                      const fileType = document.file_type || '';
+                      const fileName = document.file_name || '';
+                      return fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                    };
+
+                    const handleViewDocument = (document) => {
+                      if (document.document_id) {
+                        setViewingDocument(document);
+                        setZoomLevel(100);
+                      }
+                    };
+
+                    const closeDocumentViewer = () => {
+                      setViewingDocument(null);
+                      setZoomLevel(100);
+                    };
                     
                     return (
                       <div key={doc.document_id || index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold text-gray-800 dark:text-white">{doc.document_type}</h4>
-                          {fileUrl && (
-                            <button
-                              onClick={() => window.open(fileUrl, '_blank')}
-                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                            >
-                              View Document
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleViewDocument(doc)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                          >
+                            View Document
+                          </button>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Status: {toTitleCase(doc.status || 'pending')}
@@ -3931,6 +3962,83 @@ case 'sitePerformance':
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
                           </p>
+                        )}
+                        
+                        {/* Inline Document Viewer */}
+                        {viewingDocument && viewingDocument.document_id === doc.document_id && (
+                          <div className="mt-4 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
+                            <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex items-center justify-between border-b border-gray-300 dark:border-gray-600">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {viewingDocument.document_type} - {viewingDocument.file_name || 'Document'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
+                                  className="px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
+                                  disabled={zoomLevel <= 50}
+                                >
+                                  -
+                                </button>
+                                <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[50px] text-center">{zoomLevel}%</span>
+                                <button
+                                  onClick={() => setZoomLevel(prev => Math.min(200, prev + 25))}
+                                  className="px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
+                                  disabled={zoomLevel >= 200}
+                                >
+                                  +
+                                </button>
+                                <button
+                                  onClick={() => setZoomLevel(100)}
+                                  className="px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
+                                >
+                                  Reset
+                                </button>
+                                <button
+                                  onClick={closeDocumentViewer}
+                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                >
+                                  <FiX className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="overflow-auto max-h-[500px] bg-gray-200 dark:bg-gray-900 p-4" style={{ scrollBehavior: 'smooth' }}>
+                              <div className="flex items-center justify-center w-full">
+                                {isImageDocument(viewingDocument) ? (
+                                  <div style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center' }}>
+                                    <img
+                                      src={getDocumentViewUrl(viewingDocument)}
+                                      alt={viewingDocument.document_type || 'Document'}
+                                      className="max-w-full h-auto shadow-lg"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        const errorDiv = e.target.parentElement.parentElement.querySelector('.error-message');
+                                        if (errorDiv) errorDiv.style.display = 'block';
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div style={{ width: `${zoomLevel}%`, height: 'auto' }}>
+                                    <iframe
+                                      src={getDocumentViewUrl(viewingDocument)}
+                                      className="w-full border-none shadow-lg"
+                                      style={{ minHeight: `${600 * (zoomLevel / 100)}px` }}
+                                      title={viewingDocument.document_type || 'Document'}
+                                    />
+                                  </div>
+                                )}
+                                <div className="error-message text-center text-gray-500 dark:text-gray-400 p-8" style={{ display: 'none' }}>
+                                  <p className="mb-2">Failed to load document.</p>
+                                  <a
+                                    href={`${API_BASE_URL.replace('/api', '')}/api/verification/document/${viewingDocument.document_id}/download?token=${encodeURIComponent(localStorage.getItem('token'))}`}
+                                    download={viewingDocument.file_name || 'document'}
+                                    className="text-blue-500 hover:underline"
+                                  >
+                                    Click here to download instead
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
                     );
@@ -5495,29 +5603,30 @@ case 'sitePerformance':
 
   // Add this to your renderContent function
   const renderTeamManagement = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Team Management</h2>
+    <div className="p-4 sm:p-6 w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Team Management</h2>
         <button
           onClick={() => {
             setSelectedTeamMember(null);
             setTeamMemberForm({ name: '', position: '', description: '', image: null });
             setIsTeamModalOpen(true);
           }}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="w-full sm:w-auto px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
         >
-          Add Team Member
+          <FiPlus size={20} />
+          <span className="text-sm sm:text-base">Add Team Member</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full">
         {teamMembers.map((member) => (
-          <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden">
-            <div className="aspect-[4/3] overflow-hidden">
+          <div key={member.id} className="bg-white dark:bg-[#232323] rounded-lg shadow-md overflow-hidden w-full min-w-0">
+            <div className="aspect-[4/3] overflow-hidden w-full">
               <img 
                 src={member.image_url ? `${getBaseUrl()}${member.image_url}` : defaultAvatar}
                 alt={member.name}
-                className="w-full h-48 object-cover"
+                className="w-full h-full object-cover"
                 style={{ objectPosition: 'top center' }}
                 onError={(e) => {
                   console.error('Image load error:', e.target.src);
@@ -5526,21 +5635,21 @@ case 'sitePerformance':
                 }}
               />
             </div>
-            <div className="p-4">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{member.name}</h3>
-              <p className="text-gray-600 dark:text-gray-300">{member.position}</p>
-              <p className="mt-2 text-gray-700 dark:text-gray-400">{member.description}</p>
-              <div className="mt-4 flex justify-end space-x-2">
+            <div className="p-3 sm:p-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white break-words">{member.name}</h3>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 break-words">{member.position}</p>
+              <p className="mt-2 text-sm sm:text-base text-gray-700 dark:text-gray-400 line-clamp-3 break-words">{member.description}</p>
+              <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2 sm:space-x-2 sm:space-y-0">
                 <button
                   onClick={() => handleEditTeamMember(member)}
-                  className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center gap-1"
+                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center justify-center gap-1 text-sm"
                 >
                   <FiEdit2 size={16} />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDeleteTeamMember(member.id)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                  className="w-full sm:w-auto px-3 py-1.5 sm:py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center justify-center gap-1 text-sm"
                 >
                   <FiTrash2 size={16} />
                   Delete

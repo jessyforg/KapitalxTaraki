@@ -85,6 +85,19 @@ const Messages = () => {
     return { valid: true };
   };
 
+  // Helper to build a safe display name
+  const getDisplayName = (u) => {
+    if (!u) return '';
+    const parts = [];
+    if (u.first_name) parts.push(u.first_name);
+    if (u.last_name) parts.push(u.last_name);
+    if (parts.length > 0) return parts.join(' ').trim();
+    if (u.name) return u.name;
+    if (u.full_name) return u.full_name;
+    if (u.email) return u.email.split('@')[0];
+    return '';
+  };
+
   // Dynamic API URL that works for both localhost and network access
   const getApiUrl = () => {
     if (process.env.NODE_ENV === 'production') {
@@ -398,7 +411,7 @@ const Messages = () => {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-xs">
-              {isOwnMessage ? 'You' : `${selectedChatUser?.first_name} ${selectedChatUser?.last_name}`}
+              {isOwnMessage ? 'You' : getDisplayName(selectedChatUser) || 'User'}
             </span>
             <span className="text-[10px] text-gray-400 ml-2">
               {formatMessageTime(msg.created_at || msg.timestamp || msg.sent_at)}

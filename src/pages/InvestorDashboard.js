@@ -56,6 +56,52 @@ const locations = {
   ]
 };
 
+// Format various location shapes into a readable string
+const formatLocationValue = (location) => {
+  if (!location) return '';
+
+  // If already a string and not JSON-like, return it
+  if (typeof location === 'string') {
+    const trimmed = location.trim();
+    if (!trimmed.startsWith('{') && !trimmed.includes('regionCode')) {
+      return trimmed;
+    }
+    // Try to parse JSON strings
+    try {
+      const parsed = JSON.parse(trimmed);
+      return formatLocationValue(parsed);
+    } catch {
+      return '';
+    }
+  }
+
+  // Objects: prefer Name fields, then fall back
+  if (typeof location === 'object' && !Array.isArray(location)) {
+    const loc = location;
+    const parts = [];
+
+    if (loc.barangayName && String(loc.barangayName).trim()) parts.push(String(loc.barangayName).trim());
+    if (loc.cityName && String(loc.cityName).trim()) parts.push(String(loc.cityName).trim());
+    if (loc.provinceName && String(loc.provinceName).trim()) parts.push(String(loc.provinceName).trim());
+    if (loc.regionName && String(loc.regionName).trim()) {
+      const regionName = String(loc.regionName).trim().replace(/\s*\(Region\s+[IVX\d]+\)\s*$/i, '');
+      if (regionName && regionName !== 'Region') parts.push(regionName);
+    }
+
+    // Fallbacks if Name fields missing
+    if (parts.length === 0) {
+      if (loc.barangay) parts.push(String(loc.barangay));
+      if (loc.city) parts.push(String(loc.city));
+      if (loc.province) parts.push(String(loc.province));
+      if (loc.region) parts.push(String(loc.region));
+    }
+
+    return parts.length > 0 ? parts.join(', ') : '';
+  }
+
+  return '';
+};
+
 // Select Component with arrow icon
 const CustomSelect = ({ className, value, onChange, children, ...props }) => (
   <div className="relative">
@@ -331,6 +377,103 @@ const InvestorDashboard = () => {
     loadEnhancedUser();
   }, [user]);
 
+  // Fetch entrepreneurs with match scores (using same API as co-founders for rich data)
+  const fetchEntrepreneurs = async () => {
+    try {
+      const entrepreneursData = await getCoFounders();
+      console.log('InvestorDashboard - Raw entrepreneurs data from API:', entrepreneursData);
+      
+      // Fetch complete profile and preferences for each entrepreneur
+      const entrepreneursWithFullData = await Promise.all(
+        entrepreneursData.map(async (entrepreneur) => {
+          try {
+            // Fetch full profile data
+            const fullProfile = await getUserProfile(entrepreneur.id);
+            console.log(`InvestorDashboard - Full profile for ${entrepreneur.id}:`, fullProfile);
+            
+            // Fetch preferences
+            const preferences = await getUserPreferences(entrepreneur.id);
+            console.log(`InvestorDashboard - Preferences for entrepreneur ${entrepreneur.id}:`, preferences);
+            
+            // Parse preferred_industries if it's a string
+            let preferredIndustries = [];
+            if (preferences?.preferred_industries) {
+              try {
+                if (typeof preferences.preferred_industries === 'string') {
+                  // Only parse if it's a non-empty string that looks like JSON
+                  const trimmed = preferences.preferred_industries.trim();
+                  if (trimmed.startsWith('[') && trimmed.endsWith(']') && trimmed.length > 2) {
+                    const parsed = JSON.parse(trimmed);
+                    preferredIndustries = Array.isArray(parsed) ? parsed : [];
+                  } else if (trimmed && !trimmed.startsWith('[')) {
+                    // If it's not a JSON array, treat as single industry (clean any quotes)
+                    const cleaned = trimmed.replace(/^["']|["']$/g, '');
+                    if (cleaned && cleaned !== 'null' && cleaned !== 'undefined') {
+                      preferredIndustries = [cleaned];
+                    }
+                  }
+                } else if (Array.isArray(preferences.preferred_industries)) {
+                  preferredIndustries = preferences.preferred_industries;
+                }
+                console.log(`InvestorDashboard - Parsed industries for entrepreneur ${entrepreneur.id}:`, preferredIndustries);
+              } catch (e) {
+                console.error('Error parsing preferred_industries:', e);
+                preferredIndustries = [];
+              }
+            }
+            
+            return {
+              ...entrepreneur,
+              ...fullProfile, // Merge full profile data (industry, location, etc.)
+              // Always prioritize preferences over basic profile data
+              preferred_location: preferences?.preferred_location,
+              preferred_industries: Array.isArray(preferredIndustries) ? preferredIndustries : [],
+              preferred_startup_stage: preferences?.preferred_startup_stage,
+              // Use preferences first, only fall back to profile if preferences don't exist
+              display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (fullProfile?.industry || entrepreneur.industry || 'Not specified'),
+              display_location: formatLocationValue(preferences?.preferred_location)
+                || formatLocationValue(fullProfile?.location)
+                || formatLocationValue(entrepreneur.location)
+                || 'Not specified',
+              display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
+            };
+          } catch (error) {
+            console.error(`Error fetching full data for entrepreneur ${entrepreneur.id}:`, error);
+            return {
+              ...entrepreneur,
+              preferred_location: null,
+              preferred_industries: [],
+              preferred_startup_stage: null,
+              display_industry: entrepreneur.industry || 'Not specified',
+              display_location: entrepreneur.location || 'Not specified',
+              display_startup_stage: 'Not specified'
+            };
+          }
+        })
+      );
+      
+      // Calculate match scores for each entrepreneur
+      const currentUser = enhancedUser || user || {};
+      console.log('InvestorDashboard - Current user for matching:', currentUser);
+      
+      const entrepreneursWithMatches = entrepreneursWithFullData
+        .filter(entrepreneur => entrepreneur.id !== user?.id) // Exclude current user
+        .map(entrepreneur => {
+          console.log('InvestorDashboard - Calculating match for entrepreneur:', entrepreneur);
+          const matchScore = calculateMatchScore(currentUser, entrepreneur);
+          console.log('InvestorDashboard - Match score result:', matchScore);
+          return {
+            ...entrepreneur,
+            match_score: matchScore
+          };
+        });
+      
+      setEntrepreneurs(entrepreneursWithMatches);
+    } catch (error) {
+      console.error('Error fetching entrepreneurs:', error);
+    }
+  };
+
   useEffect(() => {
     // Fetch available startups with match scores
     const fetchAvailableStartups = async () => {
@@ -498,53 +641,13 @@ const InvestorDashboard = () => {
                 preferred_location: preferences?.preferred_location,
                 preferred_industries: Array.isArray(preferredIndustries) ? preferredIndustries : [],
                 preferred_startup_stage: preferences?.preferred_startup_stage,
-                // Use preferences first, only fall back to profile if preferences don't exist
-                display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (fullProfile?.industry || entrepreneur.industry || 'Not specified'),
-                display_location: (() => {
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
-                    const loc = preferences.preferred_location;
-                    const parts = [];
-                    
-                    // Handle malformed data where actual location is in 'region' field
-                    if (loc.city) {
-                      parts.push(loc.city);
-                    } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                      parts.push(loc.region);
-                    }
-                    
-                    // Only add province if it's not malformed data (not 'mvp', 'ideation', etc.)
-                    if (loc.province && loc.province !== '' && 
-                        !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                      parts.push(loc.province);
-                    }
-                    
-                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                  }
-                  // Handle case where preferred_location is a string
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
-                    try {
-                      const loc = JSON.parse(preferences.preferred_location);
-                      const parts = [];
-                      
-                      if (loc.city) {
-                        parts.push(loc.city);
-                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                        parts.push(loc.region);
-                      }
-                      
-                      if (loc.province && loc.province !== '' && 
-                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                        parts.push(loc.province);
-                      }
-                      
-                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                    } catch (e) {
-                      return preferences.preferred_location;
-                    }
-                  }
-                  return fullProfile?.location || entrepreneur.location || 'Not specified';
-                })(),
-                display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
+              // Use preferences first, only fall back to profile if preferences don't exist
+              display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (fullProfile?.industry || entrepreneur.industry || 'Not specified'),
+              display_location: formatLocationValue(preferences?.preferred_location) 
+                || formatLocationValue(fullProfile?.location) 
+                || formatLocationValue(entrepreneur.location) 
+                || 'Not specified',
+              display_startup_stage: preferences?.preferred_startup_stage || fullProfile?.startup_stage || 'Not specified'
               };
             } catch (error) {
               console.error(`Error fetching full data for entrepreneur ${entrepreneur.id}:`, error);
@@ -587,9 +690,15 @@ const InvestorDashboard = () => {
       // Fetch real data from database
       fetchAvailableStartups();
       fetchMatchedStartups();
-      fetchEntrepreneurs();
     }
   }, [user, enhancedUser]);
+  
+  // Fetch entrepreneurs when 'entrepreneurs' tab is active
+  useEffect(() => {
+    if (activeSection === 'entrepreneurs' && user) {
+      fetchEntrepreneurs();
+    }
+  }, [activeSection, user, enhancedUser]);
 
   // Fetch investors when 'investors' tab is active
   useEffect(() => {
@@ -639,53 +748,12 @@ const InvestorDashboard = () => {
                   preferred_location: preferences?.preferred_location,
                   preferred_industries: Array.isArray(preferredIndustries) ? preferredIndustries : [],
                   preferred_startup_stage: preferences?.preferred_startup_stage,
-                  // Use preferences first, only fall back to profile if preferences don't exist
-                display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (investor.industry || 'Not specified'),
-                display_location: (() => {
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'object') {
-                    const loc = preferences.preferred_location;
-                    const parts = [];
-                    
-                    // Handle malformed data where actual location is in 'region' field
-                    if (loc.city) {
-                      parts.push(loc.city);
-                    } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                      parts.push(loc.region);
-                    }
-                    
-                    // Only add province if it's not malformed data (not 'mvp', 'ideation', etc.)
-                    if (loc.province && loc.province !== '' && 
-                        !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                      parts.push(loc.province);
-                    }
-                    
-                    return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                  }
-                  // Handle case where preferred_location is a string
-                  if (preferences?.preferred_location && typeof preferences.preferred_location === 'string') {
-                    try {
-                      const loc = JSON.parse(preferences.preferred_location);
-                      const parts = [];
-                      
-                      if (loc.city) {
-                        parts.push(loc.city);
-                      } else if (loc.region && loc.region !== '' && !loc.region.includes('Code')) {
-                        parts.push(loc.region);
-                      }
-                      
-                      if (loc.province && loc.province !== '' && 
-                          !['mvp', 'ideation', 'validation', 'growth', 'maturity'].includes(loc.province.toLowerCase())) {
-                        parts.push(loc.province);
-                      }
-                      
-                      return parts.length > 0 ? parts.join(', ') : 'Not specified';
-                    } catch (e) {
-                      return preferences.preferred_location;
-                    }
-                  }
-                  return investor.location || 'Not specified';
-                })(),
-                display_startup_stage: preferences?.preferred_startup_stage || 'Not specified'
+              // Use preferences first, only fall back to profile if preferences don't exist
+              display_industry: preferredIndustries.length > 0 ? preferredIndustries[0] : (investor.industry || 'Not specified'),
+              display_location: formatLocationValue(preferences?.preferred_location)
+                || formatLocationValue(investor.location)
+                || 'Not specified',
+              display_startup_stage: preferences?.preferred_startup_stage || investor.startup_stage || 'Not specified'
                 };
               } catch (error) {
                 console.error(`Error fetching preferences for investor ${investor.id}:`, error);
@@ -728,7 +796,8 @@ const InvestorDashboard = () => {
   console.log('InvestorDashboard - Matched startups count:', matchedStartups.length);
   
   const filteredAvailableStartups = availableStartups
-    .filter(startup => startup.approval_status === 'approved' && !matchedIds.has(startup.startup_id))
+    // Approval restriction commented out for testing; shows all startups
+    .filter(startup => /* startup.approval_status === 'approved' && */ !matchedIds.has(startup.startup_id))
     .filter(startup => (!filters.industry || startup.industry === filters.industry) && 
                        (!filters.location || startup.location === filters.location) &&
                        (!filters.startup_stage || startup.startup_stage === filters.startup_stage))
@@ -1281,6 +1350,7 @@ const InvestorDashboard = () => {
         ${isDesktop ? 'p-6 lg:p-10 mt-24 ml-72' : 'p-3 pt-24'}
       `}>
         {/* Verification Banner */}
+        {/* COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
         {user && user.verification_status !== 'verified' && (
           <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
             <div className="flex items-center gap-3 mb-2">
@@ -1295,6 +1365,7 @@ const InvestorDashboard = () => {
             <button className="w-fit bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold mt-2" onClick={() => navigate('/verify-account')}>Verify Your Account</button>
           </div>
         )}
+        */}
         {activeSection === 'startups' && (
           <div>
             <h1 className="dashboard-section-header text-3xl font-bold mb-2">Startups</h1>
