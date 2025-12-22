@@ -365,6 +365,308 @@ app.post("/api/auth/verify-email", async (req, res) => {
 	}
 });
 
+// Forgot password endpoint
+app.post("/api/auth/forgot-password", async (req, res) => {
+	try {
+		const { email } = req.body;
+
+		if (!email) {
+			return res.status(400).json({ message: "Email is required" });
+		}
+
+		// Check if user exists
+		const [users] = await pool.query(
+			"SELECT id, email, first_name FROM users WHERE email = ?",
+			[email]
+		);
+
+		// Don't reveal if email exists for security
+		if (users.length === 0) {
+			return res.json({ message: "If that email exists, a password reset link has been sent." });
+		}
+
+		const user = users[0];
+
+		// Generate reset token
+		const resetToken = Math.random().toString(36).substring(2, 15) + 
+		                  Math.random().toString(36).substring(2, 15) + 
+		                  Date.now().toString(36);
+
+		// Store reset token (expires in 1 hour)
+		const expiresAt = new Date();
+		expiresAt.setHours(expiresAt.getHours() + 1);
+
+		await pool.query(
+			"UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?",
+			[resetToken, expiresAt, user.id]
+		);
+
+		// TODO: Send email with reset link
+		// For now, log the token (remove in production)
+		console.log(`Password reset token for ${email}: ${resetToken}`);
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		console.log(`Reset link: ${frontendUrl}/reset-password?token=${resetToken}`);
+
+		res.json({ 
+			message: "If that email exists, a password reset link has been sent.",
+			// Only return token in development for testing
+			...(process.env.NODE_ENV === "development" && { 
+				resetToken, 
+				resetLink: `${frontendUrl}/reset-password?token=${resetToken}` 
+			})
+		});
+	} catch (error) {
+		console.error("Forgot password error:", error);
+		res.status(500).json({ message: "Server error" });
+	}
+});
+
+// Reset password endpoint
+app.post("/api/auth/reset-password", async (req, res) => {
+	try {
+		const { token, newPassword } = req.body;
+
+		if (!token || !newPassword) {
+			return res.status(400).json({ message: "Token and new password are required" });
+		}
+
+		// Find user with valid reset token
+		const [users] = await pool.query(
+			"SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()",
+			[token]
+		);
+
+		if (users.length === 0) {
+			return res.status(400).json({ message: "Invalid or expired reset token" });
+		}
+
+		const user = users[0];
+
+		// Validate password
+		if (newPassword.length < 8) {
+			return res.status(400).json({ message: "Password must be at least 8 characters" });
+		}
+		if (!/[A-Z]/.test(newPassword)) {
+			return res.status(400).json({ message: "Password must contain at least one uppercase letter" });
+		}
+		if (!/[a-z]/.test(newPassword)) {
+			return res.status(400).json({ message: "Password must contain at least one lowercase letter" });
+		}
+		if (!/[0-9]/.test(newPassword)) {
+			return res.status(400).json({ message: "Password must contain at least one number" });
+		}
+
+		// Hash new password
+		const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+		// Update password and clear reset token
+		await pool.query(
+			"UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?",
+			[hashedPassword, user.id]
+		);
+
+		res.json({ message: "Password reset successfully" });
+	} catch (error) {
+		console.error("Reset password error:", error);
+		res.status(500).json({ message: "Server error" });
+	}
+});
+
+// OAuth Routes (Google and Facebook)
+// NOTE: These routes require passport.js to be installed
+// Run: npm install passport passport-google-oauth20 passport-facebook express-session
+// Then uncomment and configure the passport middleware
+
+// Google OAuth - Redirect to Google
+app.get("/api/auth/google", (req, res) => {
+	const clientId = process.env.GOOGLE_CLIENT_ID;
+	const redirectUri = process.env.GOOGLE_REDIRECT_URI || 
+		`${process.env.OAUTH_CALLBACK_URL || 'http://localhost:5000/api/auth'}/google/callback`;
+	const scope = "profile email";
+	const responseType = "code";
+	
+	if (!clientId) {
+		return res.status(500).json({ error: "Google OAuth not configured. Please set GOOGLE_CLIENT_ID in environment variables." });
+	}
+	
+	const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${responseType}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
+	res.redirect(googleAuthUrl);
+});
+
+// Google OAuth Callback
+app.get("/api/auth/google/callback", async (req, res) => {
+	try {
+		const { code } = req.query;
+		const clientId = process.env.GOOGLE_CLIENT_ID;
+		const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+		const redirectUri = process.env.GOOGLE_REDIRECT_URI || 
+			`${process.env.OAUTH_CALLBACK_URL || 'http://localhost:5000/api/auth'}/google/callback`;
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		
+		if (!code) {
+			return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+		}
+		
+		// Exchange code for access token
+		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({
+				code,
+				client_id: clientId,
+				client_secret: clientSecret,
+				redirect_uri: redirectUri,
+				grant_type: "authorization_code"
+			})
+		});
+		
+		const tokenData = await tokenResponse.json();
+		
+		if (!tokenData.access_token) {
+			return res.redirect(`${frontendUrl}/login?error=token_failed`);
+		}
+		
+		// Get user info from Google
+		const userResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+			headers: { Authorization: `Bearer ${tokenData.access_token}` }
+		});
+		
+		const googleUser = await userResponse.json();
+		
+		if (!googleUser.email) {
+			return res.redirect(`${frontendUrl}/login?error=no_email`);
+		}
+		
+		// Check if user exists
+		const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [googleUser.email]);
+		
+		let user;
+		if (users.length > 0) {
+			user = users[0];
+		} else {
+			// Create new user
+			const name = googleUser.name.split(" ");
+			const firstName = name[0] || "";
+			const lastName = name.slice(1).join(" ") || "";
+			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
+			
+			const [result] = await pool.query(
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				[firstName, lastName, googleUser.name, googleUser.email, hashedPassword]
+			);
+			
+			const [newUsers] = await pool.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
+			user = newUsers[0];
+			
+			// Insert into entrepreneurs table
+			await pool.query("INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)", [result.insertId]);
+		}
+		
+		// Generate JWT token
+		const token = jwt.sign(
+			{ id: user.id, email: user.email, role: user.role },
+			JWT_SECRET,
+			{ expiresIn: "24h" }
+		);
+		
+		// Redirect to frontend with token
+		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({id: user.id, email: user.email, role: user.role}))}`);
+	} catch (error) {
+		console.error("Google OAuth error:", error);
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		res.redirect(`${frontendUrl}/login?error=oauth_error`);
+	}
+});
+
+// Facebook OAuth - Redirect to Facebook
+app.get("/api/auth/facebook", (req, res) => {
+	const appId = process.env.FACEBOOK_APP_ID;
+	const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 
+		`${process.env.OAUTH_CALLBACK_URL || 'http://localhost:5000/api/auth'}/facebook/callback`;
+	const scope = "email";
+	
+	if (!appId) {
+		return res.status(500).json({ error: "Facebook OAuth not configured. Please set FACEBOOK_APP_ID in environment variables." });
+	}
+	
+	const facebookAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+	res.redirect(facebookAuthUrl);
+});
+
+// Facebook OAuth Callback
+app.get("/api/auth/facebook/callback", async (req, res) => {
+	try {
+		const { code } = req.query;
+		const appId = process.env.FACEBOOK_APP_ID;
+		const appSecret = process.env.FACEBOOK_APP_SECRET;
+		const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 
+			`${process.env.OAUTH_CALLBACK_URL || 'http://localhost:5000/api/auth'}/facebook/callback`;
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		
+		if (!code) {
+			return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+		}
+		
+		// Exchange code for access token
+		const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`, {
+			method: "GET"
+		});
+		
+		const tokenData = await tokenResponse.json();
+		
+		if (!tokenData.access_token) {
+			return res.redirect(`${frontendUrl}/login?error=token_failed`);
+		}
+		
+		// Get user info from Facebook
+		const userResponse = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name,email&access_token=${tokenData.access_token}`);
+		const facebookUser = await userResponse.json();
+		
+		if (!facebookUser.email) {
+			return res.redirect(`${frontendUrl}/login?error=no_email`);
+		}
+		
+		// Check if user exists
+		const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [facebookUser.email]);
+		
+		let user;
+		if (users.length > 0) {
+			user = users[0];
+		} else {
+			// Create new user
+			const name = facebookUser.name.split(" ");
+			const firstName = name[0] || "";
+			const lastName = name.slice(1).join(" ") || "";
+			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
+			
+			const [result] = await pool.query(
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				[firstName, lastName, facebookUser.name, facebookUser.email, hashedPassword]
+			);
+			
+			const [newUsers] = await pool.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
+			user = newUsers[0];
+			
+			// Insert into entrepreneurs table
+			await pool.query("INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)", [result.insertId]);
+		}
+		
+		// Generate JWT token
+		const token = jwt.sign(
+			{ id: user.id, email: user.email, role: user.role },
+			JWT_SECRET,
+			{ expiresIn: "24h" }
+		);
+		
+		// Redirect to frontend with token
+		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({id: user.id, email: user.email, role: user.role}))}`);
+	} catch (error) {
+		console.error("Facebook OAuth error:", error);
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		res.redirect(`${frontendUrl}/login?error=oauth_error`);
+	}
+});
+
 // GET user profile with new structure
 app.get("/api/user/:id", authenticateToken, async (req, res) => {
 	try {
