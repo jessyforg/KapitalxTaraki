@@ -99,6 +99,42 @@ const api = {
     }
   },
 
+  async forgotPassword(email) {
+    try {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to send reset email');
+    }
+  },
+
+  async resetPassword(token, newPassword) {
+    try {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, newPassword }),
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to reset password');
+      return data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to reset password');
+    }
+  },
+
   // User Profile
   async getUserProfile(userId) {
     try {

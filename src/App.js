@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar.js";
 import Home from "./components/Home.js";
 import About from "./components/About.js";
@@ -30,8 +30,34 @@ import Settings from './pages/Settings';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Notifications from './pages/Notifications';
 import Matches from './pages/Matches';
+import AuthCallback from './pages/AuthCallback';
 
 function MainPage() {
+  const location = useLocation();
+
+  // Handle hash navigation on home page
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      // Wait for page to render, then scroll
+      const attemptScroll = (attempts = 0) => {
+        const el = document.getElementById(hash);
+        if (el) {
+          const yOffset = -100;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        } else if (attempts < 10) {
+          // Retry if element not found yet (page still loading)
+          setTimeout(() => attemptScroll(attempts + 1), 100);
+        }
+      };
+      
+      setTimeout(() => {
+        attemptScroll();
+      }, 300);
+    }
+  }, [location.hash, location.pathname]);
+
   return (
     <>
       <Navbar />
@@ -74,6 +100,7 @@ function App() {
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     </BrowserRouter>
   );

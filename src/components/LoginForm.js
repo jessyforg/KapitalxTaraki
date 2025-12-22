@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link } from 'react-router-dom';
-import { FaGoogle, FaFacebookF, FaMicrosoft } from 'react-icons/fa';
+import { FaGoogle, FaFacebookF } from 'react-icons/fa';
 import api from '../services/api';
+import { API_BASE_URL } from '../config/api.config';
 
 const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,11 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -38,6 +44,37 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
     } catch (err) {
       setError(err.message || 'An error occurred during login');
     }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotPasswordError('');
+    setForgotPasswordSuccess('');
+    setForgotPasswordLoading(true);
+    
+    try {
+      const response = await api.forgotPassword(forgotEmail);
+      setForgotPasswordSuccess(response.message || 'Password reset link sent to your email');
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setForgotEmail('');
+      }, 3000);
+    } catch (err) {
+      setForgotPasswordError(err.message || 'Failed to send reset email');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  const handleSocialLogin = (provider) => {
+    // Redirect to backend OAuth endpoint
+    let apiUrl;
+    if (API_BASE_URL.includes('railway')) {
+      apiUrl = 'https://taraki-production.up.railway.app';
+    } else {
+      apiUrl = 'http://localhost:5000';
+    }
+    window.location.href = `${apiUrl}/api/auth/${provider}`;
   };
 
   return (
@@ -123,7 +160,16 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
               Remember me
             </label>
             <div className="ml-auto text-xs">
-              <a href="#" className="text-orange-500 hover:underline">Forgot your password?</a>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowForgotPassword(true);
+                }}
+                className="text-orange-500 hover:underline"
+              >
+                Forgot your password?
+              </button>
             </div>
           </div>
           <button
@@ -134,14 +180,21 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
           </button>
         </form>
         <div className="flex flex-row gap-4 justify-center mt-6">
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
-            <FaGoogle size={28} className="text-orange-500" />
+          <button 
+            onClick={() => handleSocialLogin('google')}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 transition shadow-md text-gray-700 border-2 border-gray-300 rounded-lg font-medium"
+            aria-label="Login with Google"
+          >
+            <FaGoogle size={20} className="text-red-500" />
+            <span>Google</span>
           </button>
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
-            <FaFacebookF size={28} className="text-orange-500" />
-          </button>
-          <button className="rounded-full p-3 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200">
-            <FaMicrosoft size={28} className="text-orange-500" />
+          <button 
+            onClick={() => handleSocialLogin('facebook')}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 transition shadow-md text-gray-700 border-2 border-gray-300 rounded-lg font-medium"
+            aria-label="Login with Facebook"
+          >
+            <FaFacebookF size={20} className="text-blue-600" />
+            <span>Facebook</span>
           </button>
         </div>
         <div className="text-center text-sm mt-6 text-black">
@@ -149,6 +202,50 @@ const LoginForm = ({ authTab, setAuthTab, onAuthSuccess, onClose }) => {
           <button className="text-orange-600 hover:underline font-semibold" onClick={() => setAuthTab('signup')}>Sign up</button>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 flex items-center justify-center z-[60] bg-black bg-opacity-70">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md animate-fadeIn relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-orange-600 text-2xl"
+              onClick={() => {
+                setShowForgotPassword(false);
+                setForgotEmail('');
+                setForgotPasswordError('');
+                setForgotPasswordSuccess('');
+              }}
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-center text-black">Reset Password</h2>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <input
+                className="w-full p-3 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400"
+                type="email"
+                placeholder="Enter your email"
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+              />
+              {forgotPasswordError && (
+                <div className="text-red-500 text-sm text-center">{forgotPasswordError}</div>
+              )}
+              {forgotPasswordSuccess && (
+                <div className="text-green-600 text-sm text-center">{forgotPasswordSuccess}</div>
+              )}
+              <button
+                type="submit"
+                disabled={forgotPasswordLoading}
+                className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold text-lg shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {forgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -541,36 +541,36 @@ app.get("/api/auth/google/callback", async (req, res) => {
 		const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [googleUser.email]);
 		
 		let user;
+		let isNewUser = false;
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user
+			// Create new user without role - they'll select it on frontend
+			isNewUser = true;
 			const name = googleUser.name.split(" ");
 			const firstName = name[0] || "";
 			const lastName = name.slice(1).join(" ") || "";
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
 				[firstName, lastName, googleUser.name, googleUser.email, hashedPassword]
 			);
 			
 			const [newUsers] = await pool.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
 			user = newUsers[0];
-			
-			// Insert into entrepreneurs table
-			await pool.query("INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)", [result.insertId]);
 		}
 		
 		// Generate JWT token
 		const token = jwt.sign(
-			{ id: user.id, email: user.email, role: user.role },
+			{ id: user.id, email: user.email, role: user.role || null },
 			JWT_SECRET,
 			{ expiresIn: "24h" }
 		);
 		
-		// Redirect to frontend with token
-		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({id: user.id, email: user.email, role: user.role}))}`);
+		// Redirect to frontend with token and newUser flag
+		const userData = { id: user.id, email: user.email, role: user.role, needsRoleSelection: isNewUser };
+		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}&newUser=${isNewUser}`);
 	} catch (error) {
 		console.error("Google OAuth error:", error);
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -630,40 +630,96 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 		const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [facebookUser.email]);
 		
 		let user;
+		let isNewUser = false;
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user
+			// Create new user without role - they'll select it on frontend
+			isNewUser = true;
 			const name = facebookUser.name.split(" ");
 			const firstName = name[0] || "";
 			const lastName = name.slice(1).join(" ") || "";
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
 				[firstName, lastName, facebookUser.name, facebookUser.email, hashedPassword]
 			);
 			
 			const [newUsers] = await pool.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
 			user = newUsers[0];
-			
-			// Insert into entrepreneurs table
-			await pool.query("INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)", [result.insertId]);
 		}
 		
 		// Generate JWT token
 		const token = jwt.sign(
-			{ id: user.id, email: user.email, role: user.role },
+			{ id: user.id, email: user.email, role: user.role || null },
 			JWT_SECRET,
 			{ expiresIn: "24h" }
 		);
 		
-		// Redirect to frontend with token
-		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({id: user.id, email: user.email, role: user.role}))}`);
+		// Redirect to frontend with token and newUser flag
+		const userData = { id: user.id, email: user.email, role: user.role, needsRoleSelection: isNewUser };
+		res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}&newUser=${isNewUser}`);
 	} catch (error) {
 		console.error("Facebook OAuth error:", error);
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 		res.redirect(`${frontendUrl}/login?error=oauth_error`);
+	}
+});
+
+// Set user role endpoint (for OAuth users)
+app.post("/api/users/:id/set-role", authenticateToken, async (req, res) => {
+	try {
+		const { id } = req.params;
+		const { role } = req.body;
+
+		// Validate role
+		const allowedRoles = ["entrepreneur", "investor", "admin"];
+		if (!role || !allowedRoles.includes(role)) {
+			return res.status(400).json({ error: "Invalid role" });
+		}
+
+		// Check if user exists and doesn't have a role yet
+		const [users] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+		if (users.length === 0) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		const user = users[0];
+		
+		// If user already has a role, don't allow changing it this way
+		if (user.role && user.role !== null) {
+			return res.status(400).json({ error: "User already has a role" });
+		}
+
+		// Update user role
+		await pool.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
+
+		// Insert into role-specific table
+		if (role === "entrepreneur") {
+			// Check if already exists
+			const [existing] = await pool.query("SELECT * FROM entrepreneurs WHERE entrepreneur_id = ?", [id]);
+			if (existing.length === 0) {
+				await pool.query("INSERT INTO entrepreneurs (entrepreneur_id) VALUES (?)", [id]);
+			}
+		} else if (role === "investor") {
+			// Check if already exists
+			const [existing] = await pool.query("SELECT * FROM investors WHERE investor_id = ?", [id]);
+			if (existing.length === 0) {
+				await pool.query("INSERT INTO investors (investor_id, investment_range_min, investment_range_max) VALUES (?, 0, 0)", [id]);
+			}
+		}
+
+		// Get updated user
+		const [updatedUsers] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+		
+		res.json({ 
+			message: "Role set successfully",
+			user: updatedUsers[0]
+		});
+	} catch (error) {
+		console.error("Error setting user role:", error);
+		res.status(500).json({ error: "Internal server error" });
 	}
 });
 

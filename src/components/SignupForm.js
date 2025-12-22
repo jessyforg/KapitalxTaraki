@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { FaGoogle, FaFacebookF, FaMicrosoft } from "react-icons/fa";
+import { FaGoogle, FaFacebookF } from "react-icons/fa";
 import api from '../services/api';
 import UserDetailsModal from './UserDetailsModal';
+import { API_BASE_URL } from '../config/api.config';
 
 export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose }) {
   const [showTerms, setShowTerms] = useState(false);
@@ -97,6 +98,17 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
   const handleUserDetailsComplete = () => {
     setShowUserDetails(false);
     if (onAuthSuccess) onAuthSuccess();
+  };
+
+  const handleSocialSignup = (provider) => {
+    // Redirect to backend OAuth endpoint
+    let apiUrl;
+    if (API_BASE_URL.includes('railway')) {
+      apiUrl = 'https://taraki-production.up.railway.app';
+    } else {
+      apiUrl = 'http://localhost:5000';
+    }
+    window.location.href = `${apiUrl}/api/auth/${provider}`;
   };
 
   if (showUserDetails && registeredUser) {
@@ -273,15 +285,31 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
           </button>
         </form>
         <div className="flex flex-row gap-4 justify-center mt-4 mb-2">
-          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Google">
-            <FaGoogle size={20} className="text-orange-500" />
+          <button 
+            onClick={() => handleSocialSignup('google')}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 transition shadow-md text-gray-700 border-2 border-gray-300 rounded-lg font-medium"
+            aria-label="Sign up with Google"
+          >
+            <FaGoogle size={20} className="text-red-500" />
+            <span>Google</span>
           </button>
-          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Facebook">
-            <FaFacebookF size={20} className="text-orange-500" />
+          <button 
+            onClick={() => handleSocialSignup('facebook')}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 transition shadow-md text-gray-700 border-2 border-gray-300 rounded-lg font-medium"
+            aria-label="Sign up with Facebook"
+          >
+            <FaFacebookF size={20} className="text-blue-600" />
+            <span>Facebook</span>
           </button>
-          <button className="rounded-full p-2 bg-orange-50 hover:bg-orange-100 transition shadow text-orange-500 border border-orange-200" aria-label="Sign up with Microsoft">
-            <FaMicrosoft size={20} className="text-orange-500" />
-          </button>
+          {/* Microsoft login commented out for now */}
+          {/* <button 
+            onClick={() => handleSocialSignup('microsoft')}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 transition shadow-md text-gray-700 border-2 border-gray-300 rounded-lg font-medium"
+            aria-label="Sign up with Microsoft"
+          >
+            <FaMicrosoft size={20} className="text-blue-500" />
+            <span>Microsoft</span>
+          </button> */}
         </div>
         <div className="text-center text-xs mt-4 text-black">
           Have an account?{' '}
