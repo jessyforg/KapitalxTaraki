@@ -565,8 +565,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user. To avoid DB NOT NULL issues on role, store a placeholder role.
-			// The frontend still uses needsRoleSelection=true to prompt the role modal for new users.
+			// Create new user with NULL role. Frontend will prompt to pick a role.
 			isNewUser = true;
 			const name = googleUser.name.split(" ");
 			const firstName = name[0] || "";
@@ -574,7 +573,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
 				[firstName, lastName, googleUser.name, googleUser.email, hashedPassword]
 			);
 			
@@ -655,8 +654,7 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user. To avoid DB NOT NULL issues on role, store a placeholder role.
-			// The frontend still uses needsRoleSelection=true to prompt the role modal for new users.
+			// Create new user with NULL role. Frontend will prompt to pick a role.
 			isNewUser = true;
 			const name = facebookUser.name.split(" ");
 			const firstName = name[0] || "";
@@ -664,7 +662,7 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
 				[firstName, lastName, facebookUser.name, facebookUser.email, hashedPassword]
 			);
 			
@@ -701,18 +699,13 @@ app.post("/api/users/:id/set-role", authenticateToken, async (req, res) => {
 			return res.status(400).json({ error: "Invalid role" });
 		}
 
-		// Check if user exists and doesn't have a role yet
+		// Check if user exists
 		const [users] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
 		if (users.length === 0) {
 			return res.status(404).json({ error: "User not found" });
 		}
 
-		const user = users[0];
-		
-		// If user already has a role, don't allow changing it this way
-		if (user.role && user.role !== null) {
-			return res.status(400).json({ error: "User already has a role" });
-		}
+		// Allow setting/overwriting the role (used for OAuth role selection)
 
 		// Update user role
 		await pool.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
