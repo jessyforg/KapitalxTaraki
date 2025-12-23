@@ -47,28 +47,28 @@ function AuthCallback() {
               localStorage.setItem('user', JSON.stringify(fullUser));
               setUser(fullUser);
               
-              // Check if user needs role selection
-              if (newUser || !fullUser.role) {
+              // Only show role selection if user truly has no role
+              if (!fullUser.role) {
                 setShowRoleSelection(true);
               } else {
-                // User has role, redirect based on role
                 redirectBasedOnRole(fullUser);
               }
             } else {
               setUser(userData);
-              if (newUser || !userData.role) {
-                setShowRoleSelection(true);
-              } else {
+              // Fallback: if we have a role from the token/userParam, skip modal
+              if (userData.role) {
                 redirectBasedOnRole(userData);
+              } else {
+                setShowRoleSelection(true);
               }
             }
           } catch (err) {
             console.error('Error fetching user profile:', err);
             setUser(userData);
-            if (newUser || !userData.role) {
-              setShowRoleSelection(true);
-            } else {
+            if (userData.role) {
               redirectBasedOnRole(userData);
+            } else {
+              setShowRoleSelection(true);
             }
           }
         };
