@@ -182,9 +182,11 @@ function AdminDashboard() {
   const [userActionNotification, setUserActionNotification] = useState(null);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUserModal, setSelectedUserModal] = useState(null);
+  const [lastInviteLink, setLastInviteLink] = useState('');
   const [viewingDocument, setViewingDocument] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [userTab, setUserTab] = useState('active'); // 'active', 'suspended', 'pending'
+  const [lastInviteLink, setLastInviteLink] = useState('');
   const [showUserVerificationModal, setShowUserVerificationModal] = useState(false);
   const [verificationAction, setVerificationAction] = useState(null); // 'approve' or 'reject'
   const [selectedUserForVerification, setSelectedUserForVerification] = useState(null);
