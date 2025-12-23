@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import defaultAvatar from './imgs/default-avatar.png';
+import defaultAvatar from './imgs/default-avatar-silhouette.svg';
 import iloisaImg from './imgs/testimonial/iloisa.webp';
 import evaImg from './imgs/testimonial/eva.webp';
 

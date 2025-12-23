@@ -9,7 +9,7 @@ import Navbar from './Navbar';
 import { useBreakpoint, useScreenSize } from '../hooks/useScreenSize';
 import './styles.css'; // For custom calendar and dashboard styles
 import { ReactComponent as PhMap } from './imgs/ph.svg';
-import defaultAvatar from './imgs/default-avatar.png';
+import defaultAvatar from './imgs/default-avatar-silhouette.svg';
 import tarakiLogo from './imgs/taraki-logo-black.png';
 import { getTickets, updateTicket } from '../api/tickets';
 import * as XLSX from 'xlsx';

@@ -3,7 +3,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import "./styles.css";
 import axios from "axios";
-import defaultAvatar from './imgs/default-avatar.png';
+import defaultAvatar from './imgs/default-avatar-silhouette.svg';
 import Testimonials from "./Testimonials";
 import { API_BASE_URL } from '../config/api.config';
 

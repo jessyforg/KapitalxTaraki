@@ -22,15 +22,22 @@ const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #FF7A1A 0%, #FFB26B 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <img src="${frontendUrl}/taraki-logo-black2.png" alt="TARAKI Logo" style="max-width: 200px; height: auto; margin: 0 auto 10px auto; display: block; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+            <img src="https://taraki-car.com/taraki-logo-black2.png" alt="TARAKI Logo" style="max-width: 200px; height: auto; margin: 0 auto 10px auto; display: block; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
           </div>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0;">
             <h2 style="color: #FF7A1A; margin-top: 0;">Password Reset Request</h2>
             <p>Hello ${userName},</p>
             <p>We received a request to reset your password for your TARAKI account. Click the button below to reset your password:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="background-color: #FF7A1A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Reset Password</a>
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+              <tr>
+                <td style="border-radius: 5px; background: #FF7A1A; text-align: center;">
+                  <a href="${resetLink}" target="_blank" rel="noopener noreferrer"
+                     style="display: inline-block; padding: 12px 30px; font-weight: bold; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; border-radius: 5px;">
+                    Reset Password
+                  </a>
+                </td>
+              </tr>
+            </table>
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; color: #666; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #e0e0e0;">${resetLink}</p>
             <p style="color: #666; font-size: 14px;">This link will expire in 1 hour for security reasons.</p>
