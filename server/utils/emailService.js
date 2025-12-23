@@ -20,47 +20,17 @@ const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Password Reset</title>
         </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #FF7A1A 0%, #FFB26B 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <tr>
-              <td align="center">
-                <img
-                  src="https://taraki-car.com/assets/email/taraki-logo.png"
-                  alt="TARAKI Logo"
-                  width="180"
-                  style="display: block; border: 0; outline: none; text-decoration: none; background: #ffffff; padding: 12px; border-radius: 6px;"
-                />
-              </td>
-            </tr>
-          </table>
-          <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0;">
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9;">
+          <div style="background: #ffffff; padding: 24px; border-radius: 10px; border: 1px solid #e0e0e0;">
             <h2 style="color: #FF7A1A; margin-top: 0;">Password Reset Request</h2>
             <p>Hello ${userName},</p>
-            <p>We received a request to reset your password for your TARAKI account. Click the button below to reset your password:</p>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px auto;">
-              <tr>
-                <td align="center" bgcolor="#FF7A1A" style="border-radius: 6px; padding: 14px 32px;">
-                  <a
-                    href="${resetLink}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style="
-                      font-family: Arial, sans-serif;
-                      font-size: 16px;
-                      font-weight: bold;
-                      color: #ffffff;
-                      text-decoration: none;
-                      display: inline-block;
-                    "
-                  >Reset Password</a>
-                </td>
-              </tr>
-            </table>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #666; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #e0e0e0;">${resetLink}</p>
+            <p>We received a request to reset your password for your TARAKI account. Use the link below to reset your password:</p>
+            <p style="word-break: break-all; color: #0066cc; background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0;">
+              <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="color: #0066cc; text-decoration: underline;">${resetLink}</a>
+            </p>
             <p style="color: #666; font-size: 14px;">This link will expire in 1 hour for security reasons.</p>
             <p style="color: #666; font-size: 14px;">If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
             <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} TARAKI. All rights reserved.</p>
           </div>
         </body>
