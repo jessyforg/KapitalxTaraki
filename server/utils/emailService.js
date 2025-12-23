@@ -1,0 +1,89 @@
+const nodemailer = require('nodemailer');
+
+// Create reusable transporter object using SMTP transport
+const createTransporter = () => {
+  // Use environment variables for email configuration
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER, // Your email
+      pass: process.env.SMTP_PASS, // Your email password or app password
+    },
+  });
+
+  return transporter;
+};
+
+// Send password reset email
+const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
+  try {
+    const transporter = createTransporter();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+      from: `"TARAKI" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Password Reset Request - TARAKI',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Password Reset</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #FF7A1A 0%, #FFB26B 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <img src="${frontendUrl}/taraki-logo-black2.png" alt="TARAKI Logo" style="max-width: 200px; height: auto; margin: 0 auto 10px auto; display: block; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+          </div>
+          <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0;">
+            <h2 style="color: #FF7A1A; margin-top: 0;">Password Reset Request</h2>
+            <p>Hello ${userName},</p>
+            <p>We received a request to reset your password for your TARAKI account. Click the button below to reset your password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="background-color: #FF7A1A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Reset Password</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #e0e0e0;">${resetLink}</p>
+            <p style="color: #666; font-size: 14px;">This link will expire in 1 hour for security reasons.</p>
+            <p style="color: #666; font-size: 14px;">If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+            <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} TARAKI. All rights reserved.</p>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+        Password Reset Request - TARAKI
+        
+        Hello ${userName},
+        
+        We received a request to reset your password for your TARAKI account.
+        
+        Click this link to reset your password:
+        ${resetLink}
+        
+        This link will expire in 1 hour for security reasons.
+        
+        If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+        
+        © ${new Date().getFullYear()} TARAKI. All rights reserved.
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw new Error('Failed to send password reset email');
+  }
+};
+
+module.exports = {
+  sendPasswordResetEmail,
+};
+

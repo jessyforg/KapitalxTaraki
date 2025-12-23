@@ -4,6 +4,9 @@ if (require('fs').existsSync('.env')) {
 	require('dotenv').config();
 }
 
+// Import email service
+const { sendPasswordResetEmail } = require('./utils/emailService');
+
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
@@ -401,18 +404,32 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 			[resetToken, expiresAt, user.id]
 		);
 
-		// TODO: Send email with reset link
-		// For now, log the token (remove in production)
-		console.log(`Password reset token for ${email}: ${resetToken}`);
-		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-		console.log(`Reset link: ${frontendUrl}/reset-password?token=${resetToken}`);
+		// Send email with reset link
+		try {
+			await sendPasswordResetEmail(
+				user.email,
+				resetToken,
+				user.first_name || user.full_name || 'User'
+			);
+		} catch (emailError) {
+			console.error('Error sending password reset email:', emailError);
+			// Still return success to user (don't reveal if email failed)
+			// Log the error for admin review
+		}
+
+		// In development, also log the token for testing
+		if (process.env.NODE_ENV === "development") {
+			const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+			console.log(`Password reset token for ${email}: ${resetToken}`);
+			console.log(`Reset link: ${frontendUrl}/reset-password?token=${resetToken}`);
+		}
 
 		res.json({ 
 			message: "If that email exists, a password reset link has been sent.",
 			// Only return token in development for testing
 			...(process.env.NODE_ENV === "development" && { 
 				resetToken, 
-				resetLink: `${frontendUrl}/reset-password?token=${resetToken}` 
+				resetLink: `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}` 
 			})
 		});
 	} catch (error) {
