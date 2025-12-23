@@ -102,6 +102,15 @@ class EventReminderService {
       }
 
     } catch (error) {
+      // If the event_registrations table doesn't exist (older DB schema),
+      // log a friendly message once and skip scheduling instead of spamming errors.
+      if (error && error.code === 'ER_NO_SUCH_TABLE') {
+        console.warn(
+          "⏭️  Skipping event reminders because 'event_registrations' table does not exist. " +
+          "Create the table if you want reminder notifications."
+        );
+        return;
+      }
       console.error(`❌ Error scheduling reminders for event ${event.event_id}:`, error);
     }
   }

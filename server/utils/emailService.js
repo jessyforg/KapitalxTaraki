@@ -29,7 +29,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
             <p>Hello ${userName},</p>
             <p>We received a request to reset your password for your TARAKI account. Click the button below to reset your password:</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" style="background-color: #FF7A1A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Reset Password</a>
+              <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="background-color: #FF7A1A; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Reset Password</a>
             </div>
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; color: #666; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #e0e0e0;">${resetLink}</p>
