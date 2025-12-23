@@ -565,7 +565,8 @@ app.get("/api/auth/google/callback", async (req, res) => {
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user without role - they'll select it on frontend
+			// Create new user. To avoid DB NOT NULL issues on role, store a placeholder role.
+			// The frontend still uses needsRoleSelection=true to prompt the role modal for new users.
 			isNewUser = true;
 			const name = googleUser.name.split(" ");
 			const firstName = name[0] || "";
@@ -573,7 +574,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
 				[firstName, lastName, googleUser.name, googleUser.email, hashedPassword]
 			);
 			
@@ -654,7 +655,8 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 		if (users.length > 0) {
 			user = users[0];
 		} else {
-			// Create new user without role - they'll select it on frontend
+			// Create new user. To avoid DB NOT NULL issues on role, store a placeholder role.
+			// The frontend still uses needsRoleSelection=true to prompt the role modal for new users.
 			isNewUser = true;
 			const name = facebookUser.name.split(" ");
 			const firstName = name[0] || "";
@@ -662,7 +664,7 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, 'entrepreneur', 1, 'verified')",
 				[firstName, lastName, facebookUser.name, facebookUser.email, hashedPassword]
 			);
 			
