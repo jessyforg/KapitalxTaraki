@@ -1090,8 +1090,7 @@ const EntrepreneurDashboard = () => {
         ${isDesktop ? 'p-6 lg:p-10 mt-24 ml-72' : 'p-3 pt-24'}
       `}>
         {/* Verification Banner */}
-        {/* COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
-        {user && user.verification_status !== 'verified' && (
+        {user && !user.is_verified && user.verification_status !== 'verified' && (
           <div className="mb-8 bg-orange-50 border border-orange-200 rounded-2xl p-8 text-orange-700 shadow flex flex-col gap-4 animate-fadeIn">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-orange-400 text-3xl"><i className="fas fa-exclamation-triangle"></i></span>
@@ -1105,7 +1104,6 @@ const EntrepreneurDashboard = () => {
             <button className="w-fit bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold mt-2" onClick={() => navigate('/verify-account')}>Verify Your Account</button>
           </div>
         )}
-        */}
         {activeSection === 'startups' && (
           <div>
             <h1 className="dashboard-section-header text-3xl font-bold mb-2">Startups</h1>

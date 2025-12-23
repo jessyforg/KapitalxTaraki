@@ -284,9 +284,11 @@ app.post("/api/auth/register", async (req, res) => {
 		const verificationToken = Math.random().toString(36).substring(2, 15);
 
 		// Insert new user
+		// Admins are automatically verified, others need to verify
+		const isVerified = role === 'admin';
 		const [result] = await pool.query(
-			"INSERT INTO users (first_name, last_name, email, password, verification_token, role, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			[first_name, last_name, email, hashedPassword, verificationToken, role, false]
+			"INSERT INTO users (first_name, last_name, email, password, verification_token, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			[first_name, last_name, email, hashedPassword, verificationToken, role, isVerified, isVerified ? 'verified' : null]
 		);
 
 		// Insert into role-specific table
@@ -596,8 +598,9 @@ app.get("/api/auth/google/callback", async (req, res) => {
 			const lastName = name.slice(1).join(" ") || "";
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
+			// OAuth users start unverified
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 0, NULL)",
 				[firstName, lastName, googleUser.name, googleUser.email, hashedPassword]
 			);
 			
@@ -685,8 +688,9 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 			const lastName = name.slice(1).join(" ") || "";
 			const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10);
 			
+			// OAuth users start unverified
 			const [result] = await pool.query(
-				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 1, 'verified')",
+				"INSERT INTO users (first_name, last_name, full_name, email, password, role, is_verified, verification_status) VALUES (?, ?, ?, ?, ?, NULL, 0, NULL)",
 				[firstName, lastName, facebookUser.name, facebookUser.email, hashedPassword]
 			);
 			

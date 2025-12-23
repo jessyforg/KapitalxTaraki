@@ -315,13 +315,15 @@ function AdminDashboard() {
     users.forEach(u => {
       const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
       const isSuspended = u.is_suspended === true || u.is_suspended === 1;
-      const userStatus = isSuspended ? 'suspended' : (isVerified ? 'active' : 'unverified');
-      if (userStatus === 'active' || userStatus === 'suspended') {
-        counts[userStatus]++;
+      
+      if (isSuspended) {
+        counts.suspended++;
+      } else if (isVerified) {
+        counts.active++;
+      } else {
+        counts.pending++;
       }
     });
-    // Pending count comes from users who have submitted verification documents
-    counts.pending = pendingVerificationUsers.length;
     return counts;
   };
 
