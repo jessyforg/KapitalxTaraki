@@ -2880,7 +2880,16 @@ case 'sitePerformance':
                     </div>
                   )}
 
-                  <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-black dark:text-white'>Startup Management</h1>
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold text-black dark:text-white'>Startup Management</h1>
+                    <button
+                      onClick={() => navigate('/create-startup?admin=true')}
+                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition flex items-center gap-2"
+                    >
+                      <i className="fas fa-plus"></i>
+                      Create Startup
+                    </button>
+                  </div>
                   
                   {/* Tab Buttons */}
                   <div className="flex gap-1 sm:gap-2 mb-4 overflow-x-auto scrollbar-hide">

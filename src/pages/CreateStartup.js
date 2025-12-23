@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { validatePhoneNumber } from '../utils/validation';
@@ -89,6 +89,8 @@ const initialState = {
 };
 
 const CreateStartup = () => {
+  const [searchParams] = useSearchParams();
+  const isAdminMode = searchParams.get('admin') === 'true';
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,6 +101,43 @@ const CreateStartup = () => {
   const businessPermitRef = useRef();
   const secDocRef = useRef();
   const navigate = useNavigate();
+  const [entrepreneurs, setEntrepreneurs] = useState([]);
+  const [selectedEntrepreneur, setSelectedEntrepreneur] = useState('');
+
+  // Check verification status for entrepreneurs (not admins)
+  useEffect(() => {
+    if (!isAdminMode) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user && user.role === 'entrepreneur' && !user.is_verified && user.verification_status !== 'verified') {
+          alert('Please verify your account to create startups.');
+          navigate('/entrepreneur-dashboard');
+        }
+      } catch (e) {
+        console.error('Error checking verification status:', e);
+      }
+    }
+  }, [isAdminMode, navigate]);
+
+  // Fetch entrepreneurs if in admin mode
+  useEffect(() => {
+    if (isAdminMode) {
+      const fetchEntrepreneurs = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${API_BASE_URL}/users`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          // Filter only entrepreneurs
+          const entrepreneurUsers = response.data.filter(u => u.role === 'entrepreneur');
+          setEntrepreneurs(entrepreneurUsers);
+        } catch (err) {
+          console.error('Failed to fetch entrepreneurs:', err);
+        }
+      };
+      fetchEntrepreneurs();
+    }
+  }, [isAdminMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -204,13 +243,33 @@ const CreateStartup = () => {
       setError('Name and industry are required.');
       return;
     }
+
+    // Admin mode validation
+    if (isAdminMode && !selectedEntrepreneur) {
+      setError('Please select an entrepreneur as the founder.');
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/startups`, form, {
+      const submitData = { ...form };
+      
+      // If admin mode, add entrepreneur_id to the payload
+      if (isAdminMode) {
+        submitData.entrepreneur_id = selectedEntrepreneur;
+      }
+      
+      await axios.post(`${API_BASE_URL}/startups`, submitData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      navigate('/entrepreneur-dashboard');
+      
+      // Navigate based on user role
+      if (isAdminMode) {
+        navigate('/admin');
+      } else {
+        navigate('/entrepreneur-dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create startup');
     } finally {
@@ -224,15 +283,45 @@ const CreateStartup = () => {
       <div className="max-w-[95%] mx-auto pt-24 pb-12">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 w-full border border-gray-200">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-800">Create Startup</h2>
+            <h2 className="text-3xl font-bold text-gray-800">
+              {isAdminMode ? 'Create Startup (Admin)' : 'Create Startup'}
+            </h2>
             <button 
               type="button" 
-              onClick={() => navigate('/entrepreneur-dashboard')} 
+              onClick={() => navigate(isAdminMode ? '/admin' : '/entrepreneur-dashboard')} 
               className="text-orange-500 hover:text-orange-600 font-semibold px-4 py-2 rounded transition flex items-center gap-2"
             >
               <i className="fas fa-arrow-left"></i> Back
             </button>
           </div>
+
+          {/* Admin Mode: Select Entrepreneur */}
+          {isAdminMode && (
+            <div className="mb-8 p-6 bg-orange-50 rounded-xl border-2 border-orange-200">
+              <h3 className="text-lg font-semibold text-orange-700 mb-3">
+                <i className="fas fa-user-tie mr-2"></i>Select Entrepreneur (Founder)
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose the entrepreneur who will be registered as the founder of this startup.
+              </p>
+              <select
+                value={selectedEntrepreneur}
+                onChange={(e) => setSelectedEntrepreneur(e.target.value)}
+                className="w-full p-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 bg-white text-gray-800"
+                required={isAdminMode}
+              >
+                <option value="">-- Select Entrepreneur --</option>
+                {entrepreneurs.map(ent => (
+                  <option key={ent.id} value={ent.id}>
+                    {ent.first_name} {ent.last_name} ({ent.email})
+                  </option>
+                ))}
+              </select>
+              {error && error.includes('entrepreneur') && (
+                <p className="text-red-500 text-sm mt-2">{error}</p>
+              )}
+            </div>
+          )}
 
           {/* Logo Upload */}
           <div className="flex flex-col items-center mb-8">

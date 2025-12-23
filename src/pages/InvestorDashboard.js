@@ -816,14 +816,29 @@ const InvestorDashboard = () => {
     }));
 
   const handleViewStartup = (startupId) => {
+    // Check verification status
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      alert('Please verify your account to view startup details.');
+      return;
+    }
     if (startupId) navigate(`/startup/${startupId}`);
   };
 
   const handleMessage = (entrepreneurId) => {
+    // Check verification status
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      alert('Please verify your account to send messages.');
+      return;
+    }
     navigate(`/messages/${entrepreneurId}`);
   };
 
   const handleMatchStartup = async (startupId) => {
+    // Check verification status
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      alert('Please verify your account to match with startups.');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       

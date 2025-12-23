@@ -493,6 +493,12 @@ const Messages = () => {
     e.preventDefault();
     if ((!messageInput.trim() && !fileInput) || !selectedChat) return;
 
+    // Check if user is verified
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      setError('Please verify your account to send messages.');
+      return;
+    }
+
     // Validate file if present
     if (fileInput) {
       const validation = validateFile(fileInput);
@@ -983,6 +989,13 @@ const Messages = () => {
     // Then check user and token
     if (!user || !token) {
       navigate('/login');
+      return;
+    }
+
+    // Check if user is verified
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      alert('Please verify your account to access messaging.');
+      navigate('/entrepreneur-dashboard'); // Redirect to dashboard
       return;
     }
 

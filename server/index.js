@@ -1366,11 +1366,19 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 			funding_stage,
 			website,
 			startup_stage,
+			entrepreneur_id, // Admin can specify entrepreneur
 		} = req.body;
 
 		// Validate required fields
 		if (!name || !industry) {
 			return res.status(400).json({ error: "Name and industry are required" });
+		}
+
+		// Determine the entrepreneur ID
+		// If entrepreneur_id is provided and user is admin, use it; otherwise use authenticated user ID
+		let founderId = req.user.id;
+		if (entrepreneur_id && req.user.role === 'admin') {
+			founderId = entrepreneur_id;
 		}
 
 		// Insert into startups table with explicit pending status
@@ -1407,7 +1415,7 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
          website, startup_stage, approval_status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', NOW(), NOW())`,
 			[
-				req.user.id,
+				founderId,
 				name,
 				industry,
 				description,
@@ -1427,7 +1435,7 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 		// COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
 		// try {
 		// 	await createStartupApplicationNotification(pool, {
-		// 		entrepreneur_id: req.user.id,
+		// 		entrepreneur_id: founderId,
 		// 		startup_name: name,
 		// 		application_status: 'under_review'
 		// 	});
@@ -1437,7 +1445,7 @@ app.post("/api/startups", authenticateToken, async (req, res) => {
 		// AUTOMATIC APPROVAL NOTIFICATION FOR TESTING
 		try {
 			await createStartupApplicationNotification(pool, {
-				entrepreneur_id: req.user.id,
+				entrepreneur_id: founderId,
 				startup_name: name,
 				application_status: 'approved'
 			});

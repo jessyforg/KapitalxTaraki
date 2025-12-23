@@ -707,6 +707,11 @@ const EntrepreneurDashboard = () => {
   }, [user, enhancedUser]);
 
   const handleCreateStartup = () => {
+    // Check verification status
+    if (user && !user.is_verified && user.verification_status !== 'verified') {
+      alert('Please verify your account to create startups.');
+      return;
+    }
     navigate('/create-startup');
   };
 
@@ -1155,7 +1160,8 @@ const EntrepreneurDashboard = () => {
                 <button
                   onClick={handleCreateStartup}
                   className="w-full md:w-auto flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  // disabled={user && user.verification_status !== 'verified'} // COMMENTED OUT FOR TESTING - TO BE RESTORED LATER
+                  disabled={user && !user.is_verified && user.verification_status !== 'verified'}
+                  title={user && !user.is_verified && user.verification_status !== 'verified' ? "Please verify your account to create startups" : ""}
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Create Startup
