@@ -342,13 +342,9 @@ function AdminDashboard() {
 
 
   const filteredUsers = (() => {
-    // For pending tab, use pendingVerificationUsers (users who have submitted documents)
-    if (activeTab === 'users' && userTab === 'pending') {
-      return pendingVerificationUsers.filter(u => {
-        // Exclude verified users
-        const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
-        if (isVerified) return false;
-        
+    // For users tab, apply specific filtering
+    if (activeTab === 'users') {
+      return users.filter(u => {
         // Search query filter
         const matchesSearch = !searchQuery || 
           (u.first_name && u.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -359,39 +355,31 @@ function AdminDashboard() {
         // Role filter
         const matchesRole = roleFilter === 'all' || u.role === roleFilter;
         
-        return matchesSearch && matchesRole;
-      });
-    }
-    
-    // For other tabs, use regular users
-    return users.filter(u => {
-      // Search query filter
-      const matchesSearch = !searchQuery || 
-        (u.first_name && u.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (u.last_name && u.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (u.full_name && u.full_name.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      // Role filter
-      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-      
-      // User status filter for tabs (only for non-pending tabs)
-      if (activeTab === 'users') {
         // Handle both boolean and integer values for is_verified and is_suspended
         const isVerified = u.is_verified === true || u.is_verified === 1 || u.verification_status === 'verified';
         const isSuspended = u.is_suspended === true || u.is_suspended === 1;
-        const userStatus = isSuspended ? 'suspended' : (isVerified ? 'active' : 'unverified');
-        const matchesUserTab = userTab === userStatus;
+        
+        // Determine user tab based on status
+        let matchesUserTab = false;
+        if (userTab === 'active') {
+          matchesUserTab = isVerified && !isSuspended;
+        } else if (userTab === 'pending') {
+          matchesUserTab = !isVerified && !isSuspended;
+        } else if (userTab === 'suspended') {
+          matchesUserTab = isSuspended;
+        }
         
         return matchesSearch && matchesRole && matchesUserTab;
-      }
-      
+      });
+    }
+    
+    // For other tabs, use regular users with report filters
+    return users.filter(u => {
       // Report filters (for site performance)
       const matchesReportRole = !roleFilterReport || u.role === roleFilterReport;
       const matchesLocation = !locationFilter || formatLocation(u.location) === locationFilter;
       const matchesIndustry = !industryFilter || u.industry === industryFilter;
       
-      // For site performance tab, use report filters
       return matchesReportRole && matchesLocation && matchesIndustry;
     });
   })();

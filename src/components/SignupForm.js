@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
+import { useSearchParams } from "react-router-dom";
 import api from '../services/api';
 import UserDetailsModal from './UserDetailsModal';
 import { API_BASE_URL } from '../config/api.config';
 
 export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose }) {
+  const [searchParams] = useSearchParams();
   const [showTerms, setShowTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showRetypePassword, setShowRetypePassword] = useState(false);
@@ -20,6 +22,16 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
   const [verificationSent, setVerificationSent] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [registeredUser, setRegisteredUser] = useState(null);
+  const [adminInviteToken, setAdminInviteToken] = useState("");
+
+  // Check for admin invite token in URL
+  useEffect(() => {
+    const token = searchParams.get('adminInviteToken');
+    if (token) {
+      setAdminInviteToken(token);
+      setRole('admin');
+    }
+  }, [searchParams]);
 
   const validatePassword = (password) => {
     if (password.length < 8) {
@@ -60,13 +72,20 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
     setLoading(true);
 
     try {
-      const response = await api.register({
+      const registerData = {
         first_name: firstName,
         last_name: lastName,
         email,
         password,
         role
-      });
+      };
+      
+      // Include admin invite token if present
+      if (adminInviteToken) {
+        registerData.adminInviteToken = adminInviteToken;
+      }
+      
+      const response = await api.register(registerData);
 
       // Store token and user data
       if (response.token && response.user) {
@@ -256,17 +275,23 @@ export default function SignupForm({ authTab, setAuthTab, onAuthSuccess, onClose
           {passwordError && (
             <div className="text-red-500 text-xs text-center animate-pulse mt-1">{passwordError}</div>
           )}
-          <select
-            className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
-            required
-            value={role}
-            onChange={e => setRole(e.target.value)}
-          >
-            <option value="">Select Role</option>
-            <option value="entrepreneur">Entrepreneur</option>
-            <option value="investor">Investor</option>
-            <option value="admin">Admin</option>
-          </select>
+          {adminInviteToken ? (
+            <div className="w-full p-2 border-2 border-orange-400 rounded bg-orange-50 text-black text-sm font-semibold flex items-center justify-between">
+              <span>👤 Admin (Invited)</span>
+              <span className="text-xs text-orange-600 bg-white px-2 py-1 rounded">Verified Invite</span>
+            </div>
+          ) : (
+            <select
+              className="w-full p-2 border border-orange-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-black placeholder-gray-400 text-sm"
+              required
+              value={role}
+              onChange={e => setRole(e.target.value)}
+            >
+              <option value="">Select Role</option>
+              <option value="entrepreneur">Entrepreneur</option>
+              <option value="investor">Investor</option>
+            </select>
+          )}
           <div className="flex items-start mt-2">
             <input type="checkbox" required className="mt-1 mr-2" id="terms" />
             <label htmlFor="terms" className="text-xs text-black select-none">
