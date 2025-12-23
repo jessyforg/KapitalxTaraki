@@ -92,11 +92,11 @@ function App() {
         <Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/entrepreneur-dashboard" element={<ProtectedRoute allowedRoles={['entrepreneur']}><EntrepreneurDashboard /></ProtectedRoute>} />
-        <Route path="/create-startup" element={<ProtectedRoute allowedRoles={['entrepreneur']}><CreateStartup /></ProtectedRoute>} />
+        <Route path="/create-startup" element={<ProtectedRoute allowedRoles={['entrepreneur', 'admin']}><CreateStartup /></ProtectedRoute>} />
         <Route path="/investor-dashboard" element={<ProtectedRoute allowedRoles={['investor']}><InvestorDashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/entrepreneur-dashboard" />} />
         <Route path="/startup/:id" element={<ProtectedRoute><StartupDetails /></ProtectedRoute>} />
-        <Route path="/edit-startup/:id" element={<ProtectedRoute allowedRoles={['entrepreneur']}><EditStartup /></ProtectedRoute>} />
+        <Route path="/edit-startup/:id" element={<ProtectedRoute allowedRoles={['entrepreneur', 'admin']}><EditStartup /></ProtectedRoute>} />
         <Route path="/verify-account" element={<ProtectedRoute><VerifyAccount /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
