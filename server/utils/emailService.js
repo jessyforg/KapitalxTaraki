@@ -1,33 +1,18 @@
-const nodemailer = require('nodemailer');
-
-// Create reusable transporter object using SMTP transport
-const createTransporter = () => {
-  // Use environment variables for email configuration
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER, // Your email
-      pass: process.env.SMTP_PASS, // Your email password or app password
-    },
-  });
-
-  return transporter;
-};
-
-// Send password reset email
+// Send password reset email using Brevo HTTP API (avoids blocked SMTP ports)
 const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
   try {
-    const transporter = createTransporter();
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) {
+      throw new Error('Brevo API key (BREVO_API_KEY) is not configured');
+    }
+
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    const mailOptions = {
-      from: `"TARAKI" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: 'Password Reset Request - TARAKI',
-      html: `
+    // Prefer an explicit Brevo sender env, fallback to SMTP_USER if set
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'no-reply@example.com';
+
+    const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -55,28 +40,63 @@ const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
           </div>
         </body>
         </html>
-      `,
-      text: `
-        Password Reset Request - TARAKI
-        
-        Hello ${userName},
-        
-        We received a request to reset your password for your TARAKI account.
-        
-        Click this link to reset your password:
-        ${resetLink}
-        
-        This link will expire in 1 hour for security reasons.
-        
-        If you didn't request a password reset, please ignore this email or contact support if you have concerns.
-        
-        © ${new Date().getFullYear()} TARAKI. All rights reserved.
-      `,
-    };
+      `;
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Password reset email sent:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    const textContent = `
+Password Reset Request - TARAKI
+
+Hello ${userName},
+
+We received a request to reset your password for your TARAKI account.
+
+Open this link to reset your password:
+${resetLink}
+
+This link will expire in 1 hour for security reasons.
+
+If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+
+© ${new Date().getFullYear()} TARAKI. All rights reserved.
+    `;
+
+    // Use Brevo HTTP API
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: 'TARAKI',
+          email: senderEmail,
+        },
+        to: [
+          {
+            email,
+            name: userName,
+          },
+        ],
+        subject: 'Password Reset Request - TARAKI',
+        htmlContent,
+        textContent,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorBody = {};
+      try {
+        errorBody = await response.json();
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+      console.error('Brevo API error:', response.status, errorBody);
+      throw new Error(errorBody.message || 'Failed to send password reset email');
+    }
+
+    console.log('Password reset email sent via Brevo');
+    return { success: true };
   } catch (error) {
     console.error('Error sending password reset email:', error);
     throw new Error('Failed to send password reset email');
