@@ -54,15 +54,19 @@ function TBI() {
         <div className="px-2 sm:px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* InTTO */}
-            <a href="/tbi/intto">
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+            <a
+              href="https://intto.uc-bcf.edu.ph/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center h-full">
                 <img
                   src={Intto}
                   alt="1st-ico"
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">InTTO</h2>
-                <p className="text-black dark:text-white text-center">
+                <p className="text-black dark:text-white text-center flex-grow">
                   The Innovation and Technology Transfer Office (InTTO) fosters
                   innovation by offering business and technology transfer
                   opportunities to faculty, students, alumni, and the community
@@ -76,14 +80,14 @@ function TBI() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center h-full">
                 <img
                   src={UP}
                   alt="1st-ico"
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">SILBI</h2>
-                <p className="text-black dark:text-white text-center">
+                <p className="text-black dark:text-white text-center flex-grow">
                   Silbi, meaning "service" in Filipino, reflects UP Baguio's
                   dedication to community service. The SILBI Center drives
                   transformation in Cordillera and Northern Luzon through research
@@ -97,14 +101,14 @@ function TBI() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center h-full">
                 <img
                   src={SLU}
                   alt="1st-ico"
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ConRes</h2>
-                <p className="text-black dark:text-white text-center">
+                <p className="text-black dark:text-white text-center flex-grow">
                   Established in 2017 with CHED funding, the SIRIB Center created
                   a Technology Hub and Co-Working Space. It launched
                   "Technopreneurship 101" to integrate entrepreneurship into
@@ -118,14 +122,14 @@ function TBI() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center h-full">
                 <img
                   src={BSU}
                   alt="1st-ico"
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">ATBI / IC</h2>
-                <p className="text-black dark:text-white text-center">
+                <p className="text-black dark:text-white text-center flex-grow">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,
@@ -139,14 +143,14 @@ function TBI() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center h-full">
                 <img
                   src={IFSU}
                   alt="1st-ico"
                   className="w-24 h-24 object-contain mb-4"
                 />
                 <h2 className="font-bold text-lg mb-2 text-center">IFSU IPTBM</h2>
-                <p className="text-black dark:text-white text-center">
+                <p className="text-black dark:text-white text-center flex-grow">
                   Founded under BOR Resolution No. 1939, s. 2010, the Agri-based
                   Technology Business Incubator/Innovation Center supports
                   start-ups and micro businesses in agricultural technology,
