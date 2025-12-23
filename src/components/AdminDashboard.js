@@ -186,7 +186,6 @@ function AdminDashboard() {
   const [viewingDocument, setViewingDocument] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [userTab, setUserTab] = useState('active'); // 'active', 'suspended', 'pending'
-  const [lastInviteLink, setLastInviteLink] = useState('');
   const [showUserVerificationModal, setShowUserVerificationModal] = useState(false);
   const [verificationAction, setVerificationAction] = useState(null); // 'approve' or 'reject'
   const [selectedUserForVerification, setSelectedUserForVerification] = useState(null);
@@ -653,6 +652,46 @@ function AdminDashboard() {
       fetchPendingVerificationUsers();
     }
   }, [activeTab]);
+
+  // Promote user to admin
+  const handlePromoteUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/promote`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to promote user');
+      }
+      alert('User promoted to admin successfully.');
+      fetchUsers(); // Refresh user list
+    } catch (err) {
+      alert(err.message || 'Failed to promote user');
+    }
+  };
+
+  // Generate admin invite link
+  const handleInviteAdmin = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/admin/invite-admin`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to generate invite');
+      }
+      const data = await res.json();
+      setLastInviteLink(data.link);
+      alert('Admin invite link generated successfully! Copy and share the link below.');
+    } catch (err) {
+      alert(err.message || 'Failed to generate invite');
+    }
+  };
 
   // Update body class and localStorage on darkMode change
   React.useEffect(() => {
@@ -2252,6 +2291,46 @@ function AdminDashboard() {
 
                   <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-black dark:text-white'>User Management</h1>
                   
+                  {/* Admin Invite Section (Admin Only) */}
+                  {user?.role === 'admin' && (
+                    <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-black dark:text-white mb-1">Admin Management</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Invite new admins or promote existing users</p>
+                        </div>
+                        <button
+                          onClick={handleInviteAdmin}
+                          className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm font-medium whitespace-nowrap"
+                        >
+                          Generate Admin Invite Link
+                        </button>
+                      </div>
+                      {lastInviteLink && (
+                        <div className="mt-3 p-3 bg-white dark:bg-[#1b1b1b] rounded border border-orange-300 dark:border-orange-600">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Share this link with the new admin (expires in 48 hours):</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={lastInviteLink}
+                              className="flex-1 px-3 py-2 text-xs bg-gray-50 dark:bg-[#252525] text-black dark:text-white rounded border border-orange-200 dark:border-orange-700 focus:outline-none"
+                            />
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(lastInviteLink);
+                                alert('Link copied to clipboard!');
+                              }}
+                              className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition text-xs"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Tab Buttons */}
                   <div className="flex gap-1 sm:gap-2 mb-4 overflow-x-auto scrollbar-hide">
                     <button
@@ -2416,6 +2495,21 @@ function AdminDashboard() {
                                         >
                                           <FiEye className="w-3 h-3" />
                                         </button>
+                                        {user.role !== 'admin' && (
+                                          <button
+                                            onClick={() => {
+                                              if (window.confirm(`Promote ${user.first_name || user.email} to Admin?`)) {
+                                                handlePromoteUser(user.id);
+                                              }
+                                            }}
+                                            className="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600"
+                                            title="Promote to Admin"
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                                            </svg>
+                                          </button>
+                                        )}
                                         {renderUserActionDropdown(user)}
                                       </div>
                                     )}
@@ -2549,6 +2643,21 @@ function AdminDashboard() {
                                         >
                                           <FiEye className="w-3 h-3" />
                                         </button>
+                                        {user.role !== 'admin' && (
+                                          <button
+                                            onClick={() => {
+                                              if (window.confirm(`Promote ${user.first_name || user.email} to Admin?`)) {
+                                                handlePromoteUser(user.id);
+                                              }
+                                            }}
+                                            className="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600"
+                                            title="Promote to Admin"
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                                            </svg>
+                                          </button>
+                                        )}
                                         {renderUserActionDropdown(user)}
                                       </div>
                                     )}

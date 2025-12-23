@@ -27,8 +27,8 @@ function FAQs() {
 
   const platformFaqItems = [
     {
-      question: "What is Taraki?",
-      answer: "Taraki is a platform that connects entrepreneurs, investors, and professionals in the startup ecosystem. It provides tools for networking, investment matching, and business development."
+      question: "What is TARAKI?",
+      answer: "TARAKI is a platform that connects entrepreneurs, investors, and professionals in the startup ecosystem. It provides tools for networking, investment matching, and business development."
     },
     {
       question: "How do I update my profile information?",

@@ -256,10 +256,25 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
   }, [isProfileOpen]);
 
   const scrollToSection = (sectionId) => {
-    // Only scroll if we're on the home page
+    // If not on home page, navigate to home page with hash
     if (location.pathname !== '/') {
-      // If not on home page, navigate to home page with hash
-      window.location.href = `/#${sectionId}`;
+      navigate(`/#${sectionId}`);
+      // Wait for navigation and page render, then scroll
+      setTimeout(() => {
+        const attemptScroll = (attempts = 0) => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            const yOffset = -100;
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          } else if (attempts < 10) {
+            // Retry if element not found yet (page still loading)
+            setTimeout(() => attemptScroll(attempts + 1), 100);
+          }
+        };
+        attemptScroll();
+      }, 300);
+      closeNavbar();
       return;
     }
 
@@ -269,7 +284,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       scroller.scrollTo(sectionId, {
         smooth: true,
         duration: 1000,
-        offset: -50,
+        offset: -100,
       });
     } else {
       console.warn(`Section with id "${sectionId}" not found`);
@@ -440,10 +455,18 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         return;
       }
 
+      // Set a timeout fallback to ensure isSearching is always set to false
+      const timeoutId = setTimeout(() => {
+        setIsSearching(false);
+      }, 5000); // 5 second timeout fallback
+
       try {
         const token = localStorage.getItem('token');
         if (!token) {
           console.warn('No authentication token found');
+          clearTimeout(timeoutId);
+          setSearchResults([]);
+          setIsSearching(false);
           handleLogout(); // Logout if no token is found
           return;
         }
@@ -451,17 +474,21 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
         const response = await axios.get(`${getApiUrl()}/search?q=${encodeURIComponent(query)}`, {
           headers: {
             Authorization: `Bearer ${token}`
-          }
+          },
+          timeout: 10000 // 10 second request timeout
         });
-        setSearchResults(response.data);
+        clearTimeout(timeoutId);
+        setSearchResults(response.data || []);
+        setIsSearching(false);
       } catch (error) {
+        clearTimeout(timeoutId);
         console.error('Search error:', error);
+        setSearchResults([]);
+        setIsSearching(false);
         if (error.response?.status === 401 || error.response?.status === 403) {
           handleLogout(); // Logout if token is invalid or expired
         }
-        setSearchResults([]);
       }
-      setIsSearching(false);
     }, 300),
     []
   );
@@ -470,6 +497,15 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
+    
+    // If query is empty, immediately clear results and stop searching
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      setShowSearchResults(false);
+      return;
+    }
+    
     setIsSearching(true);
     setShowSearchResults(true);
     debouncedSearch(query);
@@ -700,9 +736,19 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
 
   const handleMobileNavClick = (link) => {
     if (link.sectionId) {
+      // Handle newsletter as external link
+      if (link.sectionId === 'newsletter') {
+        window.open('https://heyzine.com/flip-book/be7bd4e55d.html#page/1', '_blank', 'noopener,noreferrer');
+        setIsMobileMenuOpen(false);
+        return;
+      }
       scrollToSection(link.sectionId);
     } else if (link.path) {
-      if (location.pathname === link.path && link.scrollTo) {
+      // Handle ecosystem navigation with hash
+      if (link.path === '/ecosystem' && link.scrollTo) {
+        navigate(`/ecosystem#${link.scrollTo}`);
+      } else if (location.pathname === link.path && link.scrollTo) {
+        // Already on the page, just scroll
         const el = document.getElementById(link.scrollTo);
         if (el) {
           const yOffset = -100;
@@ -710,7 +756,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
       } else {
-        navigate(link.path, { state: { scrollTo: link.scrollTo } });
+        navigate(link.path);
       }
     }
     setIsMobileMenuOpen(false);
@@ -746,33 +792,51 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const lastScrollY = useRef(0);
+  const ticking = useRef(false);
 
-  // Handle scroll behavior
+  // Optimized scroll handler with throttling
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollThreshold = 400;
-      
-      // Show/hide scroll-to-top button with smoother threshold
-      if (currentScrollY > scrollThreshold && !showScrollTop) {
-        setShowScrollTop(true);
-      } else if (currentScrollY <= scrollThreshold && showScrollTop) {
-        setShowScrollTop(false);
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const scrollThreshold = 300;
+          const hideThreshold = 50; // Minimum scroll before hiding
+          const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
+          
+          // Show/hide scroll-to-top button
+          if (currentScrollY > scrollThreshold) {
+            setShowScrollTop(true);
+          } else {
+            setShowScrollTop(false);
+          }
+          
+          // Optimized navbar show/hide logic
+          // Only hide if scrolling down significantly and past threshold
+          if (currentScrollY > hideThreshold && currentScrollY > lastScrollY.current && scrollDelta > 5) {
+            setIsNavbarVisible(false); // Scrolling down
+          } else if (currentScrollY < lastScrollY.current || currentScrollY <= hideThreshold) {
+            setIsNavbarVisible(true); // Scrolling up or at top
+          }
+          
+          lastScrollY.current = currentScrollY;
+          ticking.current = false;
+        });
+        ticking.current = true;
       }
-      
-      // Show/hide navbar based on scroll direction with a minimum scroll threshold
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-        setIsNavbarVisible(false); // Scrolling down
-      } else {
-        setIsNavbarVisible(true); // Scrolling up
-      }
-      
-      lastScrollY.current = currentScrollY;
     };
 
+    // Use passive listener for better performance
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [showScrollTop]);
+    
+    // Also handle touch events for mobile
+    window.addEventListener('touchmove', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchmove', handleScroll);
+    };
+  }, []);
 
   // Scroll to top function with smooth behavior
   const scrollToTop = () => {
@@ -792,8 +856,8 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
 
   return (
     <header className={`font-montserrat overflow-x-hidden ${darkMode ? 'dark' : ''}`}>
-      <nav className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] ${darkMode ? 'bg-trkblack/80 text-white border border-white/20' : 'bg-white/90 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-3xl transition-all duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-32'}`}>
-        <div className="flex items-center justify-between mx-auto px-6 py-3">
+      <nav className={`fixed top-2 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-[98%] sm:w-[95%] max-w-7xl ${darkMode ? 'bg-trkblack/95 text-white border border-white/20' : 'bg-white/95 text-trkblack border border-trkblack/10'} backdrop-blur-md shadow-lg rounded-2xl sm:rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isNavbarVisible ? 'translate-y-0 opacity-100' : '-translate-y-[120%] opacity-0'} ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : ''}`}>
+        <div className="flex items-center justify-between mx-auto px-3 sm:px-6 py-2 sm:py-3">
           <Link
             to="/"
             onClick={(e) => {
@@ -1016,18 +1080,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                     <ul className="py-1 overflow-hidden rounded-xl">
                       <li>
                         <Link
-                          to="/ecosystem#tbi"                        onClick={e => {
+                          to="/ecosystem#tbi"
+                          onClick={e => {
                             e.preventDefault();
-                            if (location.pathname === '/ecosystem') {
-                              const el = document.getElementById('tbi');
-                              if (el) {
-                                const yOffset = -100; // Adjust this value to control the scroll position
-                                const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                                window.scrollTo({ top: y, behavior: 'smooth' });
-                              }
-                            } else {
-                              navigate('/ecosystem', { state: { scrollTo: 'tbi' } });
-                            }
+                            navigate('/ecosystem#tbi');
                             closeNavbar();
                           }}
                           className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
@@ -1037,18 +1093,10 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                       </li>
                       <li>
                         <Link
-                          to="/ecosystem#mentors"                        onClick={e => {
+                          to="/ecosystem#mentors"
+                          onClick={e => {
                             e.preventDefault();
-                            if (location.pathname === '/ecosystem') {
-                              const el = document.getElementById('mentors');
-                              if (el) {
-                                const yOffset = -100; // Adjust this value to control the scroll position
-                                const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                                window.scrollTo({ top: y, behavior: 'smooth' });
-                              }
-                            } else {
-                              navigate('/ecosystem', { state: { scrollTo: 'mentors' } });
-                            }
+                            navigate('/ecosystem#mentors');
                             closeNavbar();
                           }}
                           className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
@@ -1061,12 +1109,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                           to="/ecosystem#framework"
                           onClick={e => {
                             e.preventDefault();
-                            if (location.pathname === '/ecosystem') {
-                              const el = document.getElementById('framework');
-                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            } else {
-                              window.location.href = '/ecosystem#framework';
-                            }
+                            navigate('/ecosystem#framework');
                             closeNavbar();
                           }}
                           className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
@@ -1113,16 +1156,15 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
                         </NavLink>
                       </li>
                       <li>
-                        <Link
-                          to="/"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            scrollToSection("newsletter");
-                          }}
+                        <a
+                          href="https://heyzine.com/flip-book/be7bd4e55d.html#page/1"
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className={`block w-full px-4 py-2 text-sm leading-5 cursor-pointer ${darkMode ? 'text-white' : 'text-gray-900'} ${darkMode ? 'hover:bg-orange-900' : 'hover:bg-orange-100'} hover:text-orange-600 dark:hover:text-orange-400 transition-colors`}
+                          onClick={closeNavbar}
                         >
                           Newsletter
-                        </Link>
+                        </a>
                       </li>
                     </ul>
                   </div>
@@ -1555,7 +1597,7 @@ function Navbar({ hideNavLinks: hideNavLinksProp = false, adminTabs, adminActive
       )}
       {/* New Full-screen Mobile Menu */}
       <div
-        className={`fixed inset-0 z-40 bg-white dark:bg-trkblack transition-transform duration-300 ease-in-out tablet-m:hidden ${
+        className={`fixed inset-0 z-40 bg-white dark:bg-trkblack transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] tablet-m:hidden ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

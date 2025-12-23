@@ -230,8 +230,8 @@ function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18191a]">
-      <Navbar hideNavLinks />
-      <div className="max-w-[95%] mx-auto pt-24">
+      <Navbar />
+      <div className="max-w-[95%] mx-auto pt-32">
         <div className="w-full">
           <div className="flex items-center gap-4 mb-6">
             <button

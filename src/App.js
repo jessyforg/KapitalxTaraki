@@ -31,6 +31,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Notifications from './pages/Notifications';
 import Matches from './pages/Matches';
 import AuthCallback from './pages/AuthCallback';
+import ResetPassword from './pages/ResetPassword';
 
 function MainPage() {
   const location = useLocation();
@@ -101,6 +102,7 @@ function App() {
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );
