@@ -21,20 +21,38 @@ const sendPasswordResetEmail = async (email, resetToken, userName = 'User') => {
           <title>Password Reset</title>
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #FF7A1A 0%, #FFB26B 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <img src="https://taraki-car.com/taraki-logo-black2.png" alt="TARAKI Logo" style="max-width: 200px; height: auto; margin: 0 auto 10px auto; display: block; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-          </div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #FF7A1A 0%, #FFB26B 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <tr>
+              <td align="center">
+                <img
+                  src="https://taraki-car.com/assets/email/taraki-logo.png"
+                  alt="TARAKI Logo"
+                  width="180"
+                  style="display: block; border: 0; outline: none; text-decoration: none; background: #ffffff; padding: 12px; border-radius: 6px;"
+                />
+              </td>
+            </tr>
+          </table>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0;">
             <h2 style="color: #FF7A1A; margin-top: 0;">Password Reset Request</h2>
             <p>Hello ${userName},</p>
             <p>We received a request to reset your password for your TARAKI account. Click the button below to reset your password:</p>
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 30px auto;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px auto;">
               <tr>
-                <td style="border-radius: 5px; background: #FF7A1A; text-align: center;">
-                  <a href="${resetLink}" target="_blank" rel="noopener noreferrer"
-                     style="display: inline-block; padding: 12px 30px; font-weight: bold; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; border-radius: 5px;">
-                    Reset Password
-                  </a>
+                <td align="center" bgcolor="#FF7A1A" style="border-radius: 6px; padding: 14px 32px;">
+                  <a
+                    href="${resetLink}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="
+                      font-family: Arial, sans-serif;
+                      font-size: 16px;
+                      font-weight: bold;
+                      color: #ffffff;
+                      text-decoration: none;
+                      display: inline-block;
+                    "
+                  >Reset Password</a>
                 </td>
               </tr>
             </table>
