@@ -208,9 +208,15 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/uploads/team", express.static(path.join(__dirname, "public", "uploads", "team")));
 
 // Authentication Routes
+// Helper to verify admin invite token
+const verifyAdminInvite = (token) => {
+	const secret = process.env.ADMIN_INVITE_SECRET || JWT_SECRET;
+	return jwt.verify(token, secret);
+};
+
 app.post("/api/auth/register", async (req, res) => {
 	try {
-		const { first_name, last_name, email, password, role } = req.body;
+		const { first_name, last_name, email, password, role, adminInviteToken } = req.body;
 		const allowedRoles = ["entrepreneur", "investor", "admin"];
 
 		// Validate input
@@ -228,6 +234,24 @@ app.post("/api/auth/register", async (req, res) => {
 		}
 		if (!allowedRoles.includes(role)) {
 			return res.status(400).json({ error: "Invalid role" });
+		}
+
+		// Enforce admin signup only via invite token
+		if (role === "admin") {
+			if (!adminInviteToken) {
+				return res.status(403).json({ error: "Admin signup requires an invite." });
+			}
+			try {
+				const payload = verifyAdminInvite(adminInviteToken);
+				if (payload.role !== "admin") {
+					return res.status(403).json({ error: "Invalid admin invite token." });
+				}
+				if (payload.email && payload.email.toLowerCase() !== email.toLowerCase()) {
+					return res.status(403).json({ error: "This invite is tied to a different email." });
+				}
+			} catch (err) {
+				return res.status(403).json({ error: "Invalid or expired admin invite token." });
+			}
 		}
 
 		// Validate email format
@@ -684,6 +708,52 @@ app.get("/api/auth/facebook/callback", async (req, res) => {
 		console.error("Facebook OAuth error:", error);
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 		res.redirect(`${frontendUrl}/login?error=oauth_error`);
+	}
+});
+
+// Generate admin invite token (admin-only)
+app.post("/api/admin/invite-admin", authenticateToken, async (req, res) => {
+	try {
+		if (req.user.role !== "admin") {
+			return res.status(403).json({ error: "Only admins can invite admins" });
+		}
+		const { email } = req.body;
+		const secret = process.env.ADMIN_INVITE_SECRET || JWT_SECRET;
+		const token = jwt.sign(
+			{
+				role: "admin",
+				email: email || undefined,
+			},
+			secret,
+			{ expiresIn: "48h" }
+		);
+
+		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+		const link = `${frontendUrl}/?adminInviteToken=${token}`;
+
+		res.json({ token, link });
+	} catch (error) {
+		console.error("Error generating admin invite:", error);
+		res.status(500).json({ error: "Failed to generate admin invite" });
+	}
+});
+
+// Promote existing user to admin (admin-only)
+app.post("/api/admin/users/:id/promote", authenticateToken, async (req, res) => {
+	try {
+		if (req.user.role !== "admin") {
+			return res.status(403).json({ error: "Only admins can promote admins" });
+		}
+		const { id } = req.params;
+		const [existing] = await pool.query("SELECT id, role FROM users WHERE id = ?", [id]);
+		if (existing.length === 0) {
+			return res.status(404).json({ error: "User not found" });
+		}
+		await pool.query("UPDATE users SET role = 'admin' WHERE id = ?", [id]);
+		res.json({ message: "User promoted to admin" });
+	} catch (error) {
+		console.error("Error promoting user to admin:", error);
+		res.status(500).json({ error: "Failed to promote user" });
 	}
 });
 
