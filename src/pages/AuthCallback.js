@@ -47,28 +47,28 @@ function AuthCallback() {
               localStorage.setItem('user', JSON.stringify(fullUser));
               setUser(fullUser);
               
-              // Only show role selection if user truly has no role
-              if (!fullUser.role) {
+              // Show role modal ONLY for new users
+              if (newUser) {
                 setShowRoleSelection(true);
               } else {
                 redirectBasedOnRole(fullUser);
               }
             } else {
               setUser(userData);
-              // Fallback: if we have a role from the token/userParam, skip modal
-              if (userData.role) {
-                redirectBasedOnRole(userData);
-              } else {
+              // If not new, skip modal and redirect; only new users see the modal
+              if (newUser) {
                 setShowRoleSelection(true);
+              } else {
+                redirectBasedOnRole(userData);
               }
             }
           } catch (err) {
             console.error('Error fetching user profile:', err);
             setUser(userData);
-            if (userData.role) {
-              redirectBasedOnRole(userData);
-            } else {
+            if (newUser) {
               setShowRoleSelection(true);
+            } else {
+              redirectBasedOnRole(userData);
             }
           }
         };
