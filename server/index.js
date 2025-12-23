@@ -404,18 +404,21 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 			[resetToken, expiresAt, user.id]
 		);
 
-		// Send email with reset link
-		try {
-			await sendPasswordResetEmail(
-				user.email,
-				resetToken,
-				user.first_name || user.full_name || 'User'
-			);
-		} catch (emailError) {
-			console.error('Error sending password reset email:', emailError);
-			// Still return success to user (don't reveal if email failed)
-			// Log the error for admin review
-		}
+		// Send email with reset link (non-blocking)
+		// We deliberately DON'T await this, so the API responds fast
+		// even if email service is slow or misconfigured.
+		(async () => {
+			try {
+				await sendPasswordResetEmail(
+					user.email,
+					resetToken,
+					user.first_name || user.full_name || 'User'
+				);
+			} catch (emailError) {
+				console.error('Error sending password reset email:', emailError);
+				// Don't throw - email failures shouldn't break the API response
+			}
+		})();
 
 		// In development, also log the token for testing
 		if (process.env.NODE_ENV === "development") {
